@@ -3,7 +3,7 @@ USE ellis;
 
 CREATE TABLE IF NOT EXISTS numbers (
     number_id varbinary(36) PRIMARY KEY,
-    number varchar(36) NOT NULL UNIQUE,
+    number varchar(128) NOT NULL UNIQUE,
     owner_id varbinary(36) NULL,
     gab_listed TinyInt NOT NULL DEFAULT 1,
     pstn boolean NOT NULL DEFAULT False,
