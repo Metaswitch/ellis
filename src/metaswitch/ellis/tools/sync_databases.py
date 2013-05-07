@@ -1,0 +1,183 @@
+#!/usr/bin/env python
+
+# @file sync_databases.py
+#
+# Copyright (C) 2013  Metaswitch Networks Ltd
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# The author can be reached by email at clearwater@metaswitch.com or by post at
+# Metaswitch Networks Ltd, 100 Church St, Enfield EN2 6BQ, UK
+
+
+import logging
+import sys
+import random
+
+from tornado.ioloop import IOLoop
+from tornado.httpclient import AsyncHTTPClient
+
+from metaswitch.common import ifcs, utils
+from metaswitch.ellis import logging_config
+from metaswitch.ellis.data import numbers, connection
+from metaswitch.ellis.remote import homestead, xdm
+from metaswitch.ellis import settings
+
+_log = logging.getLogger("ellis.create_numbers")
+
+AsyncHTTPClient.configure("tornado.curl_httpclient.CurlAsyncHTTPClient",
+                          max_clients=100)
+connection.init_connection()
+db_session = connection.Session()
+
+pending_requests = 0
+inconsistent_uris = set()
+stats = {"Assigned numbers in Ellis": 0,
+         "Unassigned numbers in Ellis": 0,
+         "Lines deleted": 0,
+         "Missing IFCs re-created": 0,
+         "Errors": 0}
+
+def create_get_handler(sip_uri, on_found=None, on_not_found=None):
+    """
+    Handler that asserts that a resource exists, executing the on_not_found handler if not
+    """
+    def handle_get(response):
+        global pending_requests
+        url = response.request.url
+        if not response.error:
+            print "Succesful GET from %s" % url
+            if on_found:
+                on_found(sip_uri)
+        elif response.code == 404:
+            print "404 for %s" % url
+            if on_not_found:
+                on_not_found(sip_uri)
+        else:
+            print "Error %s while GET %s" % (response.error, url)
+            stats["Errors"] += 1
+        pending_requests -= 1
+        if pending_requests == 0:
+            on_complete()
+    return handle_get
+
+def logging_handler(response):
+    """
+    Handler for requests where we only want to log out the result
+    """
+    global pending_requests
+    url = response.request.url
+    method = response.request.method
+    if not response.error:
+        print "Succesful %s from %s" % (method, url)
+    else:
+        print "Error %s while %s %s" % (response.error, method, url)
+        stats["Errors"] += 1
+    pending_requests -= 1
+    if pending_requests == 0:
+        on_complete()
+
+def validate_line(sip_uri):
+    """
+    Validate details about line in homestead
+    """
+    print "Validating %s " % sip_uri
+    # Verify the password for this line exists in homestead, delete the line otherwise
+    global pending_requests
+    pending_requests += 1
+    homestead.get_digest(utils.sip_public_id_to_private(sip_uri),
+                         sip_uri,
+                         create_get_handler(sip_uri,
+                                           on_found=ensure_valid_ifc,
+                                           on_not_found=delete_line))
+
+def delete_line(sip_uri):
+    """
+    Remove details about line from ellis, homestead and homer
+    """
+    print "Deleting %s" % sip_uri
+    numbers.remove_owner(db_session, sip_uri)
+    # Attempt to delete info about line from remotes
+    global pending_requests
+    pending_requests += 3
+    stats["Lines deleted"] += 1
+    homestead.delete_password(utils.sip_public_id_to_private(sip_uri),
+                              sip_uri,
+                              logging_handler)
+    homestead.delete_filter_criteria(sip_uri, logging_handler)
+    xdm.delete_simservs(sip_uri, logging_handler)
+
+def ensure_valid_ifc(sip_uri):
+    """
+    Check if a line has valid IFC, populate with default if not
+    """
+    print "Verifying IFC for %s" % sip_uri
+    global pending_requests
+    pending_requests+=1
+    def put_default_ifc(sip_uri):
+        print "Adding default IFC for %s" % sip_uri
+        stats["Missing IFCs re-created"] += 1
+        homestead.put_filter_criteria(sip_uri,
+                                      ifcs.generate_ifcs(settings.SIP_DIGEST_REALM),
+                                      logging_handler)
+    homestead.get_filter_criteria(sip_uri,
+                                  create_get_handler(sip_uri, on_not_found=put_default_ifc))
+def check_existing_uris():
+    """
+    Get list of numbers that ellis thinks exist and:
+    - Verify the digest exists in homestead, deleting the line if not.
+    - If the digest exists, but the IFC does not, put in the default IFC
+    """
+    cursor = db_session.execute("SELECT number FROM numbers WHERE owner_id IS NOT NULL")
+    assigned_numbers = [row[0] for row in cursor.fetchall()]
+    stats["Assigned numbers in Ellis"] = len(assigned_numbers)
+    for sip_uri in assigned_numbers:
+        validate_line(sip_uri)
+
+def remove_nonexisting_uris():
+    """
+    Get list of numbers that ellis thinks do not exist and
+    remove any record of them from homestead and homer
+    """
+    cursor = db_session.execute("SELECT number FROM numbers WHERE owner_id IS NULL")
+    unassigned_numbers = [row[0] for row in cursor.fetchall()]
+    stats["Unassigned numbers in Ellis"] = len(unassigned_numbers)
+    for sip_uri in unassigned_numbers:
+        delete_line(sip_uri)
+
+def on_complete():
+    """
+    Called when all request have completed
+    """
+    IOLoop.instance().stop()
+    db_session.commit()
+    # To avoid counting the lines deleted as part of the unassigned, subtract these
+    # from the line delete count
+    stats["Lines deleted"] -= stats["Unassigned numbers in Ellis"]
+    print "\nSummary:"
+    table_format = "{:<40}{}"
+    for s in stats:
+        print table_format.format(s, stats[s])
+
+def standalone():
+    """
+    Entry point to script
+    """
+    logging_config.configure_logging("sync_databases")
+    check_existing_uris()
+    remove_nonexisting_uris()
+    IOLoop.instance().start()
+
+if __name__ == '__main__':
+    standalone()

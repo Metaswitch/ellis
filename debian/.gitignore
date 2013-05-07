@@ -1,0 +1,6 @@
+/changelog
+/*.log
+/*.debhelper
+/*.substvars
+/ellis
+/files

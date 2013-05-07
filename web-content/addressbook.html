@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+
+<!-- Project Clearwater - IMS in the Cloud
+     Copyright (C) 2013  Metaswitch Networks Ltd
+
+     This program is free software: you can redistribute it and/or modify it 
+     under the terms of the GNU General Public License as published by the 
+     Free Software Foundation, either version 3 of the License, or (at your 
+     option) any later version, along with the “Special Exception” for use of 
+     the program along with SSL, set forth below. This program is distributed 
+     in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+     without even the implied warranty of MERCHANTABILITY or FITNESS FOR 
+     A PARTICULAR PURPOSE.  See the GNU General Public License for more 
+     details. You should have received a copy of the GNU General Public 
+     License along with this program.  If not, see 
+     <http://www.gnu.org/licenses/>.
+
+     The author can be reached by email at clearwater@metaswitch.com or by 
+     post at Metaswitch Networks Ltd, 100 Church St, Enfield EN2 6BQ, UK
+
+     Special Exception
+     Metaswitch Networks Ltd  grants you permission to copy, modify, 
+     propagate, and distribute a work formed by combining OpenSSL with The 
+     Software, or a work derivative of such a combination, even if such 
+     copying, modification, propagation, or distribution would otherwise 
+     violate the terms of the GPL. You must comply with the GPL in all 
+     respects for all of the code used other than OpenSSL.
+     "OpenSSL" means OpenSSL toolkit software distributed by the OpenSSL 
+     Project and licensed under the OpenSSL Licenses, or a work based on such 
+     software and licensed under the OpenSSL Licenses.
+     "OpenSSL Licenses" means the OpenSSL License and Original SSLeay License 
+     under which the OpenSSL Project distributes the OpenSSL toolkit software,
+     as those licenses appear in the file LICENSE-OPENSSL.
+-->
+
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Clearwater Addressbook</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="">
+<meta name="author" content="">
+
+<!-- Styles -->
+<link href="css/bootstrap.min.css" rel="stylesheet">
+<style>
+body {
+  padding-top: 60px;
+  /* 60px to make the container go all the way to the bottom of the topbar */
+}
+</style>
+<link href="css/bootstrap-responsive.css" rel="stylesheet">
+
+<link href="css/style.css" rel="stylesheet">
+<link href="css/addressbook.css" rel="stylesheet">
+
+<!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+<!--[if lt IE 9]>
+      <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+<!-- Le fav and touch icons -->
+<link rel="shortcut icon" href="images/favicon.ico">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+</head>
+
+<body>
+
+  <!-- NAVIGATION BAR -->
+  <div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container"> 
+        <a class="brand" href="#">Clearwater&nbsp;Addressbook</a>
+        <button class="btn logged-in-only" id="logout-button">Log out</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Address book -->
+  <div>
+  </div>
+  <div class="container" id="addressbook">
+      <input type="text" id="search-addressbook" placeholder="Search">
+      <div id="contact-list">Loading...</div>
+  </div>
+  
+  <!-- Le javascript
+    ================================================== -->
+  <!-- Placed at the end of the document so the pages load faster -->
+  <script type="text/javascript" src="js/jquery.js"></script>
+  <script type="text/javascript" src="js/jquery.cookie.js"></script>
+  <script type="text/javascript" src="js/underscore.js"></script>
+  <script type="text/javascript" src="js/backbone.js"></script>
+  <script type="text/javascript" src="js/bootstrap.min.js"></script>
+ 
+  <script src="js/addressbook.js"></script>
+
+</body>
+</html>

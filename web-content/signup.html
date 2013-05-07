@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<!-- Project Clearwater - IMS in the Cloud
+     Copyright (C) 2013  Metaswitch Networks Ltd
+
+     This program is free software: you can redistribute it and/or modify it 
+     under the terms of the GNU General Public License as published by the 
+     Free Software Foundation, either version 3 of the License, or (at your 
+     option) any later version, along with the “Special Exception” for use of 
+     the program along with SSL, set forth below. This program is distributed 
+     in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+     without even the implied warranty of MERCHANTABILITY or FITNESS FOR 
+     A PARTICULAR PURPOSE.  See the GNU General Public License for more 
+     details. You should have received a copy of the GNU General Public 
+     License along with this program.  If not, see 
+     <http://www.gnu.org/licenses/>.
+
+     The author can be reached by email at clearwater@metaswitch.com or by 
+     post at Metaswitch Networks Ltd, 100 Church St, Enfield EN2 6BQ, UK
+
+     Special Exception
+     Metaswitch Networks Ltd  grants you permission to copy, modify, 
+     propagate, and distribute a work formed by combining OpenSSL with The 
+     Software, or a work derivative of such a combination, even if such 
+     copying, modification, propagation, or distribution would otherwise 
+     violate the terms of the GPL. You must comply with the GPL in all 
+     respects for all of the code used other than OpenSSL.
+     "OpenSSL" means OpenSSL toolkit software distributed by the OpenSSL 
+     Project and licensed under the OpenSSL Licenses, or a work based on such 
+     software and licensed under the OpenSSL Licenses.
+     "OpenSSL Licenses" means the OpenSSL License and Original SSLeay License 
+     under which the OpenSSL Project distributes the OpenSSL toolkit software,
+     as those licenses appear in the file LICENSE-OPENSSL.
+-->
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Clearwater</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Styles -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <style>
+    body {
+      padding-top: 60px;
+      /* 60px to make the container go all the way to the bottom of the topbar */
+    }
+    </style>
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="css/fileuploader.css" rel="stylesheet">
+    <link href="css/jquery.miniColors.css" rel="stylesheet">
+
+    <link href="css/style.css" rel="stylesheet">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+          <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+
+    <!-- Various icons -->
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+  </head>
+
+  <body>
+
+    <!-- NAVIGATION BAR -->
+
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="#">Clearwater</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNUP PAGE -->
+
+    <div class="container well" id="signup">
+      <h1>Sign up</h1>
+
+      <form class="form-horizontal"
+            id="signup-form"
+            action="/accounts/?onsuccess=/index.html%23first&onfailure=/signup.html"
+            method="post">
+
+        <fieldset>
+
+          <p class="alert alert-error" id="username-taken" style="display:none">
+          Sorry, that username is taken.</p>
+          <p class="alert alert-error" id="incorrect-code" style="display:none">
+          Sorry, that signup code was incorrect.</p>
+          <p class="alert alert-error" id="unknown-error" style="display:none">
+          Sorry, an error occurred.  Please try again.</p>
+          <legend>Please enter your details</legend>
+          <div class="control-group">
+            <label class="control-label" for="full_name">Your name:</label>
+            <div class="controls">
+              <input type="text" class="input-xlarge" name="full_name" id="full-name">
+              <div class="help-block">
+              This will be your name in the address book
+              </div>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="username">Email:</label>
+            <div class="controls">
+              <input type="text" class="input-xlarge" id="username-field" name="username">
+              <input type="hidden" id="email-field" name="email">
+              <div class="help-block">
+              This will be the email you log in with
+              </div>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="password">Password:</label>
+            <div class="controls">
+              <input type="password" class="input-xlarge" id="password-field" name="password">
+              <input type="hidden" id="pw-score" name="score" value="0">
+              <div id="hidden-password-div" class="help-block">
+              At least 8 characters, common passwords like<br>
+              "password", "1234" and "qwerty" are not allowed.
+              </div>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="password-confirm">Confirm Password:</label>
+            <div class="controls">
+              <input type="password" class="input-xlarge" id="password-confirm-field" name="password_confirm">
+              <div class="help-block">
+              Confirm the password you entered above.
+              </div>
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="controls">
+              <label class="checkbox" for="expires">
+                <input type="checkbox" id="expires-field" name="expires" value="7" checked>
+                Demo account?
+              </label>
+              <div class="help-block">
+              Demo accounts automatically expire after one week.
+              </div>
+            </div>
+          </div>
+          <div class="control-group">
+            <label class="control-label" for="email">Signup code:</label>
+            <div class="controls">
+              <input type="text" class="input-xlarge" name="signup_code">
+              <div class="help-block">
+              You should have been sent a signup-code when <br>
+              invited to the beta
+              </div>
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="controls">
+              <button class="btn btn-success" id="signup-button">
+                <i class="icon-ok icon-white"></i> <span>Sign up</span></button>
+            </div>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+    <!-- Le javascript
+      ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/fileuploader.js"></script>
+    <script type="text/javascript" src="js/jquery.miniColors.min.js"></script>
+    <script type="text/javascript" src="js/jquery.ba-bbq.min.js"></script>
+    <script type="text/javascript" src="js/jquery.cookie.js"></script>
+    <script type="text/javascript" src="js/jquery.total-storage.min.js"></script>
+    <script type="text/javascript" src="js/jquery.validate.min.js"></script>
+    <script type="text/javascript" src="js/zxcvbn-async.js"></script>
+    <script type="text/javascript" src="js/pwstrength.js"></script>
+
+    <!--
+      <script src="js/bootstrap-transition.js"></script>
+      <script src="js/bootstrap-alert.js"></script>
+      <script src="js/bootstrap-modal.js"></script>
+      <script src="js/bootstrap-dropdown.js"></script>
+      <script src="js/bootstrap-scrollspy.js"></script>
+      <script src="js/bootstrap-tab.js"></script>
+      <script src="js/bootstrap-tooltip.js"></script>
+      <script src="js/bootstrap-popover.js"></script>
+      <script src="js/bootstrap-button.js"></script>
+      <script src="js/bootstrap-collapse.js"></script>
+      <script src="js/bootstrap-carousel.js"></script>
+      <script src="js/bootstrap-typeahead.js"></script>
+      -->
+    <script src="js/signup.js"></script>
+
+  </body>
+</html>
