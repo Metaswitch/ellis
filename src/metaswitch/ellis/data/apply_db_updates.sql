@@ -54,6 +54,13 @@ BEGIN
            ADD COLUMN recovery_token_created datetime;
   END IF;
 
+  -- --------------------------------------------------------------------------
+  -- Enlarge the maximum SIP URI value.
+  -- --------------------------------------------------------------------------
+  IF NOT EXISTS (SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='numbers' AND COLUMN_NAME='number' AND CHARACTER_OCTET_LENGTH>=128) THEN
+    ALTER TABLE numbers MODIFY number varchar(128);
+  END IF;
+
 END $$
 DELIMITER ;
 
