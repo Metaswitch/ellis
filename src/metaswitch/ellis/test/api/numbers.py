@@ -181,20 +181,21 @@ class TestNumberHandler(BaseTest):
         self.handler.finish.assert_called_once_with({})
 
 
-class TestSimservsHandler(BaseTest):
+class TestRemoteProxyHandler(BaseTest):
     """
-    Unit tests of the SimservsHandler class.
+    Unit tests of the RemoteProxyHandler class.
     """
     def setUp(self):
-        super(TestSimservsHandler, self).setUp()
+        super(TestRemoteProxyHandler, self).setUp()
         self.app = MagicMock()
         self.app._wsgi = False
         self.request = MagicMock()
-        self.handler = numbers.SimservsHandler(self.app, self.request)
+        self.handler = numbers.RemoteProxyHandler(self.app, self.request)
+        self.handler.remote_get = MagicMock()
+        self.handler.remote_put = MagicMock()
 
-    @patch("metaswitch.ellis.remote.xdm.get_simservs")
     @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
-    def test_get_mainline(self, HTTPCallbackGroup, get_simservs):
+    def test_get_mainline(self, HTTPCallbackGroup):
         # Setup
         HTTPCallbackGroup.return_value = MagicMock()
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
@@ -207,15 +208,14 @@ class TestSimservsHandler(BaseTest):
         # Asserts
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
         self.handler.check_number_ownership.assert_called_once_with(SIP_URI, USER_ID)
-        get_simservs.assert_called_once_with(SIP_URI, ANY)
+        self.handler.remote_get.assert_called_once_with(SIP_URI, ANY)
 
         # Simulate success of xdm request.
         self.handler._on_get_success([MagicMock(body="<xml>sample</xml>")])
         self.handler.finish.assert_called_once_with("<xml>sample</xml>")
 
-    @patch("metaswitch.ellis.remote.xdm.get_simservs")
     @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
-    def test_get_error(self, HTTPCallbackGroup, get_simservs):
+    def test_get_error(self, HTTPCallbackGroup):
         # Setup
         HTTPCallbackGroup.return_value = MagicMock()
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
@@ -228,16 +228,15 @@ class TestSimservsHandler(BaseTest):
         # Asserts
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
         self.handler.check_number_ownership.assert_called_once_with(SIP_URI, USER_ID)
-        get_simservs.assert_called_once_with(SIP_URI, ANY)
+        self.handler.remote_get.assert_called_once_with(SIP_URI, ANY)
 
         # Simulate error of xdm request.
         self.handler._on_get_failure(Mock())
         self.handler.send_error.assert_called_once_with(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
 
-    @patch("metaswitch.ellis.remote.xdm.put_simservs")
     @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
-    def test_put_mainline(self, HTTPCallbackGroup, put_simservs):
+    def test_put_mainline(self, HTTPCallbackGroup):
         # Setup
         HTTPCallbackGroup.return_value = MagicMock()
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
@@ -251,15 +250,14 @@ class TestSimservsHandler(BaseTest):
         # Asserts
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
         self.handler.check_number_ownership.assert_called_once_with(SIP_URI, USER_ID)
-        put_simservs.assert_called_once_with(SIP_URI, "<xml>new</xml>", ANY)
+        self.handler.remote_put.assert_called_once_with(SIP_URI, "<xml>new</xml>", ANY)
 
         # Simulate success of xdm request.
         self.handler._on_put_success(Mock())
         self.handler.finish.assert_called_once_with(None)
 
-    @patch("metaswitch.ellis.remote.xdm.put_simservs")
     @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
-    def test_put_error(self, HTTPCallbackGroup, put_simservs):
+    def test_put_error(self, HTTPCallbackGroup):
         # Setup
         HTTPCallbackGroup.return_value = MagicMock()
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
@@ -273,12 +271,43 @@ class TestSimservsHandler(BaseTest):
         # Asserts
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
         self.handler.check_number_ownership.assert_called_once_with(SIP_URI, USER_ID)
-        put_simservs.assert_called_once_with(SIP_URI, "<xml>new</xml>", ANY)
+        self.handler.remote_put.assert_called_once_with(SIP_URI, "<xml>new</xml>", ANY)
 
         # Simulate error of xdm request.
         self.handler._on_put_failure(Mock())
         self.handler.send_error.assert_called_once_with(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
+class TestSimservsHandler(BaseTest):
+    """
+    Unit tests of the SimservsHandler class.
+    """
+    @patch("metaswitch.ellis.remote.xdm.put_simservs")
+    @patch("metaswitch.ellis.remote.xdm.get_simservs")
+    def test_setup(self, get_simservs, put_simservs):
+        # The bulk of the functionality is tested by the TestRemoteProxyHandler class
+        self.app = MagicMock()
+        self.app._wsgi = False
+        self.request = MagicMock()
+        self.handler = numbers.SimservsHandler(self.app, self.request)
+        self.assertEquals(self.handler.remote_get, get_simservs)
+        self.assertEquals(self.handler.remote_put, put_simservs)
+
+class TestIFCsHandler(BaseTest):
+    """
+    Unit tests of the IFCsHandler class.
+    """
+    @patch("metaswitch.ellis.remote.homestead.put_filter_criteria")
+    @patch("metaswitch.ellis.remote.homestead.get_filter_criteria")
+    def test_setup(self, get_filter_criteria, put_filter_criteria):
+        # The bulk of the functionality is tested by the TestRemoteProxyHandler class
+        self.app = MagicMock()
+        self.app._wsgi = False
+        self.request = MagicMock()
+        self.handler = numbers.IFCsHandler(self.app, self.request)
+        self.assertEquals(self.handler.remote_get, get_filter_criteria)
+        self.assertEquals(self.handler.remote_put, put_filter_criteria)
 
 if __name__ == "__main__":
     unittest.main()
+
+

@@ -269,16 +269,13 @@ class RemoteProxyHandler(_base.LoggedInHandler):
 class SimservsHandler(RemoteProxyHandler):
     def __init__(self, application, request, **kwargs):
         super(SimservsHandler, self).__init__(application, request, **kwargs)
-        # Using the request group approach as we may need to pull/push multiple docs
-        # in the future
-        self._request_group = None
-        self.__response = None
+        """Updates the simservs on the XDM"""
         self.remote_get = xdm.get_simservs
         self.remote_put = xdm.put_simservs
 
 class IFCsHandler(RemoteProxyHandler):
     def __init__(self, application, request, **kwargs):
-        """Updates Homestead"""
+        """Updates the iFCs on Homestead"""
         super(IFCsHandler, self).__init__(application, request, **kwargs)
         self.remote_get = homestead.get_filter_criteria
         self.remote_put = homestead.put_filter_criteria
