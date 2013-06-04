@@ -253,10 +253,10 @@ class RemoteProxyHandler(_base.LoggedInHandler):
         """Updates document on remote"""
         user_id = self.get_and_check_user_id(username)
         self.check_number_ownership(sip_uri, user_id)
-        reponse_body = self.request.body
+        response_body = self.request.body
         self._request_group = HTTPCallbackGroup(self._on_put_success,
                                                 self._on_put_failure)
-        self.remote_put(sip_uri, reponse_body, self._request_group.callback())
+        self.remote_put(sip_uri, response_body, self._request_group.callback())
 
     def _on_put_success(self, responses):
         _log.debug("Successfully updated remote")
