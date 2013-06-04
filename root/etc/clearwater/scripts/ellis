@@ -12,5 +12,12 @@ sed -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$home_domain'"/g' \
     -e 's/^\(COOKIE_SECRET\) = .*$/\1 = "'$ellis_cookie_key'"/g' \
     -e 's/^\(API_KEY\) = .*$/\1 = "'$ellis_api_key'"/g' \
     </usr/share/clearwater/ellis/src/metaswitch/ellis/local_settings.py >/tmp/local_settings.py.$$
-cp /tmp/local_settings.py.$$ /usr/share/clearwater/ellis/src/metaswitch/ellis/local_settings.py
-mv /tmp/local_settings.py.$$ /usr/share/clearwater/ellis/env/lib/python2.7/site-packages/ellis-0.1-py2.7.egg/metaswitch/ellis/local_settings.py
+for dst in /usr/share/clearwater/ellis/src/metaswitch/ellis/local_settings.py \
+           /usr/share/clearwater/ellis/env/lib/python2.7/site-packages/ellis-0.1-py2.7.egg/metaswitch/ellis/local_settings.py
+do
+  if [ -f $dst ]
+  then
+    cp /tmp/local_settings.py.$$ $dst
+  fi
+done
+rm /tmp/local_settings.py.$$
