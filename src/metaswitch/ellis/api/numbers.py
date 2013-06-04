@@ -227,6 +227,7 @@ class RemoteProxyHandler(_base.LoggedInHandler):
         # in the future
         self._request_group = None
         self.__response = None
+        self.remote_name = None
         self.remote_get = None
         self.remote_put = None
 
@@ -241,11 +242,11 @@ class RemoteProxyHandler(_base.LoggedInHandler):
         self.remote_get(sip_uri, self._request_group.callback())
 
     def _on_get_success(self, responses):
-        _log.debug("Successfully fetched from remote")
+        _log.debug("Successfully fetched from %s" % self.remote_name)
         self.finish(responses[0].body)
 
     def _on_get_failure(self, response):
-        _log.warn("Failed to fetch from remote")
+        _log.warn("Failed to fetch from %s" % self.remote_name)
         self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
     @asynchronous
@@ -259,11 +260,11 @@ class RemoteProxyHandler(_base.LoggedInHandler):
         self.remote_put(sip_uri, response_body, self._request_group.callback())
 
     def _on_put_success(self, responses):
-        _log.debug("Successfully updated remote")
+        _log.debug("Successfully updated %s" % self.remote_name)
         self.finish(self.__response)
 
     def _on_put_failure(self, response):
-        _log.warn("Failed to update remote")
+        _log.warn("Failed to update %s" % self.remote_name)
         self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
 class SimservsHandler(RemoteProxyHandler):
@@ -272,6 +273,7 @@ class SimservsHandler(RemoteProxyHandler):
         """Updates the simservs on the XDM"""
         self.remote_get = xdm.get_simservs
         self.remote_put = xdm.put_simservs
+        self.remote_name = "Homer (simservs)"
 
 class IFCsHandler(RemoteProxyHandler):
     def __init__(self, application, request, **kwargs):
@@ -279,6 +281,7 @@ class IFCsHandler(RemoteProxyHandler):
         super(IFCsHandler, self).__init__(application, request, **kwargs)
         self.remote_get = homestead.get_filter_criteria
         self.remote_put = homestead.put_filter_criteria
+        self.remote_name = "Homestead (iFC)"
 
 class NumberGabListedHandler(_base.LoggedInHandler):
     def put(self, username, sip_phone, isListed):

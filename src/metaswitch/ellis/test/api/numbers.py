@@ -291,6 +291,7 @@ class TestSimservsHandler(BaseTest):
         self.handler = numbers.SimservsHandler(self.app, self.request)
         self.assertEquals(self.handler.remote_get, get_simservs)
         self.assertEquals(self.handler.remote_put, put_simservs)
+        self.assertEquals(self.handler.remote_name, "Homer (simservs)")
 
 class TestIFCsHandler(BaseTest):
     """
@@ -305,7 +306,8 @@ class TestIFCsHandler(BaseTest):
         self.request = MagicMock()
         self.handler = numbers.IFCsHandler(self.app, self.request)
         self.assertEquals(self.handler.remote_get, get_filter_criteria)
-        self.assertEquals(self.handler.remote_put, put_filter_criteria)
+        self.assertEquals(self.handler.remote_get, get_filter_criteria)
+        self.assertEquals(self.handler.remote_name, "Homestead (iFC)")
 
 if __name__ == "__main__":
     unittest.main()
