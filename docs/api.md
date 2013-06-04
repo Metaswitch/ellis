@@ -189,3 +189,22 @@ Book. The response has the following form:
       ]
     }
 
+Simservs
+========
+
+    /1/accounts/<username>/numbers/<SIP URI>/simservs
+
+Make a GET/PUT to `/1/accounts/<username>/numbers/<SIP URI>/simservs`
+to set the simservs document. Ellis merely proxies the request onto Homer.
+
+See the Homer [docs](https://github.com/Metaswitch/crest/blob/dev/docs/homer_api.md) for more information.
+
+iFCs
+====
+
+    /1/accounts/<username>/numbers/<SIP URI>/ifcs
+
+Make a GET/PUT to `/1/accounts/<username>/numbers/<SIP URI>/ifcs`
+to set the iFC document. Ellis merely proxies the request onto Homestead.
+
+See the Homestead [docs](https://github.com/Metaswitch/crest/blob/dev/docs/homestead_api.md) for more information.
