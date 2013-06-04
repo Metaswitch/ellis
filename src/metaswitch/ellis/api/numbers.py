@@ -213,53 +213,75 @@ class SipPasswordHandler(_base.LoggedInHandler):
             _log.error("failed to set password in homestead %s", response)
             self.send_error(httplib.BAD_GATEWAY)
 
-class SimservsHandler(_base.LoggedInHandler):
+class RemoteProxyHandler(_base.LoggedInHandler):
     def __init__(self, application, request, **kwargs):
-        super(SimservsHandler, self).__init__(application, request, **kwargs)
+        """
+           Abstract handler that proxies requests to a remote server (e.g.
+           Homer or Homestead)
+
+           Subclasses should override self.remote_get and self.remote_put
+           with relevant methods for contacting remotes
+        """
+        super(RemoteProxyHandler, self).__init__(application, request, **kwargs)
         # Using the request group approach as we may need to pull/push multiple docs
         # in the future
         self._request_group = None
         self.__response = None
+        self.remote_name = None
+        self.remote_get = None
+        self.remote_put = None
 
     @asynchronous
     def get(self, username, sip_uri):
-        """Fetches document from XDM"""
+        """Fetches document from remote"""
         user_id = self.get_and_check_user_id(username)
         self.check_number_ownership(sip_uri, user_id)
 
         self._request_group = HTTPCallbackGroup(self._on_get_success,
                                                 self._on_get_failure)
-        xdm.get_simservs(sip_uri, self._request_group.callback())
+        self.remote_get(sip_uri, self._request_group.callback())
 
     def _on_get_success(self, responses):
-        _log.debug("Successfully fetched from XDM")
+        _log.debug("Successfully fetched from %s" % self.remote_name)
         self.finish(responses[0].body)
 
     def _on_get_failure(self, response):
-        _log.warn("Failed to fetch from XDM")
+        _log.warn("Failed to fetch from %s" % self.remote_name)
         self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
     @asynchronous
     def put(self, username, sip_uri):
-        """Updates document XDM"""
+        """Updates document on remote"""
         user_id = self.get_and_check_user_id(username)
         self.check_number_ownership(sip_uri, user_id)
-
-        xml_doc = self.request.body
-        _log.info("Got simservs xml: %s" % xml_doc)
-
-        # Send to XDM
+        response_body = self.request.body
         self._request_group = HTTPCallbackGroup(self._on_put_success,
                                                 self._on_put_failure)
-        xdm.put_simservs(sip_uri, xml_doc, self._request_group.callback())
+        self.remote_put(sip_uri, response_body, self._request_group.callback())
 
     def _on_put_success(self, responses):
-        _log.debug("Successfully updated XDM")
+        _log.debug("Successfully updated %s" % self.remote_name)
         self.finish(self.__response)
 
     def _on_put_failure(self, response):
-        _log.warn("Failed to update XDM")
+        _log.warn("Failed to update %s" % self.remote_name)
         self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
+
+class SimservsHandler(RemoteProxyHandler):
+    def __init__(self, application, request, **kwargs):
+        super(SimservsHandler, self).__init__(application, request, **kwargs)
+        """Updates the simservs on the XDM"""
+        self.remote_get = xdm.get_simservs
+        self.remote_put = xdm.put_simservs
+        self.remote_name = "Homer (simservs)"
+
+class IFCsHandler(RemoteProxyHandler):
+    def __init__(self, application, request, **kwargs):
+        """Updates the iFCs on Homestead"""
+        super(IFCsHandler, self).__init__(application, request, **kwargs)
+        self.remote_get = homestead.get_filter_criteria
+        self.remote_put = homestead.put_filter_criteria
+        self.remote_name = "Homestead (iFC)"
 
 class NumberGabListedHandler(_base.LoggedInHandler):
     def put(self, username, sip_phone, isListed):
