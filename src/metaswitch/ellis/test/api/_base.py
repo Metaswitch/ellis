@@ -40,6 +40,7 @@ import unittest
 import uuid
 from mock import Mock
 from tornado.web import HTTPError
+from metaswitch.ellis import settings
 from metaswitch.ellis.api import _base
 from metaswitch.ellis.data  import NotFound, connection
 
@@ -59,6 +60,7 @@ class TestBaseHandler(BaseTest):
         self.request = MagicMock()
         self.request.method = "GET"
         self.request.headers = {"NGV-API-Key": 'secret'}
+        settings.API_KEY = 'secret'
         self.handler = _base.BaseHandler(self.app, self.request)
 
     def test_prepare(self):
