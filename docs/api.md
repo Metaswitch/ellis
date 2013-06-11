@@ -116,17 +116,24 @@ Number management
     /1/accounts/<username>/numbers/<SIP URI>/
     /1/accounts/<username>/numbers/<SIP URI>/password
 
-Make an empty POST to `/1/accounts/<username>/numbers/` to allocate a new number to an account.
+Make an POST request to `/1/accounts/<username>/numbers/` to allocate a new number to an account. Specify the following parameters in the body:
+
+    {
+      "pstn":             <boolean specifying if number should be a PSTN>,
+      "private_id":       <private identity to associate this number with, null if none yet exists>
+    }
 
 Response
 
     {
-      "sip_uri":          <the SIP uri of the number>,
-      "sip_username":     <the user portion of the SIP URI, i.e. exactly what the user should enter into the client>,
+      "formatted_number": <the phone number formatted for local display>,
       "gab_listed":       true if the the number is listed in the global address book,
       "number":           <the phone number, currently, this will be equal to the sip_username>,
-      "formatted_number": <the phone number formatted for local display>,
-      "sip_password":     <a randomly-generated SIP password for the number, only available at creation>
+      "pstn":             <boolean specifying if number is a PSTN>,
+      "private_id":       <private identity associated with this number>
+      "sip_password":     <a randomly-generated SIP password for the number, only available at creation>,
+      "sip_uri":          <the SIP uri of the number>,
+      "sip_username":     <the user portion of the SIP URI, i.e. exactly what the user should enter into the client>
     }
 
 Make a GET request to `/1/accounts/<username>/numbers/` to retrieve
