@@ -63,16 +63,44 @@ class TestNumbersHandler(BaseTest):
         self.app._wsgi = False
         self.request = MagicMock()
         self.handler = numbers.NumbersHandler(self.app, self.request)
+        # Finish has an important side-effect - it sets _finished to True.  If out mocked version doesn't do this, we see multiple calls to finish.
+        def finish(*args):
+            self.handler._finished = True
+        self.handler.finish = MagicMock(side_effect=finish)
 
     @patch("metaswitch.ellis.data.numbers.get_numbers")
-    def test_get_mainline(self, get_numbers):
+    def test_get_no_numbers(self, get_numbers):
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
-        self.handler.finish = MagicMock()
+        get_numbers.return_value = []
+        self.handler.get("foobar")
+        self.handler.get_and_check_user_id.assert_called_once_with("foobar")
+        self.handler.finish.assert_called_once_with( { "numbers": [] } )
+
+    @patch("metaswitch.ellis.remote.homestead.get_associated_privates")
+    @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
+    @patch("metaswitch.ellis.data.numbers.get_numbers")
+    def test_get_one_number(self, get_numbers,
+                                  HTTPCallbackGroup,
+                                  get_associated_privates):
+        self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
         get_numbers.return_value = [{"number": SIP_URI,
                                      "number_id": NUMBER_ID,
                                      "gab_listed": GAB_LISTED}]
+        HTTPCallbackGroup.return_value = MagicMock()
+
         self.handler.get("foobar")
+        # Assert that we kick off asynchronous GET at homestead
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
+        HTTPCallbackGroup.assert_called_once_with(self.handler._on_get_success,
+                                                  self.handler._on_get_failure)
+        
+        get_associated_privates.assert_called_once_with(SIP_URI,
+                                                        self.handler._request_group.callback())
+        # Simulate success of all requests.
+        response = MagicMock()
+        response.body = '{"%s": ["hidden@sip.com"]}' % SIP_URI
+        self.handler._on_get_success([response])
+
         self.handler.finish.assert_called_once_with(
             {
                 "numbers": [
@@ -82,7 +110,8 @@ class TestNumbersHandler(BaseTest):
                       "domain": "ngv.metaswitch.com",
                       "gab_listed": GAB_LISTED,
                       "formatted_number": "(555) 555-0123",
-                      "sip_uri": SIP_URI, }
+                      "sip_uri": SIP_URI,
+                      "private_id": "hidden@sip.com", }
                  ]
             })
 
@@ -99,7 +128,7 @@ class TestNumbersHandler(BaseTest):
         self.post_mainline(True, PRIVATE_ID)
 
     @patch("metaswitch.common.ifcs.generate_ifcs")
-    @patch("metaswitch.ellis.remote.homestead.post_associated_uri")
+    @patch("metaswitch.ellis.remote.homestead.post_associated_public")
     @patch("metaswitch.ellis.remote.homestead.post_password")
     @patch("metaswitch.ellis.remote.homestead.put_filter_criteria")
     @patch("metaswitch.ellis.remote.xdm.put_simservs")
@@ -114,11 +143,10 @@ class TestNumbersHandler(BaseTest):
                                               post_simservs,
                                               put_filter_criteria,
                                               post_password,
-                                              post_associated_uri,
+                                              post_associated_public,
                                               generate_ifcs):
         # Setup
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
-        self.handler.finish = MagicMock()
         self.request.arguments = {}
         if pstn:
             self.request.arguments["pstn"] = ["true"]
@@ -145,7 +173,7 @@ class TestNumbersHandler(BaseTest):
             sip_pub_to_priv.assert_called_once_with(SIP_URI)
             post_password.assert_called_once_with("generated_private_id", SIP_URI, "sip_pass", ANY)
         else:
-            post_associated_uri.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+            post_associated_public.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
         generate_ifcs.assert_called_once_with(settings.SIP_DIGEST_REALM)
         put_filter_criteria.assert_called_once_with(SIP_URI, "ifcs", ANY)
         post_simservs.assert_called_once_with(SIP_URI, ANY, ANY)

@@ -35,6 +35,7 @@
 
 import logging
 import httplib
+import json
 
 from tornado.web import HTTPError, asynchronous
 
@@ -56,19 +57,54 @@ class NumbersHandler(_base.LoggedInHandler):
         super(NumbersHandler, self).__init__(application, request, **kwargs)
         self._request_group = None
         self.__response = None
+        self._numbers = None
 
+    @asynchronous
     def get(self, username):
         """Retrieve list of phone numbers."""
         user_id = self.get_and_check_user_id(username)
-        nums = numbers.get_numbers(self.db_session(), user_id)
-        for number in nums:
+        self._request_group = HTTPCallbackGroup(self._on_get_success, self._on_get_failure)
+        self._numbers = numbers.get_numbers(self.db_session(), user_id)
+        if len(self._numbers) == 0:
+            self.finish({"numbers": []})
+            return
+
+        for number in self._numbers:
             number["number_id"] = number["number_id"].hex
             number["sip_uri"] = number["number"]
             number["sip_username"] = utils.sip_uri_to_phone_number(number["number"])
             number["domain"] = utils.sip_uri_to_domain(number["number"])
             number["number"] = utils.sip_uri_to_phone_number(number["number"])
             number["formatted_number"] = utils.format_phone_number(number["number"])
-        self.finish({"numbers": nums})
+            
+            # We only store the public identities in Ellis, and must query
+            # Homestead for the associated private identities
+            homestead.get_associated_privates(number["sip_uri"],
+                                              self._request_group.callback())
+
+    def _on_get_success(self, responses):
+        _log.debug("Successfully fetched associated private identities")
+        for response in responses:
+            try:
+                # Body is of format {"public_id" : ["private_id_1", "private_id_2"...]}
+                parsed_body = json.loads(response.body)
+                public_id = parsed_body.keys()[0]
+                # We only support one private id per public id, so only pull out first in list
+                private_id = parsed_body.values()[0][0]
+                for number in [n for n in self._numbers if n["sip_uri"] == public_id]:
+                    number["private_id"] = private_id
+            
+            except (TypeError, KeyError):
+                _log.error("Cloud not parse response: %s", response.body)
+                self.send_error(httplib.BAD_GATEWAY, 
+                                reason="Upstream request failed: could not parse private identity list")
+                return
+            
+
+        self.finish({"numbers": self._numbers})
+
+    def _on_get_failure(self, response):
+        _log.warn("Failed to fetch from %s" % self.remote_name)
 
     @asynchronous
     def post(self, username):
@@ -128,9 +164,9 @@ class NumbersHandler(_base.LoggedInHandler):
             # Private identity was specified, so rather than creating a
             # new digest in homestead, we just associate the new public 
             # identity with the existing private identity in Homestead
-            homestead.post_associated_uri(private_id,
-                                          sip_uri,
-                                          self._request_group.callback())
+            homestead.post_associated_public(private_id,
+                                             sip_uri,
+                                             self._request_group.callback())
             
         self.__response["private_id"] = private_id
 
