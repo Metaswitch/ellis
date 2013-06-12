@@ -86,27 +86,49 @@ class TestNumbersHandler(BaseTest):
                  ]
             })
 
+    def test_post_mainline(self):
+        self.post_mainline(False, None)
+
+    def test_post_pstn(self):
+        self.post_mainline(True, None)
+
+    def test_post_associate(self):
+        self.post_mainline(False, PRIVATE_ID)
+
+    def test_post_associate_pstn(self):
+        self.post_mainline(True, PRIVATE_ID)
 
     @patch("metaswitch.common.ifcs.generate_ifcs")
+    @patch("metaswitch.ellis.remote.homestead.post_associated_uri")
     @patch("metaswitch.ellis.remote.homestead.post_password")
     @patch("metaswitch.ellis.remote.homestead.put_filter_criteria")
     @patch("metaswitch.ellis.remote.xdm.put_simservs")
     @patch("metaswitch.common.utils.generate_sip_password")
+    @patch("metaswitch.common.utils.sip_public_id_to_private")
     @patch("metaswitch.ellis.data.numbers.allocate_number")
     @patch("metaswitch.ellis.data.numbers.get_number")
-    def test_post_mainline(self, get_number,
-                                 allocate_number,
-                                 gen_sip_pass,
-                                 post_simservs,
-                                 put_filter_criteria,
-                                 post_password,
-                                 generate_ifcs):
+    def post_mainline(self, pstn, private_id, get_number,
+                                              allocate_number,
+                                              sip_pub_to_priv,
+                                              gen_sip_pass,
+                                              post_simservs,
+                                              put_filter_criteria,
+                                              post_password,
+                                              post_associated_uri,
+                                              generate_ifcs):
         # Setup
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
         self.handler.finish = MagicMock()
-        self.request.arguments = {"pstn": ['true']}
+        self.request.arguments = {}
+        if pstn:
+            self.request.arguments["pstn"] = ["true"]
+        else:
+            self.request.arguments["pstn"] = ["false"]
+        if private_id:
+            self.request.arguments["private_id"] = [private_id]
         allocate_number.return_value = NUMBER_ID
         gen_sip_pass.return_value = "sip_pass"
+        sip_pub_to_priv.return_value = "generated_private_id"
         get_number.return_value = SIP_URI
         generate_ifcs.return_value = "ifcs"
 
@@ -115,27 +137,33 @@ class TestNumbersHandler(BaseTest):
 
         # Asserts
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
-        allocate_number.assert_called_once_with(self.db_sess, USER_ID, True)
+        allocate_number.assert_called_once_with(self.db_sess, USER_ID, pstn)
         get_number.assert_called_once_with(self.db_sess, NUMBER_ID, USER_ID)
-        gen_sip_pass.assert_called_once_with()
-        post_password.assert_called_once_with(PRIVATE_ID, SIP_URI, "sip_pass", ANY)
+        if not private_id:
+            # We don't generate a pw if we are just associating a pub/priv id
+            gen_sip_pass.assert_called_once_with()
+            sip_pub_to_priv.assert_called_once_with(SIP_URI)
+            post_password.assert_called_once_with("generated_private_id", SIP_URI, "sip_pass", ANY)
+        else:
+            post_associated_uri.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
         generate_ifcs.assert_called_once_with(settings.SIP_DIGEST_REALM)
         put_filter_criteria.assert_called_once_with(SIP_URI, "ifcs", ANY)
         post_simservs.assert_called_once_with(SIP_URI, ANY, ANY)
 
         # Simulate success of all requests.
         self.handler._on_post_success([Mock(), Mock(), Mock()])
-
-        self.handler.finish.assert_called_once_with(
-            {
-                "number_id": NUMBER_ID_HEX,
-                "number": "5555550123",
-                "sip_username": "5555550123",
-                "formatted_number": "(555) 555-0123",
-                "sip_uri": SIP_URI,
-                "sip_password": "sip_pass",
-                "pstn": True
-            })
+        post_response = { "number_id": NUMBER_ID_HEX,
+                          "number": "5555550123",
+                          "sip_username": "5555550123",
+                          "formatted_number": "(555) 555-0123",
+                          "sip_uri": SIP_URI,
+                          "pstn": pstn }
+        if private_id:
+            post_response["private_id"] = private_id
+        else:
+            post_response["sip_password"] = "sip_pass"
+            post_response["private_id"] = "generated_private_id"
+        self.handler.finish.assert_called_once_with(post_response)
 
 
 class TestNumberHandler(BaseTest):

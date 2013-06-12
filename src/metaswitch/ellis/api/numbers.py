@@ -77,6 +77,7 @@ class NumbersHandler(_base.LoggedInHandler):
         user_id = self.get_and_check_user_id(username)
         db_sess = self.db_session()
         pstn = self.get_argument('pstn', 'false') == 'true'
+        private_id = self.get_argument('private_id', None)
         try:
             number_id = numbers.allocate_number(db_sess, user_id, pstn)
             sip_uri = numbers.get_number(db_sess, number_id, user_id)
@@ -100,7 +101,6 @@ class NumbersHandler(_base.LoggedInHandler):
 
         # Work out the response we'll send if the upstream requests
         # are successful.
-        sip_password = utils.generate_sip_password()
         number = utils.sip_uri_to_phone_number(sip_uri)
         pretty_number = utils.format_phone_number(number)
         self.__response = {"sip_uri": sip_uri,
@@ -108,17 +108,31 @@ class NumbersHandler(_base.LoggedInHandler):
                            "number": number,
                            "pstn": pstn,
                            "formatted_number": pretty_number,
-                           "number_id": number_id.hex,
-                           "sip_password": sip_password}
+                           "number_id": number_id.hex}
 
         # Generate a random password and store it in Homestead.
         _log.debug("Populating other servers...")
         self._request_group = HTTPCallbackGroup(self._on_post_success,
                                                 self._on_post_failure)
-        homestead.post_password(utils.sip_public_id_to_private(sip_uri),
-                                sip_uri,
-                                sip_password,
-                                self._request_group.callback())
+        if private_id == None:
+            # No private id was provided, so we need to create and
+            # entirely new private/public digest pair in Homestead
+            private_id = utils.sip_public_id_to_private(sip_uri)
+            sip_password = utils.generate_sip_password()
+            homestead.post_password(private_id,
+                                    sip_uri,
+                                    sip_password,
+                                    self._request_group.callback())
+            self.__response["sip_password"] = sip_password
+        else:
+            # Private identity was specified, so rather than creating a
+            # new digest in homestead, we just associate the new public 
+            # identity with the existing private identity in Homestead
+            homestead.post_associated_uri(private_id,
+                                          sip_uri,
+                                          self._request_group.callback())
+            
+        self.__response["private_id"] = private_id
 
         # Store the iFCs in homestead.
         homestead.put_filter_criteria(sip_uri,
