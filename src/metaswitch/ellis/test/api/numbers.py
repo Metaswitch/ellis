@@ -49,6 +49,8 @@ USER_ID = uuid.UUID('90babc2a-d376-494d-a94a-2b1aca07130b')
 USER_ID_HEX = '90babc2ad376494da94a2b1aca07130b'
 NUMBER_ID = uuid.UUID('c9b15e68-5e8b-4bcf-9523-3eda4e677afd')
 NUMBER_ID_HEX = 'c9b15e685e8b4bcf95233eda4e677afd'
+NUMBER_ID2 = uuid.UUID('c9b15e68-5e8b-4bcf-9523-3eda4e123456')
+NUMBER_ID2_HEX = 'c9b15e685e8b4bcf95233eda4e123456'
 SIP_URI = "sip:5555550123@ngv.metaswitch.com"
 PRIVATE_ID = "5555550123@ngv.metaswitch.com"
 GAB_LISTED = 1
@@ -83,9 +85,7 @@ class TestNumbersHandler(BaseTest):
                                   HTTPCallbackGroup,
                                   get_associated_privates):
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
-        get_numbers.return_value = [{"number": SIP_URI,
-                                     "number_id": NUMBER_ID,
-                                     "gab_listed": GAB_LISTED}]
+        get_numbers.return_value = [{"number": SIP_URI, "number_id": NUMBER_ID, "gab_listed": GAB_LISTED}]
         HTTPCallbackGroup.return_value = MagicMock()
 
         self.handler.get("foobar")
@@ -114,6 +114,61 @@ class TestNumbersHandler(BaseTest):
                       "private_id": "hidden@sip.com", }
                  ]
             })
+
+    def test_get_two_numbers(self):
+        self.get_two_numbers(False)
+
+    def test_get_two_numbers_shared(self):
+        self.get_two_numbers(True)
+
+    @patch("metaswitch.ellis.remote.homestead.get_associated_privates")
+    @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
+    @patch("metaswitch.ellis.data.numbers.get_numbers")
+    def get_two_numbers(self, shared_private_id, get_numbers,
+                                                 HTTPCallbackGroup,
+                                                 get_associated_privates):
+        self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
+        get_numbers.return_value = [{"number": "sip:4155551234@sip.com", "number_id": NUMBER_ID, "gab_listed": 0},
+                                    {"number": "sip:4155555678@sip.com", "number_id": NUMBER_ID2, "gab_listed": 1}]
+        HTTPCallbackGroup.return_value = MagicMock()
+
+        self.handler.get("foobar")
+        
+        # Simulate success of all requests.
+        response1 = MagicMock()
+        response1.body = '{"sip:4155551234@sip.com": ["hidden1@sip.com"]}'
+        response2 = MagicMock()
+        if shared_private_id:
+            response2.body = '{"sip:4155555678@sip.com": ["hidden1@sip.com"]}'
+        else:
+            response2.body = '{"sip:4155555678@sip.com": ["hidden2@sip.com"]}'
+        self.handler._on_get_success([response1, response2])
+
+        self.handler.finish.assert_called_once_with(
+                {
+                    "numbers": [
+                        {
+                            "number_id": NUMBER_ID_HEX,
+                            "number": "4155551234",
+                            "sip_username": "4155551234",
+                            "domain": "sip.com",
+                            "gab_listed": 0,
+                            "formatted_number": "(415) 555-1234",
+                            "sip_uri": "sip:4155551234@sip.com",
+                            "private_id": "hidden1@sip.com",
+                        },
+                        {
+                            "number_id": NUMBER_ID2_HEX,
+                            "number": "4155555678",
+                            "sip_username": "4155555678",
+                            "domain": "sip.com",
+                            "gab_listed": 1,
+                            "formatted_number": "(415) 555-5678",
+                            "sip_uri": "sip:4155555678@sip.com",
+                            "private_id": (shared_private_id and "hidden1@sip.com" or "hidden2@sip.com"),
+                        }
+                    ]
+                })
 
     def test_post_mainline(self):
         self.post_mainline(False, None)

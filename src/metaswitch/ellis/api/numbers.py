@@ -94,7 +94,7 @@ class NumbersHandler(_base.LoggedInHandler):
                 for number in [n for n in self._numbers if n["sip_uri"] == public_id]:
                     number["private_id"] = private_id
             
-            except (TypeError, KeyError):
+            except (TypeError, KeyError) as e:
                 _log.error("Cloud not parse response: %s", response.body)
                 self.send_error(httplib.BAD_GATEWAY, 
                                 reason="Upstream request failed: could not parse private identity list")
