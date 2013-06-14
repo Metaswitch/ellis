@@ -133,19 +133,6 @@ var clearwater = (function(mod, $){
           $(clone).find(".password-unavailable").hide();
         }
 
-        if (numbers[i]["gab_listed"]) {
-          $(clone).find(".gab-cell-checkbox").attr('checked', 'checked');
-        } else {
-          $(clone).find(".gab-cell-checkbox").removeAttr('checked');
-        }
-        $(clone).find(".gab-cell-checkbox").click(function() {
-          log("Updating gab listed value for " + numbers[i]["formatted_number"]);
-          var newVal = $(clone).find(".gab-cell-checkbox").is(':checked') ? 1 : 0;
-          dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
-                        encodeURIComponent(numbers[i]["sip_uri"]) + "/listed/" +
-                        newVal + "/", {});
-        });
-
         $(clone).find(".reset-password-button").click(function() {
           if (confirm("Are you sure you want to reset the password for this number?")) {
             log("Resetting password for " + numbers[i]["formatted_number"]);
