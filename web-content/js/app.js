@@ -166,15 +166,22 @@ var clearwater = (function(mod, $){
               .done(dashboardPage.onNumberDeleted);
           }
         });
-        $(clone).find(".edit-simservs-button").click(function() {
-          function displaySimservs(data){
-            dashboardPage.populateSimservsBox(numbers[i]["sip_uri"], $.parseXML(data));
+        $(clone).find(".configure-button").click(function() {
+          function displayConfigure(simservsData, gabData){
+            dashboardPage.populateConfigureModal(numbers[i]["sip_uri"],
+                                                 $.parseXML(simservsData[0]),
+                                                 gabData[0]["gab_listed"]);
           }
 
-          dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
-                                encodeURIComponent(numbers[i]["sip_uri"]) + "/simservs",
-                                {})
-            .done(displaySimservs)
+          var simservsGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
+                                                  encodeURIComponent(numbers[i]["sip_uri"]) + "/simservs",
+                                                  {});
+          var gabGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
+                                                  encodeURIComponent(numbers[i]["sip_uri"]) + "/listed",
+                                                  {});
+          // Fetch data in parallel, launching modal wehn all requests complete
+          $.when(simservsGet, gabGet)
+            .done(displayConfigure)
             .fail(function() {
               log("Failed to retrieve simservs.");
             });
@@ -190,16 +197,16 @@ var clearwater = (function(mod, $){
     }
   };
 
-  dashboardPage.populateSimservsBox = function(sip_uri, xml) {
+  dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed) {
     // We reuse the modal dialog, so be sure to cleanup when closing, see the cleanup() function below
-    var simservsModal = $("#simservs-modal");
+    var configureModal = $("#configure-modal");
     var putXml = function(){
       dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
           encodeURIComponent(sip_uri) + "/simservs",
           new XMLSerializer().serializeToString(xml))
         .done(function(){
           log("Updated simservs on server");
-          simservsModal.modal("hide");
+          configureModal.modal("hide");
         })
         .fail(function() {
           log("Failed to put simservs.");
@@ -207,7 +214,7 @@ var clearwater = (function(mod, $){
     };
 
     // Bind action to put xml to save button
-    simservsModal.find("#save-simservs-button").click(putXml);
+    configureModal.find("#save-configure-button").click(putXml);
 
     // Optimized XML filter function to use instead of jQuery find where
     // namespaces are involved.
@@ -218,7 +225,7 @@ var clearwater = (function(mod, $){
     };
 
     // Cross-browser working xml.createELement replacement
-    // This is necessary in order to corretly work in both Chrome and Firefox. Firefox will automatically add 
+    // This is necessary in order to corretly work in both Chrome and Firefox. Firefox will automatically add
     // a namespace to an element if it is not specified, resulting in xmlns="" in added elements
     var makeXmlElement = function(nodeName) {
 	var nameSpace = nodeName.slice(0, 3) == "cp:" ? "urn:ietf:params:xml:ns:common-policy" : "http://uri.etsi.org/ngn/params/xml/simservs/xcap";
@@ -253,7 +260,7 @@ var clearwater = (function(mod, $){
 
     // Privacy
     // Connect caller ID checkbox to XML attribute
-    var callerIdCheckBox = simservsModal.find("#callerIdCheckBox");
+    var callerIdCheckBox = configureModal.find("#callerIdCheckBox");
     var callerIdXml = $(xml).find('originating-identity-presentation-restriction');
     var callerIdDefaultXml = callerIdXml.find('default-behaviour');
     var callerIdEnabled = callerIdXml.attr("active") == "true" &&
@@ -267,27 +274,31 @@ var clearwater = (function(mod, $){
                     "presentation-not-restricted" : "presentation-restricted");
     });
 
+    // GAB availability
+    var gabCheckBox = configureModal.find("#gabCheckBox");
+    gabCheckBox.prop("checked", gabListed);
+
     // Redirect
     addNodeIfMissing($(xml).find('simservs'), 'communication-diversion', {'active': 'false'});
     var callDiversionXml = $(xml).find('communication-diversion');
 
     // Connect call diversion checkbox to XML attribute
-    var callDiversionCheckBox = simservsModal.find("#callDiversionCheckBox");
+    var callDiversionCheckBox = configureModal.find("#callDiversionCheckBox");
     var callDiversionEnabled = callDiversionXml.attr("active") == "true";
     callDiversionCheckBox.prop("checked", callDiversionEnabled);
     callDiversionCheckBox.click(function(){
       callDiversionXml.attr("active", callDiversionCheckBox.prop("checked"));
       if (callDiversionCheckBox.prop("checked")) {
-        simservsModal.find(".redirect-rule-inactive").hide();
+        configureModal.find(".redirect-rule-inactive").hide();
       }
       else {
-        simservsModal.find(".redirect-rule-inactive").show();
+        configureModal.find(".redirect-rule-inactive").show();
       }
     });
 
     // Connect no-reply-timer dropdown to XML attribute
     addNodeIfMissing(callDiversionXml, 'NoReplyTimer', {}, '20');
-    var noReplyTimerDropdown = simservsModal.find("#no-reply-timer-dropdown");
+    var noReplyTimerDropdown = configureModal.find("#no-reply-timer-dropdown");
     var noReplyTimer = callDiversionXml.find('NoReplyTimer').text();
 
     // Get user friendly names for timeouts
@@ -295,16 +306,16 @@ var clearwater = (function(mod, $){
     noReplyTimerDropdown.find("li").each(function(i, element){
       timeoutDescriptions[$(element).data("timer")] = $(element).find("a").text();
     });
-    simservsModal.find("#no-reply-timer-value").text(timeoutDescriptions[noReplyTimer] || noReplyTimer + " seconds ");
+    configureModal.find("#no-reply-timer-value").text(timeoutDescriptions[noReplyTimer] || noReplyTimer + " seconds ");
     noReplyTimerDropdown.find("li:not(.disabled)").each(function(i, timerElement){
       $(timerElement).click(function(){
         var timer = $(timerElement).data("timer");
-        simservsModal.find("#no-reply-timer-value").text(timeoutDescriptions[timer] || timer + " seconds ");
+        configureModal.find("#no-reply-timer-value").text(timeoutDescriptions[timer] || timer + " seconds ");
         callDiversionXml.find('NoReplyTimer').text(timer);
       });
     });
 
-    var rulesAccordion = simservsModal.find("#rules-accordion");
+    var rulesAccordion = configureModal.find("#rules-accordion");
     var templateRule = rulesAccordion.find(".redirect-rule.template");
 
     // Helper function for adding a rule
@@ -321,7 +332,7 @@ var clearwater = (function(mod, $){
       rulesAccordion.append(rule);
       rule.show('fast');
 
-      var callDiversionEnabled = simservsModal.find("#callDiversionCheckBox").prop("checked");
+      var callDiversionEnabled = configureModal.find("#callDiversionCheckBox").prop("checked");
       if (callDiversionEnabled) {
         rule.find(".redirect-rule-inactive").hide();
       }
@@ -484,7 +495,7 @@ var clearwater = (function(mod, $){
     callDiversionXml.find("rule").each(addRule);
 
     // Click handler for new rule button, creates new XML node and UI for rule
-    simservsModal.find("#redirect-new-rule-button").click(function(){
+    configureModal.find("#redirect-new-rule-button").click(function(){
       addNodeIfMissing($(xml).find('communication-diversion'), 'cp:ruleset');
 
       // Pretty verbose, but taking shortcuts leads to jQuery adding a default xmlns
@@ -507,7 +518,7 @@ var clearwater = (function(mod, $){
     });
 
     // Barring
-    var barringPane = simservsModal.find("#barring-pane");
+    var barringPane = configureModal.find("#barring-pane");
     var setupBarring = function(direction) {
       // Generate any needed XML if it is missing
       addNodeIfMissing($(xml).find('simservs'), direction + '-communication-barring', {'active': 'true'});
@@ -545,23 +556,23 @@ var clearwater = (function(mod, $){
     // As we reuse the same modal dialog we need to do some cleanup, eg unbind click handlers
     // so they don't get duplicated and any elements cloned from templates
     var cleanup = function(){
-      simservsModal.find("#save-simservs-button").unbind("click");
+      configureModal.find("#save-configure-button").unbind("click");
       callerIdCheckBox.unbind("click");
       callDiversionCheckBox.unbind("click");
-      simservsModal.find("#redirect-new-rule-button").unbind("click");
+      configureModal.find("#redirect-new-rule-button").unbind("click");
       barringPane.find(".barring-radio").unbind("click");
-      simservsModal.find(".redirect-rule:not(.template)").remove();
-      simservsModal.find(".redirect-condition:not(.template)").remove();
+      configureModal.find(".redirect-rule:not(.template)").remove();
+      configureModal.find(".redirect-condition:not(.template)").remove();
     };
 
-    simservsModal.on('hidden', function(){
+    configureModal.on('hidden', function(){
       // 'hidden' can be triggered by other elements, so check the modal really has been hidden
-      if (!simservsModal.is(":visible")) {
+      if (!configureModal.is(":visible")) {
         cleanup();
       }
     });
 
-  }; // dashboardPage.populateSimservsBox()
+  }; // dashboardPage.populateConfigureModal()
 
   var hashValue = mod.parseUrl()["hash"];
   if (hashValue && hashValue.indexOf("first") != -1) {

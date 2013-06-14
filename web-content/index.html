@@ -146,14 +146,14 @@ body {
                   class="hovertip">What is this?</a>
           </td>
           <td class="actions-cell">
-            <button class="edit-simservs-button btn btn-small" href="#simservs-modal" data-toggle="modal"><i class="icon-edit"></i> Configure</button>
+            <button class="configure-button btn btn-small" href="#configure-modal" data-toggle="modal"><i class="icon-edit"></i> Configure</button>
             <button class="delete-button btn btn-small btn-danger"><i class="icon-trash icon-white"></i> Delete</button>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <div class="modal hide fade" id="simservs-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display:none; ">
+    <div class="modal hide fade" id="configure-modal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="display:none; ">
         <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
             <h3>Configure</h3>
@@ -172,6 +172,14 @@ body {
                             <div class="controls">
                                 <label class="checkbox">
                                     <input type="checkbox" id="callerIdCheckBox"/> Show my caller id when calling
+                                </label>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label" for="checkbox">Address book</label>
+                            <div class="controls">
+                                <label class="checkbox">
+                                    <input type="checkbox" id="gabCheckBox"/> Checking this box indicates that you wish to have this number shown in the global address book
                                 </label>
                             </div>
                         </div>
@@ -287,7 +295,7 @@ body {
         </div>
         <div class="modal-footer">
             <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
-            <button class="btn btn-primary" id="save-simservs-button">Save changes</button>
+            <button class="btn btn-primary" id="save-configure-button">Save changes</button>
         </div>
     </div>
     <p class="alert alert-info" style="display: none" id="no-numbers">
