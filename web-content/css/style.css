@@ -128,11 +128,6 @@ a:HOVER.hovertip {
     color: #333;
 }
 
-.update-message {
-    float: right;
-    text-align: center;
-}
-
 .modal.fade.in {
     top: 40%;
 }

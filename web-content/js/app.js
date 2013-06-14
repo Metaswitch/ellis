@@ -112,7 +112,6 @@ var clearwater = (function(mod, $){
     templateRow.remove();
     templateRow.removeClass("template");
     var numbers = data["numbers"];
-    $(".update-message").hide();
 
     for (var i = 0; i < numbers.length; i++) {
       (function(i) {
@@ -141,14 +140,10 @@ var clearwater = (function(mod, $){
         }
         $(clone).find(".gab-cell-checkbox").click(function() {
           log("Updating gab listed value for " + numbers[i]["formatted_number"]);
-          $(".update-message").show();
           var newVal = $(clone).find(".gab-cell-checkbox").is(':checked') ? 1 : 0;
           dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
                         encodeURIComponent(numbers[i]["sip_uri"]) + "/listed/" +
-                        newVal + "/", {})
-                        .done(function() {
-                          setTimeout(function(){$(".update-message").hide()}, 500);
-                        });
+                        newVal + "/", {});
         });
 
         $(clone).find(".reset-password-button").click(function() {
