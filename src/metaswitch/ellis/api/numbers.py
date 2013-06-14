@@ -95,16 +95,16 @@ class NumbersHandler(_base.LoggedInHandler):
                     number["private_id"] = private_id
             
             except (TypeError, KeyError) as e:
-                _log.error("Cloud not parse response: %s", response.body)
+                _log.error("Could not parse response: %s", response.body)
                 self.send_error(httplib.BAD_GATEWAY, 
                                 reason="Upstream request failed: could not parse private identity list")
                 return
-            
 
         self.finish({"numbers": self._numbers})
 
     def _on_get_failure(self, response):
         _log.warn("Failed to fetch from %s" % self.remote_name)
+        self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
     @asynchronous
     def post(self, username):
@@ -187,10 +187,8 @@ class NumbersHandler(_base.LoggedInHandler):
     def _on_post_failure(self, response):
         _log.warn("Failed to update all the backends")
         # Try to back out the changes so we don't leave orphaned data.
-        _delete_number(self.db_session(),
-                       self.sip_uri,
-                       self._on_backout_success,
-                       self._on_backout_failure)
+        _remove_public_id(self.db_session(), self.sip_uri,
+                          self._on_backout_success, self._on_backout_failure)
         self.db_session().commit()
 
     def _on_backout_success(self, responses):
@@ -201,19 +199,51 @@ class NumbersHandler(_base.LoggedInHandler):
         _log.warn("Failed to back out changes after failure")
         self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
-def _delete_number(db_sess, sip_uri, on_success, on_failure):
+def _remove_public_id(db_sess, sip_uri, on_success, on_failure):
+    """
+       Looks up the private id related to the sip_uri, and then the public ids
+       related the retrieved private id. If there are multiple public ids, then
+       only the sip_uri is is removed from Homestead, and the association to its
+       private id is destroyed. If this is the only public id associated with the
+       private id, then both the private and public ids are removed from Homestead
+       along with their associations
+    """
+    def _on_get_privates_success(responses):
+        _log.debug("Got related private ids")
+        # Body is of format {"public_id" : ["private_id_1", "private_id_2"...]}
+        parsed_body = json.loads(responses[0].body)
+        # We only support one private id per public id, so only pull out first in list
+        private_id = parsed_body.values()[0][0]
+        request_group2 = HTTPCallbackGroup(_on_get_publics_success, on_failure)
+        homestead.get_associated_publics(private_id, request_group2)
+
+    def _on_get_publics_success(responses):
+        _log.debug("Got related public ids")
+        parsed_body = json.loads(responses[0].body)
+        private_id = parsed_body.keys()[0]
+        public_ids = parsed_body.values()[0]
+        # Only delete the delete if there is only a single private identity
+        # associated with our sip_uri
+        delete_digest = (len(public_ids) == 1)
+        _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure)
+
+    request_group = HTTPCallbackGroup(_on_get_privates_success, on_failure)
+    homestead.get_associated_privates(sip_uri, request_group)
+
+def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure):
+    """
+       Deletes all information associated with a private/public identity
+       pair, optionally deleting the digest associated with the private identity
+    """
     numbers.remove_owner(db_sess, sip_uri)
 
-    # Delete the password from homestead
-    request_group = HTTPCallbackGroup(on_success,
-                                      on_failure)
-    homestead.delete_password(utils.sip_public_id_to_private(sip_uri),
-                              sip_uri,
-                              request_group.callback())
-    # Delete the iFCs from homestead.
-    homestead.delete_filter_criteria(sip_uri,
-                                     request_group.callback())
-    # Concurrently, delete privacy settings in XDM.
+    # Concurrently, delete data from Homestead and Homer
+    request_group = HTTPCallbackGroup(on_success, on_failure)
+    if delete_digest:
+        homestead.delete_password(private_id, sip_uri, request_group.callback())
+    else:
+        homestead.delete_associated_public(private_id, sip_uri, request_group.callback())
+    homestead.delete_filter_criteria(sip_uri, request_group.callback())
     xdm.delete_simservs(sip_uri, request_group.callback())
 
 class NumberHandler(_base.LoggedInHandler):
@@ -230,7 +260,7 @@ class NumberHandler(_base.LoggedInHandler):
         user_id = self.get_and_check_user_id(username)
         self.check_number_ownership(sip_uri, user_id)
         db_sess = self.db_session()
-        _delete_number(db_sess, sip_uri, self._on_delete_success, self._on_delete_failure)
+        _remove_public_id(db_sess, sip_uri, self._on_delete_success, self._on_delete_failure)
         db_sess.commit()
 
     def _on_delete_success(self, responses):

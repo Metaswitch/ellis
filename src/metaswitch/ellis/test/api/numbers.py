@@ -93,7 +93,7 @@ class TestNumbersHandler(BaseTest):
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
         HTTPCallbackGroup.assert_called_once_with(self.handler._on_get_success,
                                                   self.handler._on_get_failure)
-        
+
         get_associated_privates.assert_called_once_with(SIP_URI,
                                                         self.handler._request_group.callback())
         # Simulate success of all requests.
@@ -133,7 +133,7 @@ class TestNumbersHandler(BaseTest):
         HTTPCallbackGroup.return_value = MagicMock()
 
         self.handler.get("foobar")
-        
+
         # Simulate success of all requests.
         response1 = MagicMock()
         response1.body = '{"sip:4155551234@sip.com": ["hidden1@sip.com"]}'
@@ -257,18 +257,9 @@ class TestNumberHandler(BaseTest):
         self.request = MagicMock()
         self.handler = numbers.NumberHandler(self.app, self.request)
 
-    @patch("metaswitch.ellis.remote.homestead.delete_password")
-    @patch("metaswitch.ellis.remote.homestead.delete_filter_criteria")
-    @patch("metaswitch.ellis.remote.xdm.delete_simservs")
-    @patch("metaswitch.ellis.data.numbers.remove_owner")
-    @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
-    def test_delete_mainline(self, HTTPCallbackGroup,
-                                      remove_owner,
-                                      delete_simservs,
-                                      delete_filter_criteria,
-                                      delete_password):
+    @patch("metaswitch.ellis.api.numbers._remove_public_id")
+    def test_delete_mainline(self, _remove_public_id):
         # Setup
-        HTTPCallbackGroup.return_value = MagicMock()
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
         self.handler.check_number_ownership = Mock()
         self.handler.finish = MagicMock()
@@ -279,18 +270,110 @@ class TestNumberHandler(BaseTest):
         # Asserts
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
         self.handler.check_number_ownership.assert_called_once_with(SIP_URI, USER_ID)
-        remove_owner.assert_called_once_with(self.db_sess, SIP_URI)
-        HTTPCallbackGroup.assert_called_once_with(self.handler._on_delete_success,
+        _remove_public_id.assert_called_once_with(self.db_sess,
+                                                  SIP_URI,
+                                                  self.handler._on_delete_success,
                                                   self.handler._on_delete_failure)
-        delete_password.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
-        delete_filter_criteria.assert_called_once_with(SIP_URI, ANY)
-        delete_simservs.assert_called_once_with(SIP_URI, ANY)
 
         # Simulate success of all requests.
         self.handler._on_delete_success([Mock(), Mock(), Mock()])
 
         self.handler.finish.assert_called_once_with({})
 
+    def test_remove_public_id(self):
+        self.remove_public_id(False)
+
+    def test_remove_last_public_id(self):
+        self.remove_public_id(True)
+
+    @patch("metaswitch.ellis.api.numbers._delete_number")
+    @patch("metaswitch.ellis.remote.homestead.get_associated_publics")
+    @patch("metaswitch.ellis.remote.homestead.get_associated_privates")
+    @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
+    def remove_public_id(self, last_public_id, HTTPCallbackGroup,
+                                               get_associated_privates,
+                                               get_associated_publics,
+                                               _delete_number):
+        # Setup
+        HTTPCallbackGroup.return_value = MagicMock()
+        on_success_handler = MagicMock()
+        on_failure_handler = MagicMock()
+
+        # Test
+        numbers._remove_public_id(self.db_sess,
+                                  SIP_URI,
+                                  on_success_handler,
+                                  on_failure_handler)
+
+        # Asserts
+        get_associated_privates.assert_called_once_with(SIP_URI, ANY)
+        HTTPCallbackGroup.assert_called_once_with(ANY, on_failure_handler)
+
+        # Extract inner function and can call it with response
+        on_get_privates_success = HTTPCallbackGroup.call_args[0][0]
+        response = MagicMock()
+        response.body = '{"%s": ["%s"]}' % (SIP_URI, PRIVATE_ID)
+        on_get_privates_success([response])
+
+        # Response should have been paresed now and a new call invoked
+        get_associated_publics.assert_called_once_with(PRIVATE_ID, ANY)
+        on_get_publics_success = HTTPCallbackGroup.call_args[0][0]
+        response = MagicMock()
+        if last_public_id:
+            response.body = '{"%s": ["%s"]}' % (PRIVATE_ID, SIP_URI)
+        else:
+            response.body = '{"%s": ["another@sip.com", "%s"]}' % (PRIVATE_ID, SIP_URI)
+        on_get_publics_success([response])
+
+        # Returned a single public id, so we expect to delete the digest
+        _delete_number.assert_called_once_with(self.db_sess,
+                                               SIP_URI,
+                                               PRIVATE_ID,
+                                               last_public_id,
+                                               on_success_handler,
+                                               on_failure_handler)
+
+    def test_delete_number(self):
+        self.delete_number(True)
+
+    def test_disassociate_number(self):
+        self.delete_number(False)
+
+    @patch("metaswitch.ellis.remote.homestead.delete_associated_public")
+    @patch("metaswitch.ellis.remote.homestead.delete_password")
+    @patch("metaswitch.ellis.remote.homestead.delete_filter_criteria")
+    @patch("metaswitch.ellis.remote.xdm.delete_simservs")
+    @patch("metaswitch.ellis.data.numbers.remove_owner")
+    @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
+    def delete_number(self, delete_digest, HTTPCallbackGroup,
+                                           remove_owner,
+                                           delete_simservs,
+                                           delete_filter_criteria,
+                                           delete_password,
+                                           delete_associated_public):
+        # Setup
+        HTTPCallbackGroup.return_value = MagicMock()
+        on_success_handler = MagicMock()
+        on_failure_handler = MagicMock()
+
+        # Test
+        numbers._delete_number(self.db_sess,
+                               SIP_URI,
+                               PRIVATE_ID,
+                               delete_digest,
+                               on_success_handler,
+                               on_failure_handler)
+
+        # Asserts
+        remove_owner.assert_called_once_with(self.db_sess, SIP_URI)
+        HTTPCallbackGroup.assert_called_once_with(on_success_handler,
+                                                  on_failure_handler)
+        if delete_digest:
+            delete_password.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+        else:
+            delete_associated_public.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+        delete_filter_criteria.assert_called_once_with(SIP_URI, ANY)
+        delete_simservs.assert_called_once_with(SIP_URI, ANY)
 
 class TestRemoteProxyHandler(BaseTest):
     """
