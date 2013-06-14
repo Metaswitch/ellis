@@ -76,11 +76,9 @@ def url_prefix():
             (scheme, settings.HOMESTEAD_URL)
     return url
 
-def digest_url(private_id, public_id):
+def digest_url(private_id):
     encoded_private_id = urllib.quote_plus(private_id)
-    encoded_public_id = urllib.quote_plus(public_id)
-    url = url_prefix() + ("credentials/%s/%s/digest" %
-                                       (encoded_private_id, encoded_public_id))
+    url = url_prefix() + ("privatecredentials/%s/digest" % encoded_private_id)
     return url
 
 def filter_url(public_id):
@@ -104,31 +102,31 @@ def associated_private_url(public_id, private_id=None):
         url += "/%s" % (encoded_private_id)
     return url
 
-def get_digest(private_id, public_id, callback):
+def get_digest(private_id, callback):
     """
-    Retreives a digest from Homestead for a given private & public id pair
+    Retreives a digest from Homestead for a given private id
     callback receives the HTTPResponse object. Note the homestead api returns
     {"digest": "<digest>"}, rather than just the digest
     """
-    url = digest_url(private_id, public_id)
+    url = digest_url(private_id)
     fetch(url, callback, method='GET')
 
-def post_password(private_id, public_id, password, callback):
+def put_password(private_id, password, callback):
     """
-    Posts a new password to Homestead for a given private & public id pair
+    Posts a new password to Homestead for a given private id
     callback receives the HTTPResponse object.
     """
-    url = digest_url(private_id, public_id)
+    url = digest_url(private_id)
     digest = utils.md5("%s:%s:%s" % (private_id, settings.SIP_DIGEST_REALM, password))
     body = urllib.urlencode({"digest" : digest})
-    fetch(url, callback, method='POST', body=body)
+    fetch(url, callback, method='PUT', body=body)
 
-def delete_password(private_id, public_id, callback):
+def delete_password(private_id, callback):
     """
-    Deletes a password from Homestead for a given private & public id pair
+    Deletes a password from Homestead for a given private id
     callback receives the HTTPResponse object.
     """
-    url = digest_url(private_id, public_id)
+    url = digest_url(private_id)
     fetch(url, callback, method='DELETE')
 
 def get_associated_publics(private_id, callback):
