@@ -76,7 +76,7 @@ class NumbersHandler(_base.LoggedInHandler):
             number["domain"] = utils.sip_uri_to_domain(number["number"])
             number["number"] = utils.sip_uri_to_phone_number(number["number"])
             number["formatted_number"] = utils.format_phone_number(number["number"])
-            
+
             # We only store the public identities in Ellis, and must query
             # Homestead for the associated private identities
             homestead.get_associated_privates(number["sip_uri"],
@@ -93,10 +93,10 @@ class NumbersHandler(_base.LoggedInHandler):
                 private_id = parsed_body.values()[0][0]
                 for number in [n for n in self._numbers if n["sip_uri"] == public_id]:
                     number["private_id"] = private_id
-            
+
             except (TypeError, KeyError) as e:
                 _log.error("Could not parse response: %s", response.body)
-                self.send_error(httplib.BAD_GATEWAY, 
+                self.send_error(httplib.BAD_GATEWAY,
                                 reason="Upstream request failed: could not parse private identity list")
                 return
 
@@ -151,23 +151,20 @@ class NumbersHandler(_base.LoggedInHandler):
         self._request_group = HTTPCallbackGroup(self._on_post_success,
                                                 self._on_post_failure)
         if private_id == None:
-            # No private id was provided, so we need to create and
-            # entirely new private/public digest pair in Homestead
+            # No private id was provided, so we need to create a new
+            # digest in Homestead
             private_id = utils.sip_public_id_to_private(sip_uri)
             sip_password = utils.generate_sip_password()
-            homestead.post_password(private_id,
-                                    sip_uri,
-                                    sip_password,
-                                    self._request_group.callback())
+            homestead.put_password(private_id,
+                                   sip_password,
+                                   self._request_group.callback())
             self.__response["sip_password"] = sip_password
-        else:
-            # Private identity was specified, so rather than creating a
-            # new digest in homestead, we just associate the new public 
-            # identity with the existing private identity in Homestead
-            homestead.post_associated_public(private_id,
-                                             sip_uri,
-                                             self._request_group.callback())
-            
+
+        # Associate the new public identity with the private identity in Homestead
+        homestead.post_associated_public(private_id,
+                                         sip_uri,
+                                         self._request_group.callback())
+
         self.__response["private_id"] = private_id
 
         # Store the iFCs in homestead.
@@ -280,17 +277,30 @@ class SipPasswordHandler(_base.LoggedInHandler):
         self.check_number_ownership(sip_uri, user_id)
         self.sip_password = utils.generate_sip_password()
 
+        # Fetch private ID from Homestead for this public ID
+        self._request_group = HTTPCallbackGroup(self.on_get_privates_success,
+                                                self.on_get_privates_failure)
+        homestead.get_associated_privates(sip_uri, self._request_group.callback())
+
+    def on_get_privates_success(self, responses):
+        _log.debug("Got related private ids")
+        # Body is of format {"public_id" : ["private_id_1", "private_id_2"...]}
+        parsed_body = json.loads(responses[0].body)
+        # We only support one private id per public id, so only pull out first in list
+        private_id = parsed_body.values()[0][0]
+
         # Do not expect a response body, as long as there is no error, we are fine
-        homestead.post_password(utils.sip_public_id_to_private(sip_uri),
-                                sip_uri,
-                                self.sip_password,
-                                self.on_password_response)
+        homestead.put_password(private_id, self.sip_password, self.on_password_response)
+
+    def on_get_privates_failure(self, responses):
+        _log.error("Failed to get associated private ID from homestead %s", responses[0])
+        self.send_error(httplib.BAD_GATEWAY)
 
     def on_password_response(self, response):
         if response.code // 100 == 2:
             self.finish({"sip_password": self.sip_password})
         else:
-            _log.error("failed to set password in homestead %s", response)
+            _log.error("Failed to set password in homestead %s", response)
             self.send_error(httplib.BAD_GATEWAY)
 
 class RemoteProxyHandler(_base.LoggedInHandler):

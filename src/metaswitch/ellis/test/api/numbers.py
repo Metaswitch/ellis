@@ -184,7 +184,7 @@ class TestNumbersHandler(BaseTest):
 
     @patch("metaswitch.common.ifcs.generate_ifcs")
     @patch("metaswitch.ellis.remote.homestead.post_associated_public")
-    @patch("metaswitch.ellis.remote.homestead.post_password")
+    @patch("metaswitch.ellis.remote.homestead.put_password")
     @patch("metaswitch.ellis.remote.homestead.put_filter_criteria")
     @patch("metaswitch.ellis.remote.xdm.put_simservs")
     @patch("metaswitch.common.utils.generate_sip_password")
@@ -197,7 +197,7 @@ class TestNumbersHandler(BaseTest):
                                               gen_sip_pass,
                                               post_simservs,
                                               put_filter_criteria,
-                                              post_password,
+                                              put_password,
                                               post_associated_public,
                                               generate_ifcs):
         # Setup
@@ -226,9 +226,12 @@ class TestNumbersHandler(BaseTest):
             # We don't generate a pw if we are just associating a pub/priv id
             gen_sip_pass.assert_called_once_with()
             sip_pub_to_priv.assert_called_once_with(SIP_URI)
-            post_password.assert_called_once_with("generated_private_id", SIP_URI, "sip_pass", ANY)
+            put_password.assert_called_once_with("generated_private_id", "sip_pass", ANY)
+            post_associated_public.assert_called_once_with("generated_private_id", SIP_URI, ANY)
         else:
+            # We don't generate a pw if we are just associating a pub/priv id
             post_associated_public.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+
         generate_ifcs.assert_called_once_with(settings.SIP_DIGEST_REALM)
         put_filter_criteria.assert_called_once_with(SIP_URI, "ifcs", ANY)
         post_simservs.assert_called_once_with(SIP_URI, ANY, ANY)
@@ -374,6 +377,58 @@ class TestNumberHandler(BaseTest):
             delete_associated_public.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
         delete_filter_criteria.assert_called_once_with(SIP_URI, ANY)
         delete_simservs.assert_called_once_with(SIP_URI, ANY)
+
+class TestSipPasswordHandler(BaseTest):
+    """
+    Unit tests of the SipPasswordHandler class.
+    """
+    def setUp(self):
+        super(TestSipPasswordHandler, self).setUp()
+        self.app = MagicMock()
+        self.app._wsgi = False
+        self.request = MagicMock()
+        self.handler = numbers.SipPasswordHandler(self.app, self.request)
+
+    @patch("metaswitch.ellis.remote.homestead.put_password")
+    @patch("metaswitch.ellis.remote.homestead.get_associated_privates")
+    @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
+    @patch("metaswitch.common.utils.generate_sip_password")
+    @patch("metaswitch.ellis.data.numbers.allocate_number")
+    @patch("metaswitch.ellis.data.numbers.get_number")
+    def test_post_mainline(self, get_number,
+                                 allocate_number,
+                                 gen_sip_pass,
+                                 HTTPCallbackGroup,
+                                 get_associated_privates,
+                                 put_password):
+        # Setup
+        self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
+        self.handler.check_number_ownership = Mock()
+        gen_sip_pass.return_value = "sip_pass"
+        HTTPCallbackGroup.return_value = MagicMock()
+        self.handler.finish = MagicMock()
+
+        # Test
+        self.handler.post("foobar", SIP_URI)
+
+        # Assert
+        HTTPCallbackGroup.assert_called_once_with(self.handler.on_get_privates_success,
+                                                  self.handler.on_get_privates_failure)
+        get_associated_privates.assert_called_once_with(SIP_URI,
+                                                        self.handler._request_group.callback())
+        # Invoke callback for returned private IDs and assert password is created
+        response = MagicMock()
+        response.body = '{"%s": ["hidden@sip.com"]}' % SIP_URI
+        self.handler.on_get_privates_success([response])
+        put_password.assert_called_once_with("hidden@sip.com",
+                                             "sip_pass",
+                                             self.handler.on_password_response)
+        # Invoke call for password PUT
+        response = MagicMock()
+        response.code = 200
+        self.handler.on_password_response(response)
+        self.handler.finish.assert_called_once_with({"sip_password": "sip_pass"})
+
 
 class TestRemoteProxyHandler(BaseTest):
     """
