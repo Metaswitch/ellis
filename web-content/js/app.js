@@ -200,21 +200,27 @@ var clearwater = (function(mod, $){
   dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed) {
     // We reuse the modal dialog, so be sure to cleanup when closing, see the cleanup() function below
     var configureModal = $("#configure-modal");
-    var putXml = function(){
-      dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
-          encodeURIComponent(sip_uri) + "/simservs",
-          new XMLSerializer().serializeToString(xml))
+    var saveConfiguration = function(){
+      var putSimservs = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
+                                              encodeURIComponent(sip_uri) + "/simservs",
+                                              new XMLSerializer().serializeToString(xml));
+      var gabListed = gabCheckBox.is(':checked') ? 1 : 0;
+      var putGab = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
+                                         encodeURIComponent(sip_uri) + "/listed/" +
+                                         gabListed + "/", {});
+
+      $.when(putSimservs, putGab)
         .done(function(){
-          log("Updated simservs on server");
+          log("Updated configuration on server");
           configureModal.modal("hide");
         })
         .fail(function() {
-          log("Failed to put simservs.");
+          log("Failed to update configuration");
         });
     };
 
     // Bind action to put xml to save button
-    configureModal.find("#save-configure-button").click(putXml);
+    configureModal.find("#save-configure-button").click(saveConfiguration);
 
     // Optimized XML filter function to use instead of jQuery find where
     // namespaces are involved.
