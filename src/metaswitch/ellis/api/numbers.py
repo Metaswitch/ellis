@@ -184,9 +184,8 @@ class NumbersHandler(_base.LoggedInHandler):
     def _on_post_failure(self, response):
         _log.warn("Failed to update all the backends")
         # Try to back out the changes so we don't leave orphaned data.
-        _remove_public_id(self.db_session(), self.sip_uri,
-                          self._on_backout_success, self._on_backout_failure)
-        self.db_session().commit()
+        remove_public_id(self.db_session(), self.sip_uri,
+                         self._on_backout_success, self._on_backout_failure)
 
     def _on_backout_success(self, responses):
         _log.warn("Backed out changes after failure")
@@ -196,7 +195,7 @@ class NumbersHandler(_base.LoggedInHandler):
         _log.warn("Failed to back out changes after failure")
         self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
-def _remove_public_id(db_sess, sip_uri, on_success, on_failure):
+def remove_public_id(db_sess, sip_uri, on_success, on_failure):
     """
        Looks up the private id related to the sip_uri, and then the public ids
        related the retrieved private id. If there are multiple public ids, then
@@ -233,6 +232,7 @@ def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_f
        pair, optionally deleting the digest associated with the private identity
     """
     numbers.remove_owner(db_sess, sip_uri)
+    db_sess.commit()
 
     # Concurrently, delete data from Homestead and Homer
     request_group = HTTPCallbackGroup(on_success, on_failure)
@@ -256,9 +256,7 @@ class NumberHandler(_base.LoggedInHandler):
         _log.info("Request to delete %s by %s", sip_uri, username)
         user_id = self.get_and_check_user_id(username)
         self.check_number_ownership(sip_uri, user_id)
-        db_sess = self.db_session()
-        _remove_public_id(db_sess, sip_uri, self._on_delete_success, self._on_delete_failure)
-        db_sess.commit()
+        remove_public_id(self.db_session(), sip_uri, self._on_delete_success, self._on_delete_failure)
 
     def _on_delete_success(self, responses):
         _log.debug("All requests successful.")

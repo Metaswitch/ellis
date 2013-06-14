@@ -260,8 +260,8 @@ class TestNumberHandler(BaseTest):
         self.request = MagicMock()
         self.handler = numbers.NumberHandler(self.app, self.request)
 
-    @patch("metaswitch.ellis.api.numbers._remove_public_id")
-    def test_delete_mainline(self, _remove_public_id):
+    @patch("metaswitch.ellis.api.numbers.remove_public_id")
+    def test_delete_mainline(self, remove_public_id):
         # Setup
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
         self.handler.check_number_ownership = Mock()
@@ -273,10 +273,10 @@ class TestNumberHandler(BaseTest):
         # Asserts
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
         self.handler.check_number_ownership.assert_called_once_with(SIP_URI, USER_ID)
-        _remove_public_id.assert_called_once_with(self.db_sess,
-                                                  SIP_URI,
-                                                  self.handler._on_delete_success,
-                                                  self.handler._on_delete_failure)
+        remove_public_id.assert_called_once_with(self.db_sess,
+                                                 SIP_URI,
+                                                 self.handler._on_delete_success,
+                                                 self.handler._on_delete_failure)
 
         # Simulate success of all requests.
         self.handler._on_delete_success([Mock(), Mock(), Mock()])
@@ -303,7 +303,7 @@ class TestNumberHandler(BaseTest):
         on_failure_handler = MagicMock()
 
         # Test
-        numbers._remove_public_id(self.db_sess,
+        numbers.remove_public_id(self.db_sess,
                                   SIP_URI,
                                   on_success_handler,
                                   on_failure_handler)

@@ -421,136 +421,68 @@ class TestAccountHandler(BaseTest):
 
     @patch("metaswitch.ellis.data.users.delete_user")
     @patch("metaswitch.ellis.data.numbers.remove_owner")
-    @patch("metaswitch.ellis.remote.xdm.delete_simservs")
-    @patch("metaswitch.ellis.remote.homestead.delete_filter_criteria")
-    @patch("metaswitch.ellis.remote.homestead.delete_password")
-    @patch("metaswitch.ellis.api.users.HTTPCallbackGroup")
-    @patch("metaswitch.ellis.data.numbers.get_numbers")
-    def test_delete_one_num(self,
-                            get_numbers,
-                            HTTPCallbackGroup,
-                            delete_password,
-                            delete_filter_criteria,
-                            delete_simservs,
-                            remove_owner,
-                            delete_user):
-        # Setup
-        get_numbers.return_value = [copy.copy(NUMBER_OBJ)]
-        HTTPCallbackGroup.return_value = MagicMock()
-
-        # Test
-        self.handler.delete(EMAIL)
-
-        # Assert that we kick off asynchronous deletion at homestead and XDM
-        self.handler.get_and_check_user_id.assert_called_once_with(EMAIL)
-        HTTPCallbackGroup.assert_called_once_with(self.handler._on_delete_post_success,
-                                                  self.handler._on_delete_post_failure)
-        delete_password.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
-        delete_filter_criteria.assert_called_once_with(SIP_URI, ANY)
-        delete_simservs.assert_called_once_with(SIP_URI, ANY)
-
-        # Simulate success of all requests.
-        self.handler._on_delete_post_success([Mock(), Mock(), Mock()])
-
-        # Assert that we delete the number and user locally and finish the response
-        remove_owner.assert_called_once_with(self.db_sess, SIP_URI)
-        delete_user.assert_called_once_with(self.db_sess, USER_ID)
-        self.handler.set_status.assert_called_once_with(httplib.NO_CONTENT)
-        self.handler.finish.assert_called_once_with({})
-
-    @patch("metaswitch.ellis.data.users.delete_user")
-    @patch("metaswitch.ellis.data.numbers.remove_owner")
-    @patch("metaswitch.ellis.remote.xdm.delete_simservs")
-    @patch("metaswitch.ellis.remote.homestead.delete_filter_criteria")
-    @patch("metaswitch.ellis.remote.homestead.delete_password")
-    @patch("metaswitch.ellis.api.users.HTTPCallbackGroup")
+    @patch("metaswitch.ellis.api.numbers.remove_public_id")
     @patch("metaswitch.ellis.data.numbers.get_numbers")
     def test_delete_two_nums(self,
                              get_numbers,
-                             HTTPCallbackGroup,
-                             delete_password,
-                             delete_filter_criteria,
-                             delete_simservs,
+                             remove_public_id,
                              remove_owner,
                              delete_user):
         # Setup
         get_numbers.return_value = [copy.copy(NUMBER_OBJ), copy.copy(NUMBER_OBJ2)]
-        HTTPCallbackGroup.return_value = MagicMock()
 
         # Test
         self.handler.delete(EMAIL)
 
-        # Assert that we kick off asynchronous deletion at homestead and XDM of first number
+        # Assert that we kick off asynchronous deletion at homestead
         self.handler.get_and_check_user_id.assert_called_once_with(EMAIL)
-        HTTPCallbackGroup.assert_called_once_with(self.handler._on_delete_post_success,
-                                                  self.handler._on_delete_post_failure)
-        delete_password.assert_called_once_with(PRIVATE_ID2, SIP_URI2, ANY)
-        delete_filter_criteria.assert_called_once_with(SIP_URI2, ANY)
-        delete_simservs.assert_called_once_with(SIP_URI2, ANY)
+        remove_public_id.assert_called_with(self.db_sess,
+                                            SIP_URI2,
+                                            self.handler._on_delete_post_success,
+                                            self.handler._on_delete_post_failure)
 
-        # Re-prime for the second number
-        HTTPCallbackGroup.reset_mock()
-        delete_password.reset_mock()
-        delete_filter_criteria.reset_mock()
-        delete_simservs.reset_mock()
 
-        # Simulate success of all requests.
-        self.handler._on_delete_post_success([Mock(), Mock(), Mock()])
-
-        # Assert that we delete the number locally and kick off asynchronous deletion at
-        # homestead and XDM of second number
-        remove_owner.assert_called_once_with(self.db_sess, SIP_URI2)
-        HTTPCallbackGroup.assert_called_once_with(self.handler._on_delete_post_success,
-                                                  self.handler._on_delete_post_failure)
-        delete_password.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
-        delete_filter_criteria.assert_called_once_with(SIP_URI, ANY)
-        delete_simservs.assert_called_once_with(SIP_URI, ANY)
-        remove_owner.reset_mock()
-
-        # Simulate success of all requests.
-        self.handler._on_delete_post_success([Mock(), Mock(), Mock()])
+        # Simulate success of request.
+        remove_public_id.reset_mock()
+        self.handler._on_delete_post_success([Mock()])
 
         # Assert that we delete the second number and user locally and finish the response
-        remove_owner.assert_called_once_with(self.db_sess, SIP_URI)
+        remove_public_id.assert_called_with(self.db_sess,
+                                            SIP_URI,
+                                            self.handler._on_delete_post_success,
+                                            self.handler._on_delete_post_failure)
+
+        self.handler._on_delete_post_success([Mock()])
         delete_user.assert_called_once_with(self.db_sess, USER_ID)
         self.handler.set_status.assert_called_once_with(httplib.NO_CONTENT)
         self.handler.finish.assert_called_once_with({})
 
     @patch("metaswitch.ellis.data.users.delete_user")
     @patch("metaswitch.ellis.data.numbers.remove_owner")
-    @patch("metaswitch.ellis.remote.xdm.delete_simservs")
-    @patch("metaswitch.ellis.remote.homestead.delete_filter_criteria")
-    @patch("metaswitch.ellis.remote.homestead.delete_password")
-    @patch("metaswitch.ellis.api.users.HTTPCallbackGroup")
+    @patch("metaswitch.ellis.api.numbers.remove_public_id")
     @patch("metaswitch.ellis.data.numbers.get_numbers")
-    def test_delete_num_fail(self,
-                             get_numbers,
-                             HTTPCallbackGroup,
-                             delete_password,
-                             delete_filter_criteria,
-                             delete_simservs,
-                             remove_owner,
-                             delete_user):
+    def test_delete_two_nums_fail(self,
+                                  get_numbers,
+                                  remove_public_id,
+                                  remove_owner,
+                                  delete_user):
         # Setup
         get_numbers.return_value = [copy.copy(NUMBER_OBJ), copy.copy(NUMBER_OBJ2)]
-        HTTPCallbackGroup.return_value = MagicMock()
 
         # Test
         self.handler.delete(EMAIL)
 
-        # Assert that we kick off asynchronous deletion at homestead and XDM of first number
+        # Assert that we kick off asynchronous deletion at homestead
         self.handler.get_and_check_user_id.assert_called_once_with(EMAIL)
-        HTTPCallbackGroup.assert_called_once_with(self.handler._on_delete_post_success,
-                                                  self.handler._on_delete_post_failure)
-        delete_password.assert_called_once_with(PRIVATE_ID2, SIP_URI2, ANY)
-        delete_filter_criteria.assert_called_once_with(SIP_URI2, ANY)
-        delete_simservs.assert_called_once_with(SIP_URI2, ANY)
+        remove_public_id.assert_called_with(self.db_sess,
+                                            SIP_URI2,
+                                            self.handler._on_delete_post_success,
+                                            self.handler._on_delete_post_failure)
 
-        # Simulate failure of one or more requests.
-        self.handler._on_delete_post_failure([Mock(), Mock(), Mock()])
+        # Simulate failure of the request.
+        self.handler._on_delete_post_failure([Mock()])
 
         # Assert that we bin out and don't delete the number or user locally
-        self.assertFalse(remove_owner.called)
         self.assertFalse(delete_user.called)
         self.handler.set_status.assert_called_once_with(httplib.BAD_GATEWAY)
         self.handler.finish.assert_called_once_with({"status": 502, "detail": {}, "message": "Bad Gateway", "reason": "Upstream request failed.", "error": True})
