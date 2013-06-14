@@ -71,10 +71,14 @@ body {
 
   <!-- NAVIGATION BAR -->
 
-  <div class="navbar navbar-fixed-top">
+  <div class="navbar navbar-fixed-top navbar-inverse">
     <div class="navbar-inner">
       <div class="container">
         <a class="brand" href="#">Clearwater</a>
+        <ul class="nav">
+            <li class="active"><a href="/">Dashboard</a></li>
+            <li><a href="/addressbook.html">Addressbook</a></li>
+        </ul>
         <button class="btn logged-in-only" id="logout-button">Log out</button>
       </div>
     </div>
@@ -93,9 +97,6 @@ body {
   <!-- DASHBOARD PAGE -->
 
   <div class="container" id="dashboard" style="display: none">
-
-    <h1>Dashboard</h1>
-
     <div class="button-bar">
         <div class="btn-group">
             <button class="btn btn-primary" id="create-number-button" data-pstn="false">
