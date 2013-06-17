@@ -97,6 +97,7 @@ body {
   <!-- DASHBOARD PAGE -->
 
   <div class="container" id="dashboard" style="display: none">
+  <!--
     <div class="button-bar">
         <div class="btn-group">
             <button class="btn btn-primary" id="create-number-button" data-pstn="false">
@@ -111,39 +112,41 @@ body {
             </ul>
         </div>
     </div>
+    -->
 
-    <table class="table table-bordered"
-           id="number-list">
+    <table class="table table-hover" id="number-list">
       <thead>
         <tr>
-          <th>Private identity</th>
-          <th>Associated Public Identities</th>
-          <th>Actions</th>
-        </tr>
+          <th class="private-col"></th>
+          <th class="public-col"></th>
+      </tr>
       </thead>
       <tbody>
         <tr id="template-number-list-row" class="template">
-          <td class="number-cell">
-            <div>
-              <span class="pstn-badge badge" style="display:none">PSTN</span>
-              <span class="formatted-number">1 (800) 1234-555</span>
-            </div>
-            <div>
+          <td class="private-id-cell">
+            <blockquote>
+                <p><span class="pstn-badge badge" style="display:none">PSTN</span>
+                <span class="private-id">1235550000@cw-ngv.com</span></p>
               <button class="reset-password-button btn btn-small pull-right">Reset</button>
-              <div class="password" style="display: none;">
+              <div><span>Password: </span><strong>akfj28sdlo</strong></div>
+              <a class="password-shown-once hovertip"
+                 title="Passwords are stored securely and can only be displayed once. If you need a new password, click the reset password button on the right.">only shown once</a>
+            </blockquote>
+          </td>
+          <td class="sip-uri-cell">
+            <blockquote>
+              <p>Associated Public Identities</p>
+              <div>
+                  <span class="sip-uri">sip:11235550000@cw-ngv.com</span>
+                  <button class="delete-button btn btn-small btn-danger"><i class="icon-trash icon-white"></i> Delete</button>
+                  <button class="configure-button btn btn-small" href="#configure-modal" data-toggle="modal"><i class="icon-edit"></i> Configure</button>
               </div>
-              <a title="Passwords are stored securely and can only be displayed once."
-                    class="password-tip hovertip" style="display: none;">Password only shown once</a>
-              <span class="password-unavailable">
-                  <a title="Passwords are stored securely and can only be displayed once. If you need a new password, click the reset password button on the right." class="hovertip">Not available</a>
-              </span>
-            </div>
-          </td>
-          <td class="sip-uri-cell">sip:18001234555@a-tel.co</td>
-          </td>
-          <td class="actions-cell">
-            <button class="configure-button btn btn-small" href="#configure-modal" data-toggle="modal"><i class="icon-edit"></i> Configure</button>
-            <button class="delete-button btn btn-small btn-danger"><i class="icon-trash icon-white"></i> Delete</button>
+              <div>
+                  <span class="sip-uri">sip:11235550000@cw-ngv.com</span>
+                  <button class="delete-button btn btn-small btn-danger"><i class="icon-trash icon-white"></i> Delete</button>
+                  <button class="configure-button btn btn-small" href="#configure-modal" data-toggle="modal"><i class="icon-edit"></i> Configure</button>
+              </div>
+            </blockquote>
           </td>
         </tr>
       </tbody>

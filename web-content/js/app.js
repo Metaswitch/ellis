@@ -117,14 +117,14 @@ var clearwater = (function(mod, $){
       (function(i) {
         var clone = templateRow.clone();
         log("Adding cell for " + numbers[i]["number"]);
-        $(clone).find(".formatted-number").text(" " + numbers[i]["formatted_number"]);
+        $(clone).find(".private-id").text(" " + numbers[i]["private_id"]);
+        $(clone).find(".sip-uri").text(numbers[i]["sip_uri"]);
         var pstn_badge = $(clone).find(".pstn-badge");
         if (numbers[i]['pstn']) {
           $(pstn_badge).show();
         } else {
           $(pstn_badge).hide();
         }
-        $(clone).find(".sip-uri-cell").text(numbers[i]["sip_username"]);
 
         if (knownPasswords[numbers[i]["sip_uri"]]) {
           $(clone).find(".password").text(knownPasswords[numbers[i]["sip_uri"]]);

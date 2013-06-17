@@ -170,3 +170,31 @@ input.barring-radio {
     margin: 0px;
     vertical-align: baseline;
 }
+
+table {
+    table-layout: fixed;
+}
+
+table th, table td {
+    overflow: hidden;
+}
+
+th.private-col {
+    width: 30%;
+}
+
+th.public-col {
+    width: 50%;
+}
+
+.password-shown-once {
+    font-size: 80%;
+}
+
+.btn {
+    margin: 4px;
+}
+
+.delete-button {
+    margin-left: 60px;
+}
