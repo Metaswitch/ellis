@@ -116,28 +116,30 @@ body {
            id="number-list">
       <thead>
         <tr>
-          <th>Phone number</th>
-          <th>SIP Username</th>
-          <th>SIP Password</th>
+          <th>Private identity</th>
+          <th>Associated Public Identities</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr id="template-number-list-row" class="template">
           <td class="number-cell">
-            <span class="pstn-badge badge" style="display:none">PSTN</span>
-            <span class="formatted-number">1 (800) 1234-555</span>
+            <div>
+              <span class="pstn-badge badge" style="display:none">PSTN</span>
+              <span class="formatted-number">1 (800) 1234-555</span>
+            </div>
+            <div>
+              <button class="reset-password-button btn btn-small pull-right">Reset</button>
+              <div class="password" style="display: none;">
+              </div>
+              <a title="Passwords are stored securely and can only be displayed once."
+                    class="password-tip hovertip" style="display: none;">Password only shown once</a>
+              <span class="password-unavailable">
+                  <a title="Passwords are stored securely and can only be displayed once. If you need a new password, click the reset password button on the right." class="hovertip">Not available</a>
+              </span>
+            </div>
           </td>
           <td class="sip-uri-cell">sip:18001234555@a-tel.co</td>
-          <td class="sip-password-cell">
-            <button class="reset-password-button btn btn-small pull-right">Reset</button>
-            <div class="password" style="display: none;">
-            </div>
-            <a title="Passwords are stored securely and can only be displayed once."
-                  class="password-tip hovertip" style="display: none;">Password only shown once</a>
-            <span class="password-unavailable">
-                <a title="Passwords are stored securely and can only be displayed once. If you need a new password, click the reset password button on the right." class="hovertip">Not available</a>
-            </span>
           </td>
           <td class="actions-cell">
             <button class="configure-button btn btn-small" href="#configure-modal" data-toggle="modal"><i class="icon-edit"></i> Configure</button>
