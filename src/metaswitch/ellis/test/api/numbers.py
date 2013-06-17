@@ -52,6 +52,7 @@ NUMBER_ID_HEX = 'c9b15e685e8b4bcf95233eda4e677afd'
 NUMBER_ID2 = uuid.UUID('c9b15e68-5e8b-4bcf-9523-3eda4e123456')
 NUMBER_ID2_HEX = 'c9b15e685e8b4bcf95233eda4e123456'
 SIP_URI = "sip:5555550123@ngv.metaswitch.com"
+SIP_URI2 = "sip:5555550456@ngv.metaswitch.com"
 PRIVATE_ID = "5555550123@ngv.metaswitch.com"
 GAB_LISTED = 1
 
@@ -284,38 +285,46 @@ class TestNumberHandler(BaseTest):
         self.handler.finish.assert_called_once_with({})
 
     def test_remove_public_id(self):
-        self.remove_public_id(False)
+        self.remove_public_id(False, False)
+
+    def test_remove_original_public_id(self):
+        self.remove_public_id(False, True)
 
     def test_remove_last_public_id(self):
-        self.remove_public_id(True)
+        self.remove_public_id(True, True)
 
     @patch("metaswitch.ellis.api.numbers._delete_number")
     @patch("metaswitch.ellis.remote.homestead.get_associated_publics")
     @patch("metaswitch.ellis.remote.homestead.get_associated_privates")
     @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
-    def remove_public_id(self, last_public_id, HTTPCallbackGroup,
-                                               get_associated_privates,
-                                               get_associated_publics,
-                                               _delete_number):
+    def remove_public_id(self, last_public_id, original_id, HTTPCallbackGroup,
+                                                            get_associated_privates,
+                                                            get_associated_publics,
+                                                            _delete_number):
         # Setup
         HTTPCallbackGroup.return_value = MagicMock()
         on_success_handler = MagicMock()
         on_failure_handler = MagicMock()
+        self.handler.send_error = MagicMock()
+        if original_id:
+            sip_uri = SIP_URI
+        else:
+            sip_uri = SIP_URI2
 
         # Test
         numbers.remove_public_id(self.db_sess,
-                                  SIP_URI,
+                                  sip_uri,
                                   on_success_handler,
                                   on_failure_handler)
 
         # Asserts
-        get_associated_privates.assert_called_once_with(SIP_URI, ANY)
+        get_associated_privates.assert_called_once_with(sip_uri, ANY)
         HTTPCallbackGroup.assert_called_once_with(ANY, on_failure_handler)
 
         # Extract inner function and can call it with response
         on_get_privates_success = HTTPCallbackGroup.call_args[0][0]
         response = MagicMock()
-        response.body = '{"public_id": "%s", "private_ids": ["%s"]}' % (SIP_URI, PRIVATE_ID)
+        response.body = '{"public_id": "%s", "private_ids": ["%s"]}' % (sip_uri, PRIVATE_ID)
         on_get_privates_success([response])
 
         # Response should have been parsed now and a new call invoked
@@ -323,18 +332,22 @@ class TestNumberHandler(BaseTest):
         on_get_publics_success = HTTPCallbackGroup.call_args[0][0]
         response = MagicMock()
         if last_public_id:
-            response.body = '{"private_id": "%s", "public_ids": ["%s"]}' % (PRIVATE_ID, SIP_URI)
+            response.body = '{"private_id": "%s", "public_ids": ["%s"]}' % (PRIVATE_ID, sip_uri)
         else:
-            response.body = '{"private_id": "%s", "public_ids": ["another@sip.com", "%s"]}' % (PRIVATE_ID, SIP_URI)
-        on_get_publics_success([response])
+            response.body = '{"private_id": "%s", "public_ids": ["another@sip.com", "%s"]}' % (PRIVATE_ID, sip_uri)
 
-        # Returned a single public id, so we expect to delete the digest
-        _delete_number.assert_called_once_with(self.db_sess,
-                                               SIP_URI,
-                                               PRIVATE_ID,
-                                               last_public_id,
-                                               on_success_handler,
-                                               on_failure_handler)
+        on_get_publics_success([response])
+        if original_id and not last_public_id:
+            # When deleting the originally created public identity we want the request to fail
+            # if other public identities are associated with the private id
+            on_failure_handler.assert_called_once_with(response)
+        else:
+            _delete_number.assert_called_once_with(self.db_sess,
+                                                   sip_uri,
+                                                   PRIVATE_ID,
+                                                   last_public_id,
+                                                   on_success_handler,
+                                                   on_failure_handler)
 
     def test_delete_number(self):
         self.delete_number(True)

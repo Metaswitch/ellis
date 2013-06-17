@@ -220,10 +220,16 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
         parsed_body = json.loads(responses[0].body)
         private_id = parsed_body["private_id"]
         public_ids = parsed_body["public_ids"]
-        # Only delete the delete if there is only a single private identity
-        # associated with our sip_uri
-        delete_digest = (len(public_ids) == 1)
-        _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure)
+        if (utils.sip_public_id_to_private(sip_uri) == private_id and
+            len(public_ids) > 1):
+            # Do not permit deletion of an original public identity if others exist
+            # otherwise another may claim the same private id from the pool
+            on_failure(responses[0])
+        else:
+            # Only delete the digest if there is only a single private identity
+            # associated with our sip_uri (i.e. this is the last public id)
+            delete_digest = (len(public_ids) == 1)
+            _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure)
 
     request_group = HTTPCallbackGroup(_on_get_privates_success, on_failure)
     homestead.get_associated_privates(sip_uri, request_group)
