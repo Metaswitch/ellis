@@ -86,11 +86,12 @@ class NumbersHandler(_base.LoggedInHandler):
         _log.debug("Successfully fetched associated private identities")
         for response in responses:
             try:
-                # Body is of format {"public_id" : ["private_id_1", "private_id_2"...]}
+                # Body is of format {"public_id": "<public_id>",
+                #                    "private_ids": ["<private_id_1>", "<private_id_2>"...]}
                 parsed_body = json.loads(response.body)
-                public_id = parsed_body.keys()[0]
+                public_id = parsed_body["public_id"]
                 # We only support one private id per public id, so only pull out first in list
-                private_id = parsed_body.values()[0][0]
+                private_id = parsed_body["private_ids"][0]
                 for number in [n for n in self._numbers if n["sip_uri"] == public_id]:
                     number["private_id"] = private_id
 
@@ -206,18 +207,19 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
     """
     def _on_get_privates_success(responses):
         _log.debug("Got related private ids")
-        # Body is of format {"public_id" : ["private_id_1", "private_id_2"...]}
+        # Body is of format {"public_id": "<public_id>",
+        #                    "private_ids": ["<private_id_1>", "<private_id_2>"...]}
         parsed_body = json.loads(responses[0].body)
         # We only support one private id per public id, so only pull out first in list
-        private_id = parsed_body.values()[0][0]
+        private_id = parsed_body["private_ids"][0]
         request_group2 = HTTPCallbackGroup(_on_get_publics_success, on_failure)
         homestead.get_associated_publics(private_id, request_group2)
 
     def _on_get_publics_success(responses):
         _log.debug("Got related public ids")
         parsed_body = json.loads(responses[0].body)
-        private_id = parsed_body.keys()[0]
-        public_ids = parsed_body.values()[0]
+        private_id = parsed_body["private_id"]
+        public_ids = parsed_body["public_ids"]
         # Only delete the delete if there is only a single private identity
         # associated with our sip_uri
         delete_digest = (len(public_ids) == 1)
@@ -282,10 +284,11 @@ class SipPasswordHandler(_base.LoggedInHandler):
 
     def on_get_privates_success(self, responses):
         _log.debug("Got related private ids")
-        # Body is of format {"public_id" : ["private_id_1", "private_id_2"...]}
+        # Body is of format {"public_id": "<public_id>",
+        #                    "private_ids": ["<private_id_1>", "<private_id_2>"...]}
         parsed_body = json.loads(responses[0].body)
         # We only support one private id per public id, so only pull out first in list
-        private_id = parsed_body.values()[0][0]
+        private_id = parsed_body["private_ids"][0]
 
         # Do not expect a response body, as long as there is no error, we are fine
         homestead.put_password(private_id, self.sip_password, self.on_password_response)

@@ -98,7 +98,7 @@ class TestNumbersHandler(BaseTest):
                                                         self.handler._request_group.callback())
         # Simulate success of all requests.
         response = MagicMock()
-        response.body = '{"%s": ["hidden@sip.com"]}' % SIP_URI
+        response.body = '{"public_id": "%s", "private_ids": ["hidden@sip.com"]}' % SIP_URI
         self.handler._on_get_success([response])
 
         self.handler.finish.assert_called_once_with(
@@ -136,12 +136,12 @@ class TestNumbersHandler(BaseTest):
 
         # Simulate success of all requests.
         response1 = MagicMock()
-        response1.body = '{"sip:4155551234@sip.com": ["hidden1@sip.com"]}'
+        response1.body = '{"public_id": "sip:4155551234@sip.com", "private_ids": ["hidden1@sip.com"]}'
         response2 = MagicMock()
         if shared_private_id:
-            response2.body = '{"sip:4155555678@sip.com": ["hidden1@sip.com"]}'
+            response2.body = '{"public_id": "sip:4155555678@sip.com", "private_ids": ["hidden1@sip.com"]}'
         else:
-            response2.body = '{"sip:4155555678@sip.com": ["hidden2@sip.com"]}'
+            response2.body = '{"public_id": "sip:4155555678@sip.com", "private_ids": ["hidden2@sip.com"]}'
         self.handler._on_get_success([response1, response2])
 
         self.handler.finish.assert_called_once_with(
@@ -315,17 +315,17 @@ class TestNumberHandler(BaseTest):
         # Extract inner function and can call it with response
         on_get_privates_success = HTTPCallbackGroup.call_args[0][0]
         response = MagicMock()
-        response.body = '{"%s": ["%s"]}' % (SIP_URI, PRIVATE_ID)
+        response.body = '{"public_id": "%s", "private_ids": ["%s"]}' % (SIP_URI, PRIVATE_ID)
         on_get_privates_success([response])
 
-        # Response should have been paresed now and a new call invoked
+        # Response should have been parsed now and a new call invoked
         get_associated_publics.assert_called_once_with(PRIVATE_ID, ANY)
         on_get_publics_success = HTTPCallbackGroup.call_args[0][0]
         response = MagicMock()
         if last_public_id:
-            response.body = '{"%s": ["%s"]}' % (PRIVATE_ID, SIP_URI)
+            response.body = '{"private_id": "%s", "public_ids": ["%s"]}' % (PRIVATE_ID, SIP_URI)
         else:
-            response.body = '{"%s": ["another@sip.com", "%s"]}' % (PRIVATE_ID, SIP_URI)
+            response.body = '{"private_id": "%s", "public_ids": ["another@sip.com", "%s"]}' % (PRIVATE_ID, SIP_URI)
         on_get_publics_success([response])
 
         # Returned a single public id, so we expect to delete the digest
@@ -418,7 +418,7 @@ class TestSipPasswordHandler(BaseTest):
                                                         self.handler._request_group.callback())
         # Invoke callback for returned private IDs and assert password is created
         response = MagicMock()
-        response.body = '{"%s": ["hidden@sip.com"]}' % SIP_URI
+        response.body = '{"public_id": "%s", "private_ids": ["hidden@sip.com"]}' % SIP_URI
         self.handler.on_get_privates_success([response])
         put_password.assert_called_once_with("hidden@sip.com",
                                              "sip_pass",
