@@ -174,8 +174,11 @@ var clearwater = (function(mod, $){
             });
         });
 
-        tbody.append(clone);
+        tbody.find("#add-private-id-row").before(clone);
       })(i);
+
+      // Must initialize bootstrap hovertips explicitly
+      $(".hovertip").tooltip();
     }
     if (numbers.length > 0) {
       $("#no-numbers").hide();

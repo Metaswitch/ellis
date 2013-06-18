@@ -175,10 +175,6 @@ table {
     table-layout: fixed;
 }
 
-table th, table td {
-    overflow: hidden;
-}
-
 th.private-col {
     width: 30%;
 }
@@ -191,10 +187,12 @@ th.public-col {
     font-size: 80%;
 }
 
-.btn {
+td.sip-uri-cell .btn,
+td.private-id-cell .btn {
     margin: 4px;
+    min-width: 80px;
 }
 
-.delete-button {
+td.sip-uri-cell .configure-button {
     margin-left: 60px;
 }

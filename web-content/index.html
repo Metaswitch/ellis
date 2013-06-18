@@ -97,23 +97,6 @@ body {
   <!-- DASHBOARD PAGE -->
 
   <div class="container" id="dashboard" style="display: none">
-  <!--
-    <div class="button-bar">
-        <div class="btn-group">
-            <button class="btn btn-primary" id="create-number-button" data-pstn="false">
-                <i class="icon-plus icon-white"></i> Add number
-            </button>
-            <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
-                <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu" id="create-number-dropdown">
-                <li data-pstn="false"><a href="javascript:void(0)">Internal</a></li>
-                <li data-pstn="true"><a href="javascript:void(0)">PSTN</a></li>
-            </ul>
-        </div>
-    </div>
-    -->
-
     <table class="table table-hover" id="number-list">
       <thead>
         <tr>
@@ -128,23 +111,41 @@ body {
                 <p><span class="pstn-badge badge" style="display:none">PSTN</span>
                 <span class="private-id">1235550000@cw-ngv.com</span></p>
               <button class="reset-password-button btn btn-small pull-right">Reset</button>
-              <div><span>Password: </span><strong>akfj28sdlo</strong></div>
+              <div>
+                <span>Password: </span>
+                <strong class="password">Not available</strong>
+              </div>
               <a class="password-shown-once hovertip"
+                 data-placement="bottom"
                  title="Passwords are stored securely and can only be displayed once. If you need a new password, click the reset password button on the right.">only shown once</a>
             </blockquote>
           </td>
           <td class="sip-uri-cell">
             <blockquote>
-              <p>Associated Public Identities</p>
+              <p>Associated Public Identities:</p>
               <div>
-                  <span class="sip-uri">sip:11235550000@cw-ngv.com</span>
-                  <button class="delete-button btn btn-small btn-danger"><i class="icon-trash icon-white"></i> Delete</button>
-                  <button class="configure-button btn btn-small" href="#configure-modal" data-toggle="modal"><i class="icon-edit"></i> Configure</button>
+                <span class="sip-uri">sip:11235550000@cw-ngv.com</span>
+                <button class="configure-button btn btn-small" href="#configure-modal" data-toggle="modal">Configure</button>
+                <button class="delete-button btn btn-small btn-danger">Delete</button>
               </div>
-              <div>
-                  <span class="sip-uri">sip:11235550000@cw-ngv.com</span>
-                  <button class="delete-button btn btn-small btn-danger"><i class="icon-trash icon-white"></i> Delete</button>
-                  <button class="configure-button btn btn-small" href="#configure-modal" data-toggle="modal"><i class="icon-edit"></i> Configure</button>
+            </blockquote>
+          </td>
+        </tr>
+        <tr id="add-private-id-row">
+          <td colspan="2">
+            <blockquote>
+              <p>New Private Identity</p>
+              <div class="button-bar">
+                <div class="btn-group">
+                  <button class="btn" id="create-number-button" data-pstn="false">Create</button>
+                  <button class="btn dropdown-toggle" data-toggle="dropdown">
+                    <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu" id="create-number-dropdown">
+                    <li data-pstn="false"><a href="javascript:void(0)">Internal</a></li>
+                    <li data-pstn="true"><a href="javascript:void(0)">PSTN</a></li>
+                  </ul>
+                </div>
               </div>
             </blockquote>
           </td>
@@ -320,21 +321,6 @@ body {
   <script type="text/javascript" src="js/jquery.cookie.js"></script>
   <script type="text/javascript" src="js/jquery.total-storage.min.js"></script>
   <script type="text/javascript" src="js/bootstrap.min.js"></script>
-
-  <!--
-    <script src="js/bootstrap-transition.js"></script>
-    <script src="js/bootstrap-alert.js"></script>
-    <script src="js/bootstrap-modal.js"></script>
-    <script src="js/bootstrap-dropdown.js"></script>
-    <script src="js/bootstrap-scrollspy.js"></script>
-    <script src="js/bootstrap-tab.js"></script>
-    <script src="js/bootstrap-tooltip.js"></script>
-    <script src="js/bootstrap-popover.js"></script>
-    <script src="js/bootstrap-button.js"></script>
-    <script src="js/bootstrap-collapse.js"></script>
-    <script src="js/bootstrap-carousel.js"></script>
-    <script src="js/bootstrap-typeahead.js"></script>
-    -->
 
   <script src="js/common.js"></script>
   <script src="js/app.js"></script>
