@@ -383,6 +383,18 @@ class IFCsHandler(RemoteProxyHandler):
         self.remote_name = "Homestead (iFC)"
 
 class NumberGabListedHandler(_base.LoggedInHandler):
+    def get(self, username, sip_uri):
+        """Retrieves GAB listed setting for a given phone number"""
+        user_id = self.get_and_check_user_id(username)
+        db_sess = self.db_session()
+        try:
+            gab_listed = numbers.is_gab_listed(db_sess, user_id, sip_uri)
+        except NotFound:
+            _log.warning("Could not retrieve gab listing")
+            raise HTTPError(httplib.NOT_FOUND)
+
+        self.finish({"gab_listed": gab_listed})
+
     def put(self, username, sip_phone, isListed):
         """Updates GAB listed setting for a given phone number"""
         user_id = self.get_and_check_user_id(username)
