@@ -297,18 +297,20 @@ class SipPasswordHandler(_base.LoggedInHandler):
         private_id = parsed_body["private_ids"][0]
 
         # Do not expect a response body, as long as there is no error, we are fine
-        homestead.put_password(private_id, self.sip_password, self.on_password_response)
+        self._request_group = HTTPCallbackGroup(self.on_put_password_success,
+                                                self.on_put_password_failure)
+        homestead.put_password(private_id, self.sip_password, self._request_group.callback())
 
     def on_get_privates_failure(self, responses):
         _log.error("Failed to get associated private ID from homestead %s", responses[0])
         self.send_error(httplib.BAD_GATEWAY)
 
-    def on_password_response(self, response):
-        if response.code // 100 == 2:
-            self.finish({"sip_password": self.sip_password})
-        else:
-            _log.error("Failed to set password in homestead %s", response)
-            self.send_error(httplib.BAD_GATEWAY)
+    def on_put_password_success(self, responses):
+        self.finish({"sip_password": self.sip_password})
+
+    def on_put_password_failure(self, responses):
+        _log.error("Failed to set password in homestead %s", responses[0])
+        self.send_error(httplib.BAD_GATEWAY)
 
 class RemoteProxyHandler(_base.LoggedInHandler):
     def __init__(self, application, request, **kwargs):

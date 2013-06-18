@@ -429,17 +429,23 @@ class TestSipPasswordHandler(BaseTest):
                                                   self.handler.on_get_privates_failure)
         get_associated_privates.assert_called_once_with(SIP_URI,
                                                         self.handler._request_group.callback())
+        # Reset http callback group
+        HTTPCallbackGroup.reset_mock()
+        HTTPCallbackGroup.return_value = MagicMock()
+
         # Invoke callback for returned private IDs and assert password is created
         response = MagicMock()
         response.body = '{"public_id": "%s", "private_ids": ["hidden@sip.com"]}' % SIP_URI
         self.handler.on_get_privates_success([response])
+        HTTPCallbackGroup.assert_called_once_with(self.handler.on_put_password_success,
+                                                  self.handler.on_put_password_failure)
         put_password.assert_called_once_with("hidden@sip.com",
                                              "sip_pass",
-                                             self.handler.on_password_response)
+                                             self.handler._request_group.callback())
         # Invoke call for password PUT
         response = MagicMock()
         response.code = 200
-        self.handler.on_password_response(response)
+        self.handler.on_put_password_success(response)
         self.handler.finish.assert_called_once_with({"sip_password": "sip_pass"})
 
 
