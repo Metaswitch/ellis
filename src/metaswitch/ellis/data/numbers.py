@@ -157,6 +157,19 @@ def get_number(db_sess, number_id, expected_user_id):
     except TypeError:
         raise NotFound()
 
+def is_gab_listed(db_sess, expected_user_id, sip_uri):
+    cursor = db_sess.execute("""
+                             SELECT gab_listed FROM numbers
+                             WHERE number = :sip_uri
+                             AND owner_id = :owner_id;
+                             """, {"sip_uri": sip_uri,
+                                   "owner_id": expected_user_id})
+    try:
+        gab_listed = cursor.fetchone()[0]
+        return gab_listed
+    except TypeError:
+        raise NotFound()
+
 
 def update_gab_list(db_sess, user_id, number_id, isListed):
     db_sess.execute("""

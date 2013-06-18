@@ -92,7 +92,6 @@
 }
 
 .navbar .brand {
-    min-width: 14em;
     color: white;
     text-shadow: none;
 }
@@ -127,11 +126,6 @@ a:ACTIVE.hovertip {
 
 a:HOVER.hovertip {
     color: #333;
-}
-
-.update-message {
-    float: right;
-    text-align: center;
 }
 
 .modal.fade.in {
