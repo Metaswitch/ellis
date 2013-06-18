@@ -166,7 +166,7 @@ var clearwater = (function(mod, $){
           var gabGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
                                                   encodeURIComponent(numbers[i]["sip_uri"]) + "/listed",
                                                   {});
-          // Fetch data in parallel, launching modal wehn all requests complete
+          // Fetch data in parallel, launching modal when all requests complete
           $.when(simservsGet, gabGet)
             .done(displayConfigure)
             .fail(function() {
