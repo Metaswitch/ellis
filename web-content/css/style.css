@@ -183,12 +183,11 @@ th.public-col {
     width: 50%;
 }
 
-.password-shown-once {
+td .hovertip {
     font-size: 80%;
 }
 
-td.sip-uri-cell .btn,
-td.private-id-cell .btn {
+td .btn-action {
     margin: 4px;
     min-width: 80px;
 }
