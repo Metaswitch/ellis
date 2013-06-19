@@ -104,7 +104,7 @@ class NumbersHandler(_base.LoggedInHandler):
         self.finish({"numbers": self._numbers})
 
     def _on_get_failure(self, response):
-        _log.warn("Failed to fetch from %s" % self.remote_name)
+        _log.warn("Failed to fetch private identities from homestead")
         self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
     @asynchronous

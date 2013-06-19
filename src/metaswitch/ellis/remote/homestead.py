@@ -118,8 +118,9 @@ def put_password(private_id, password, callback):
     """
     url = digest_url(private_id)
     digest = utils.md5("%s:%s:%s" % (private_id, settings.SIP_DIGEST_REALM, password))
-    body = urllib.urlencode({"digest" : digest})
-    fetch(url, callback, method='PUT', body=body)
+    body = json.dumps({"digest" : digest})
+    headers = {"Content-Type": "application/json"}
+    fetch(url, callback, method='PUT', headers=headers, body=body)
 
 def delete_password(private_id, callback):
     """
