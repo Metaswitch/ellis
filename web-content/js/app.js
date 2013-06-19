@@ -85,15 +85,25 @@ var clearwater = (function(mod, $){
         log("Failed to retrieve numbers.");
         $("#numbers-error").show();
       });
-    var createNumberHandler = function(e) {
+
+    var handler = dashboardPage.numberCreator();
+    $("#create-number-button").click(handler);
+    $("#create-number-dropdown li").click(handler);
+  };
+
+  // Given a private id, generates a function for creating numbers associated
+  // with that id. For unassociated numbers, do not pass in a private id
+  dashboardPage.numberCreator = function(privateId) {
+    return function(e) {
       var pstn = $(this).data("pstn");
       log("Creating a number");
-      dashboardPage.postHttp(numbersUrl, {'pstn': pstn})
+      var data = {'pstn': pstn};
+      if (privateId) {
+        data["private_id"] = privateId;
+      }
+      dashboardPage.postHttp(numbersUrl, data)
         .done(dashboardPage.onNumberCreated);
-    };
-
-    $("#create-number-button").click(createNumberHandler);
-    $("#create-number-dropdown li").click(createNumberHandler);
+    }
   };
 
   dashboardPage.onNumberDeleted = function(data) {
@@ -158,7 +168,6 @@ var clearwater = (function(mod, $){
         });
 
         // Now spin through all the numbers, adding the UI for each
-        // For now just do first number
         for (var n in numberGroup) {
           (function(number) {
             log("Adding cell for public id " + number);
@@ -206,6 +215,10 @@ var clearwater = (function(mod, $){
             publicIdListContainer.append(publicIdRowClone);
           })(numberGroup[n]);
         }
+
+        var handler = dashboardPage.numberCreator(privateId);
+        $(clone).find(".add-public-id-btn").click(handler);
+        $(clone).find(".add-public-id-dropdown li").click(handler);
 
         tbody.find("#add-private-id-row").before(clone);
       })(privateId, grouped[privateId]);
