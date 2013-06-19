@@ -95,7 +95,7 @@ class NumbersHandler(_base.LoggedInHandler):
                 for number in [n for n in self._numbers if n["sip_uri"] == public_id]:
                     number["private_id"] = private_id
 
-            except (TypeError, KeyError) as e:
+           except (TypeError, KeyError) as e:
                 _log.error("Could not parse response: %s", response.body)
                 self.send_error(httplib.BAD_GATEWAY,
                                 reason="Upstream request failed: could not parse private identity list")
@@ -248,8 +248,7 @@ def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_f
     request_group = HTTPCallbackGroup(on_success, on_failure)
     if delete_digest:
         homestead.delete_password(private_id, request_group.callback())
-    else:
-        homestead.delete_associated_public(private_id, sip_uri, request_group.callback())
+    homestead.delete_associated_public(private_id, sip_uri, request_group.callback())
     homestead.delete_filter_criteria(sip_uri, request_group.callback())
     xdm.delete_simservs(sip_uri, request_group.callback())
 
