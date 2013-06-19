@@ -141,7 +141,8 @@ var clearwater = (function(mod, $){
       grouped[privateId].push(numbers[n]);
     }
 
-    for (var privateId in grouped) {
+    var sortedPrivateIds = Object.keys(grouped).sort();
+    for (var privateId in sortedPrivateIds) {
       (function(privateId, numberGroup) {
         var clone = templateRow.clone();
         var number = grouped[privateId][0];
@@ -221,7 +222,7 @@ var clearwater = (function(mod, $){
         $(clone).find(".add-public-id-dropdown li").click(handler);
 
         tbody.find("#add-private-id-row").before(clone);
-      })(privateId, grouped[privateId]);
+      })(sortedPrivateIds[privateId], grouped[sortedPrivateIds[privateId]]);
     }
     if (numbers.length > 0) {
       $("#no-numbers").hide();
