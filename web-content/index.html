@@ -108,8 +108,7 @@
         <tr id="template-number-list-row" class="template">
           <td class="private-id-cell">
             <blockquote>
-                <p><span class="pstn-badge badge" style="display:none">PSTN</span>
-                <span class="private-id">1235550000@cw-ngv.com</span></p>
+              <p><span class="private-id">1235550000@cw-ngv.com</span></p>
               <button class="reset-password-button btn btn-small btn-action pull-right">Reset</button>
               <div>
                 <span>Password: </span>
@@ -125,6 +124,7 @@
               <p>Associated Public Identities:</p>
               <div class="public-id-list">
                 <div id="template-public-id" class="template">
+                  <span class="pstn-badge badge" style="display:none">PSTN</span>
                   <span class="sip-uri">sip:11235550000@cw-ngv.com</span>
                   <button class="configure-button btn btn-small btn-action" href="#configure-modal" data-toggle="modal">Configure</button>
                   <button class="delete-button btn btn-small btn-danger btn-action">Delete</button>
@@ -321,7 +321,7 @@
     </div>
     <p class="alert alert-info" style="display: none" id="no-numbers">
         <strong>Information:</strong> you don't currently have any phone numbers.
-        Click "Add number" above to create one.
+        Click "Create" above to create one.
     </p>
     <p class="alert alert-error" style="display: none" id="no-numbers">
         <strong>Error:</strong> Failed to retrieve numbers.  Please refresh this
