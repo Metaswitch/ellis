@@ -85,15 +85,25 @@ var clearwater = (function(mod, $){
         log("Failed to retrieve numbers.");
         $("#numbers-error").show();
       });
-    var createNumberHandler = function(e) {
+
+    var handler = dashboardPage.numberCreator();
+    $("#create-number-button").click(handler);
+    $("#create-number-dropdown li").click(handler);
+  };
+
+  // Given a private id, generates a function for creating numbers associated
+  // with that id. For unassociated numbers, do not pass in a private id
+  dashboardPage.numberCreator = function(privateId) {
+    return function(e) {
       var pstn = $(this).data("pstn");
       log("Creating a number");
-      dashboardPage.postHttp(numbersUrl, {'pstn': pstn})
+      var data = {'pstn': pstn};
+      if (privateId) {
+        data["private_id"] = privateId;
+      }
+      dashboardPage.postHttp(numbersUrl, data)
         .done(dashboardPage.onNumberCreated);
-    };
-
-    $("#create-number-button").click(createNumberHandler);
-    $("#create-number-dropdown li").click(createNumberHandler);
+    }
   };
 
   dashboardPage.onNumberDeleted = function(data) {
@@ -107,112 +117,147 @@ var clearwater = (function(mod, $){
   };
 
   dashboardPage.populateTemplate = function(data) {
+    // Extract templates from HTML, sigh
     var templateRow = $("#template-number-list-row");
+    var publicIdRow = $("#template-public-id");
     var tbody = templateRow.parent();
     templateRow.remove();
     templateRow.removeClass("template");
+    publicIdRow.remove();
+    publicIdRow.removeClass("template");
     var numbers = data["numbers"];
-    $(".update-message").hide();
 
-    for (var i = 0; i < numbers.length; i++) {
-      (function(i) {
+    // Group numbers by private id
+    var grouped = {};
+    for (var n in numbers) {
+      var privateId = numbers[n]["private_id"];
+      if (privateId === undefined) {
+        log("Number did not have a private id associated");
+        break;
+      }
+      if (grouped[privateId] === undefined) {
+        grouped[privateId] = [];
+      }
+      grouped[privateId].push(numbers[n]);
+    }
+
+    var sortedPrivateIds = Object.keys(grouped).sort();
+    for (var privateId in sortedPrivateIds) {
+      (function(privateId, numberGroup) {
         var clone = templateRow.clone();
-        log("Adding cell for " + numbers[i]["number"]);
-        $(clone).find(".formatted-number").text(" " + numbers[i]["formatted_number"]);
-        var pstn_badge = $(clone).find(".pstn-badge");
-        if (numbers[i]['pstn']) {
-          $(pstn_badge).show();
-        } else {
-          $(pstn_badge).hide();
-        }
-        $(clone).find(".sip-uri-cell").text(numbers[i]["sip_username"]);
-
-        if (knownPasswords[numbers[i]["sip_uri"]]) {
-          $(clone).find(".password").text(knownPasswords[numbers[i]["sip_uri"]]);
+        var number = grouped[privateId][0];
+        // First setup UI associated with the private id
+        log("Adding cell for private id " + privateId);
+        $(clone).find(".private-id").text(privateId);
+        if (knownPasswords[number["sip_uri"]]) {
+          $(clone).find(".password").text(knownPasswords[number["sip_uri"]]);
           $(clone).find(".password").show();
           $(clone).find(".password-tip").show();
           $(clone).find(".password-unavailable").hide();
         }
-
-        if (numbers[i]["gab_listed"]) {
-          $(clone).find(".gab-cell-checkbox").attr('checked', 'checked');
-        } else {
-          $(clone).find(".gab-cell-checkbox").removeAttr('checked');
-        }
-        $(clone).find(".gab-cell-checkbox").click(function() {
-          log("Updating gab listed value for " + numbers[i]["formatted_number"]);
-          $(".update-message").show();
-          var newVal = $(clone).find(".gab-cell-checkbox").is(':checked') ? 1 : 0;
-          dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
-                        encodeURIComponent(numbers[i]["sip_uri"]) + "/listed/" +
-                        newVal + "/", {})
-                        .done(function() {
-                          setTimeout(function(){$(".update-message").hide()}, 500);
-                        });
-        });
-
         $(clone).find(".reset-password-button").click(function() {
           if (confirm("Are you sure you want to reset the password for this number?")) {
-            log("Resetting password for " + numbers[i]["formatted_number"]);
+            log("Resetting password for " + number["formatted_number"]);
             dashboardPage.postHttp(accUrlPrefix + "/numbers/" +
-                          encodeURIComponent(numbers[i]["sip_uri"]) + "/password",
+                          encodeURIComponent(number["sip_uri"]) + "/password",
                           {})
               .done(function(data) {
-                knownPasswords[numbers[i]["sip_uri"]] = data["sip_password"];
+                knownPasswords[number["sip_uri"]] = data["sip_password"];
                 mod.goToPage(dashboardPage);
               });
           }
         });
-        $(clone).find(".delete-button").click(function() {
-          if (confirm("Are you sure you want to delete this number?")) {
-            log("Resetting password for " + numbers[i]["formatted_number"]);
-            dashboardPage.deleteHttp(accUrlPrefix + "/numbers/" +
-                                      encodeURIComponent(numbers[i]["sip_uri"]))
-              .done(dashboardPage.onNumberDeleted);
-          }
-        });
-        $(clone).find(".edit-simservs-button").click(function() {
-          function displaySimservs(data){
-            dashboardPage.populateSimservsBox(numbers[i]["sip_uri"], $.parseXML(data));
-          }
 
-          dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
-                                encodeURIComponent(numbers[i]["sip_uri"]) + "/simservs",
-                                {})
-            .done(displaySimservs)
-            .fail(function() {
-              log("Failed to retrieve simservs.");
+        // Now spin through all the numbers, adding the UI for each
+        for (var n in numberGroup) {
+          (function(number) {
+            log("Adding cell for public id " + number);
+            var publicIdListContainer = $(clone).find(".public-id-list");
+            var publicIdRowClone = publicIdRow.clone();
+
+            $(publicIdRowClone).find(".sip-uri").text(number["sip_uri"]);
+
+            var pstn_badge = $(publicIdRowClone).find(".pstn-badge");
+            if (number['pstn']) {
+              $(pstn_badge).show();
+            } else {
+              $(pstn_badge).hide();
+            }
+
+            $(publicIdRowClone).find(".delete-button").click(function() {
+              if (confirm("Are you sure you want to delete this number?")) {
+                log("Resetting password for " + number["formatted_number"]);
+                dashboardPage.deleteHttp(accUrlPrefix + "/numbers/" +
+                                          encodeURIComponent(number["sip_uri"]))
+                  .done(dashboardPage.onNumberDeleted);
+              }
             });
-        });
+            $(publicIdRowClone).find(".configure-button").click(function() {
+              function displayConfigure(simservsData, gabData){
+                dashboardPage.populateConfigureModal(number["sip_uri"],
+                                                     $.parseXML(simservsData[0]),
+                                                     gabData[0]["gab_listed"]);
+              }
 
-        tbody.append(clone);
-      })(i);
+              var simservsGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
+                                                      encodeURIComponent(number["sip_uri"]) + "/simservs",
+                                                      {});
+              var gabGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
+                                                      encodeURIComponent(number["sip_uri"]) + "/listed",
+                                                      {});
+              // Fetch data in parallel, launching modal wehn all requests complete
+              $.when(simservsGet, gabGet)
+                .done(displayConfigure)
+                .fail(function() {
+                  log("Failed to retrieve simservs.");
+                });
+            });
+
+            publicIdListContainer.append(publicIdRowClone);
+          })(numberGroup[n]);
+        }
+
+        var handler = dashboardPage.numberCreator(privateId);
+        $(clone).find(".add-public-id-btn").click(handler);
+        $(clone).find(".add-public-id-dropdown li").click(handler);
+
+        tbody.find("#add-private-id-row").before(clone);
+      })(sortedPrivateIds[privateId], grouped[sortedPrivateIds[privateId]]);
     }
     if (numbers.length > 0) {
       $("#no-numbers").hide();
     } else {
       $("#no-numbers").show();
     }
+
+    // Must initialize bootstrap hovertips explicitly
+    $(".hovertip").tooltip();
   };
 
-  dashboardPage.populateSimservsBox = function(sip_uri, xml) {
+  dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed) {
     // We reuse the modal dialog, so be sure to cleanup when closing, see the cleanup() function below
-    var simservsModal = $("#simservs-modal");
-    var putXml = function(){
-      dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
-          encodeURIComponent(sip_uri) + "/simservs",
-          new XMLSerializer().serializeToString(xml))
+    var configureModal = $("#configure-modal");
+    var saveConfiguration = function(){
+      var putSimservs = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
+                                              encodeURIComponent(sip_uri) + "/simservs",
+                                              new XMLSerializer().serializeToString(xml));
+      var gabListed = gabCheckBox.is(':checked') ? 1 : 0;
+      var putGab = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
+                                         encodeURIComponent(sip_uri) + "/listed/" +
+                                         gabListed + "/", {});
+
+      $.when(putSimservs, putGab)
         .done(function(){
-          log("Updated simservs on server");
-          simservsModal.modal("hide");
+          log("Updated configuration on server");
+          configureModal.modal("hide");
         })
         .fail(function() {
-          log("Failed to put simservs.");
+          log("Failed to update configuration");
         });
     };
 
     // Bind action to put xml to save button
-    simservsModal.find("#save-simservs-button").click(putXml);
+    configureModal.find("#save-configure-button").click(saveConfiguration);
 
     // Optimized XML filter function to use instead of jQuery find where
     // namespaces are involved.
@@ -223,7 +268,7 @@ var clearwater = (function(mod, $){
     };
 
     // Cross-browser working xml.createELement replacement
-    // This is necessary in order to corretly work in both Chrome and Firefox. Firefox will automatically add 
+    // This is necessary in order to corretly work in both Chrome and Firefox. Firefox will automatically add
     // a namespace to an element if it is not specified, resulting in xmlns="" in added elements
     var makeXmlElement = function(nodeName) {
 	var nameSpace = nodeName.slice(0, 3) == "cp:" ? "urn:ietf:params:xml:ns:common-policy" : "http://uri.etsi.org/ngn/params/xml/simservs/xcap";
@@ -258,7 +303,7 @@ var clearwater = (function(mod, $){
 
     // Privacy
     // Connect caller ID checkbox to XML attribute
-    var callerIdCheckBox = simservsModal.find("#callerIdCheckBox");
+    var callerIdCheckBox = configureModal.find("#callerIdCheckBox");
     var callerIdXml = $(xml).find('originating-identity-presentation-restriction');
     var callerIdDefaultXml = callerIdXml.find('default-behaviour');
     var callerIdEnabled = callerIdXml.attr("active") == "true" &&
@@ -272,27 +317,31 @@ var clearwater = (function(mod, $){
                     "presentation-not-restricted" : "presentation-restricted");
     });
 
+    // GAB availability
+    var gabCheckBox = configureModal.find("#gabCheckBox");
+    gabCheckBox.prop("checked", gabListed);
+
     // Redirect
     addNodeIfMissing($(xml).find('simservs'), 'communication-diversion', {'active': 'false'});
     var callDiversionXml = $(xml).find('communication-diversion');
 
     // Connect call diversion checkbox to XML attribute
-    var callDiversionCheckBox = simservsModal.find("#callDiversionCheckBox");
+    var callDiversionCheckBox = configureModal.find("#callDiversionCheckBox");
     var callDiversionEnabled = callDiversionXml.attr("active") == "true";
     callDiversionCheckBox.prop("checked", callDiversionEnabled);
     callDiversionCheckBox.click(function(){
       callDiversionXml.attr("active", callDiversionCheckBox.prop("checked"));
       if (callDiversionCheckBox.prop("checked")) {
-        simservsModal.find(".redirect-rule-inactive").hide();
+        configureModal.find(".redirect-rule-inactive").hide();
       }
       else {
-        simservsModal.find(".redirect-rule-inactive").show();
+        configureModal.find(".redirect-rule-inactive").show();
       }
     });
 
     // Connect no-reply-timer dropdown to XML attribute
     addNodeIfMissing(callDiversionXml, 'NoReplyTimer', {}, '20');
-    var noReplyTimerDropdown = simservsModal.find("#no-reply-timer-dropdown");
+    var noReplyTimerDropdown = configureModal.find("#no-reply-timer-dropdown");
     var noReplyTimer = callDiversionXml.find('NoReplyTimer').text();
 
     // Get user friendly names for timeouts
@@ -300,16 +349,16 @@ var clearwater = (function(mod, $){
     noReplyTimerDropdown.find("li").each(function(i, element){
       timeoutDescriptions[$(element).data("timer")] = $(element).find("a").text();
     });
-    simservsModal.find("#no-reply-timer-value").text(timeoutDescriptions[noReplyTimer] || noReplyTimer + " seconds ");
+    configureModal.find("#no-reply-timer-value").text(timeoutDescriptions[noReplyTimer] || noReplyTimer + " seconds ");
     noReplyTimerDropdown.find("li:not(.disabled)").each(function(i, timerElement){
       $(timerElement).click(function(){
         var timer = $(timerElement).data("timer");
-        simservsModal.find("#no-reply-timer-value").text(timeoutDescriptions[timer] || timer + " seconds ");
+        configureModal.find("#no-reply-timer-value").text(timeoutDescriptions[timer] || timer + " seconds ");
         callDiversionXml.find('NoReplyTimer').text(timer);
       });
     });
 
-    var rulesAccordion = simservsModal.find("#rules-accordion");
+    var rulesAccordion = configureModal.find("#rules-accordion");
     var templateRule = rulesAccordion.find(".redirect-rule.template");
 
     // Helper function for adding a rule
@@ -326,7 +375,7 @@ var clearwater = (function(mod, $){
       rulesAccordion.append(rule);
       rule.show('fast');
 
-      var callDiversionEnabled = simservsModal.find("#callDiversionCheckBox").prop("checked");
+      var callDiversionEnabled = configureModal.find("#callDiversionCheckBox").prop("checked");
       if (callDiversionEnabled) {
         rule.find(".redirect-rule-inactive").hide();
       }
@@ -489,7 +538,7 @@ var clearwater = (function(mod, $){
     callDiversionXml.find("rule").each(addRule);
 
     // Click handler for new rule button, creates new XML node and UI for rule
-    simservsModal.find("#redirect-new-rule-button").click(function(){
+    configureModal.find("#redirect-new-rule-button").click(function(){
       addNodeIfMissing($(xml).find('communication-diversion'), 'cp:ruleset');
 
       // Pretty verbose, but taking shortcuts leads to jQuery adding a default xmlns
@@ -512,7 +561,7 @@ var clearwater = (function(mod, $){
     });
 
     // Barring
-    var barringPane = simservsModal.find("#barring-pane");
+    var barringPane = configureModal.find("#barring-pane");
     var setupBarring = function(direction) {
       // Generate any needed XML if it is missing
       addNodeIfMissing($(xml).find('simservs'), direction + '-communication-barring', {'active': 'true'});
@@ -550,23 +599,23 @@ var clearwater = (function(mod, $){
     // As we reuse the same modal dialog we need to do some cleanup, eg unbind click handlers
     // so they don't get duplicated and any elements cloned from templates
     var cleanup = function(){
-      simservsModal.find("#save-simservs-button").unbind("click");
+      configureModal.find("#save-configure-button").unbind("click");
       callerIdCheckBox.unbind("click");
       callDiversionCheckBox.unbind("click");
-      simservsModal.find("#redirect-new-rule-button").unbind("click");
+      configureModal.find("#redirect-new-rule-button").unbind("click");
       barringPane.find(".barring-radio").unbind("click");
-      simservsModal.find(".redirect-rule:not(.template)").remove();
-      simservsModal.find(".redirect-condition:not(.template)").remove();
+      configureModal.find(".redirect-rule:not(.template)").remove();
+      configureModal.find(".redirect-condition:not(.template)").remove();
     };
 
-    simservsModal.on('hidden', function(){
+    configureModal.on('hidden', function(){
       // 'hidden' can be triggered by other elements, so check the modal really has been hidden
-      if (!simservsModal.is(":visible")) {
+      if (!configureModal.is(":visible")) {
         cleanup();
       }
     });
 
-  }; // dashboardPage.populateSimservsBox()
+  }; // dashboardPage.populateConfigureModal()
 
   var hashValue = mod.parseUrl()["hash"];
   if (hashValue && hashValue.indexOf("first") != -1) {

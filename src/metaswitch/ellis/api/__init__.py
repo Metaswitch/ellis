@@ -73,6 +73,8 @@ URLS = [
     (PATH_PREFIX + r'accounts/([^/]*)/numbers/([^/]*)/simservs/?$', numbers.SimservsHandler),
     # Read/write iFCs from Homestead for number
     (PATH_PREFIX + r'accounts/([^/]*)/numbers/([^/]*)/ifcs/?$', numbers.IFCsHandler),
+    # GAB availability
+    (PATH_PREFIX + r'accounts/([^/]*)/numbers/([^/]*)/listed/?$', numbers.NumberGabListedHandler),
     # GAB availability update
     (PATH_PREFIX + r'accounts/([^/]*)/numbers/([^/]*)/listed/([0-1])/?$', numbers.NumberGabListedHandler),
 
