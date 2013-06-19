@@ -85,15 +85,25 @@ var clearwater = (function(mod, $){
         log("Failed to retrieve numbers.");
         $("#numbers-error").show();
       });
-    var createNumberHandler = function(e) {
+
+    var handler = dashboardPage.numberCreator();
+    $("#create-number-button").click(handler);
+    $("#create-number-dropdown li").click(handler);
+  };
+
+  // Given a private id, generates a function for creating numbers associated
+  // with that id. For unassociated numbers, do not pass in a private id
+  dashboardPage.numberCreator = function(privateId) {
+    return function(e) {
       var pstn = $(this).data("pstn");
       log("Creating a number");
-      dashboardPage.postHttp(numbersUrl, {'pstn': pstn})
+      var data = {'pstn': pstn};
+      if (privateId) {
+        data["private_id"] = privateId;
+      }
+      dashboardPage.postHttp(numbersUrl, data)
         .done(dashboardPage.onNumberCreated);
-    };
-
-    $("#create-number-button").click(createNumberHandler);
-    $("#create-number-dropdown li").click(createNumberHandler);
+    }
   };
 
   dashboardPage.onNumberDeleted = function(data) {
@@ -107,81 +117,120 @@ var clearwater = (function(mod, $){
   };
 
   dashboardPage.populateTemplate = function(data) {
+    // Extract templates from HTML, sigh
     var templateRow = $("#template-number-list-row");
+    var publicIdRow = $("#template-public-id");
     var tbody = templateRow.parent();
     templateRow.remove();
     templateRow.removeClass("template");
+    publicIdRow.remove();
+    publicIdRow.removeClass("template");
     var numbers = data["numbers"];
 
-    for (var i = 0; i < numbers.length; i++) {
-      (function(i) {
-        var clone = templateRow.clone();
-        log("Adding cell for " + numbers[i]["number"]);
-        $(clone).find(".formatted-number").text(" " + numbers[i]["formatted_number"]);
-        var pstn_badge = $(clone).find(".pstn-badge");
-        if (numbers[i]['pstn']) {
-          $(pstn_badge).show();
-        } else {
-          $(pstn_badge).hide();
-        }
-        $(clone).find(".sip-uri-cell").text(numbers[i]["sip_username"]);
+    // Group numbers by private id
+    var grouped = {};
+    for (var n in numbers) {
+      var privateId = numbers[n]["private_id"];
+      if (privateId === undefined) {
+        log("Number did not have a private id associated");
+        break;
+      }
+      if (grouped[privateId] === undefined) {
+        grouped[privateId] = [];
+      }
+      grouped[privateId].push(numbers[n]);
+    }
 
-        if (knownPasswords[numbers[i]["sip_uri"]]) {
-          $(clone).find(".password").text(knownPasswords[numbers[i]["sip_uri"]]);
+    for (var privateId in grouped) {
+      (function(privateId, numberGroup) {
+        var clone = templateRow.clone();
+        var number = grouped[privateId][0];
+        // First setup UI associated with the private id
+        log("Adding cell for private id " + privateId);
+        $(clone).find(".private-id").text(privateId);
+        if (knownPasswords[number["sip_uri"]]) {
+          $(clone).find(".password").text(knownPasswords[number["sip_uri"]]);
           $(clone).find(".password").show();
           $(clone).find(".password-tip").show();
           $(clone).find(".password-unavailable").hide();
         }
-
         $(clone).find(".reset-password-button").click(function() {
           if (confirm("Are you sure you want to reset the password for this number?")) {
-            log("Resetting password for " + numbers[i]["formatted_number"]);
+            log("Resetting password for " + number["formatted_number"]);
             dashboardPage.postHttp(accUrlPrefix + "/numbers/" +
-                          encodeURIComponent(numbers[i]["sip_uri"]) + "/password",
+                          encodeURIComponent(number["sip_uri"]) + "/password",
                           {})
               .done(function(data) {
-                knownPasswords[numbers[i]["sip_uri"]] = data["sip_password"];
+                knownPasswords[number["sip_uri"]] = data["sip_password"];
                 mod.goToPage(dashboardPage);
               });
           }
         });
-        $(clone).find(".delete-button").click(function() {
-          if (confirm("Are you sure you want to delete this number?")) {
-            log("Resetting password for " + numbers[i]["formatted_number"]);
-            dashboardPage.deleteHttp(accUrlPrefix + "/numbers/" +
-                                      encodeURIComponent(numbers[i]["sip_uri"]))
-              .done(dashboardPage.onNumberDeleted);
-          }
-        });
-        $(clone).find(".configure-button").click(function() {
-          function displayConfigure(simservsData, gabData){
-            dashboardPage.populateConfigureModal(numbers[i]["sip_uri"],
-                                                 $.parseXML(simservsData[0]),
-                                                 gabData[0]["gab_listed"]);
-          }
 
-          var simservsGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
-                                                  encodeURIComponent(numbers[i]["sip_uri"]) + "/simservs",
-                                                  {});
-          var gabGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
-                                                  encodeURIComponent(numbers[i]["sip_uri"]) + "/listed",
-                                                  {});
-          // Fetch data in parallel, launching modal when all requests complete
-          $.when(simservsGet, gabGet)
-            .done(displayConfigure)
-            .fail(function() {
-              log("Failed to retrieve simservs.");
+        // Now spin through all the numbers, adding the UI for each
+        for (var n in numberGroup) {
+          (function(number) {
+            log("Adding cell for public id " + number);
+            var publicIdListContainer = $(clone).find(".public-id-list");
+            var publicIdRowClone = publicIdRow.clone();
+
+            $(publicIdRowClone).find(".sip-uri").text(number["sip_uri"]);
+
+            var pstn_badge = $(publicIdRowClone).find(".pstn-badge");
+            if (number['pstn']) {
+              $(pstn_badge).show();
+            } else {
+              $(pstn_badge).hide();
+            }
+
+            $(publicIdRowClone).find(".delete-button").click(function() {
+              if (confirm("Are you sure you want to delete this number?")) {
+                log("Resetting password for " + number["formatted_number"]);
+                dashboardPage.deleteHttp(accUrlPrefix + "/numbers/" +
+                                          encodeURIComponent(number["sip_uri"]))
+                  .done(dashboardPage.onNumberDeleted);
+              }
             });
-        });
+            $(publicIdRowClone).find(".configure-button").click(function() {
+              function displayConfigure(simservsData, gabData){
+                dashboardPage.populateConfigureModal(number["sip_uri"],
+                                                     $.parseXML(simservsData[0]),
+                                                     gabData[0]["gab_listed"]);
+              }
 
-        tbody.append(clone);
-      })(i);
+              var simservsGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
+                                                      encodeURIComponent(number["sip_uri"]) + "/simservs",
+                                                      {});
+              var gabGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
+                                                      encodeURIComponent(number["sip_uri"]) + "/listed",
+                                                      {});
+              // Fetch data in parallel, launching modal wehn all requests complete
+              $.when(simservsGet, gabGet)
+                .done(displayConfigure)
+                .fail(function() {
+                  log("Failed to retrieve simservs.");
+                });
+            });
+
+            publicIdListContainer.append(publicIdRowClone);
+          })(numberGroup[n]);
+        }
+
+        var handler = dashboardPage.numberCreator(privateId);
+        $(clone).find(".add-public-id-btn").click(handler);
+        $(clone).find(".add-public-id-dropdown li").click(handler);
+
+        tbody.find("#add-private-id-row").before(clone);
+      })(privateId, grouped[privateId]);
     }
     if (numbers.length > 0) {
       $("#no-numbers").hide();
     } else {
       $("#no-numbers").show();
     }
+
+    // Must initialize bootstrap hovertips explicitly
+    $(".hovertip").tooltip();
   };
 
   dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed) {

@@ -35,36 +35,36 @@
 
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Clearwater</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="">
-<meta name="author" content="">
+  <meta charset="utf-8">
+  <title>Clearwater</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
 
-<!-- Styles -->
-<link href="css/bootstrap.min.css" rel="stylesheet">
-<style>
-body {
-  padding-top: 60px;
-  /* 60px to make the container go all the way to the bottom of the topbar */
-}
-</style>
-<link href="css/bootstrap-responsive.css" rel="stylesheet">
-<link href="css/fileuploader.css" rel="stylesheet">
-<link href="css/jquery.miniColors.css" rel="stylesheet">
+  <!-- Styles -->
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding-top: 60px;
+      /* 60px to make the container go all the way to the bottom of the topbar */
+    }
+  </style>
+  <link href="css/bootstrap-responsive.css" rel="stylesheet">
+  <link href="css/fileuploader.css" rel="stylesheet">
+  <link href="css/jquery.miniColors.css" rel="stylesheet">
 
-<link href="css/style.css" rel="stylesheet">
+  <link href="css/style.css" rel="stylesheet">
 
-<!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
-<!--[if lt IE 9]>
-      <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+  <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+  <!--[if lt IE 9]>
+  <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+  <![endif]-->
 
-<!-- Le fav and touch icons -->
-<link rel="shortcut icon" href="images/favicon.ico">
-<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
-<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
-<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+  <!-- Le fav and touch icons -->
+  <link rel="shortcut icon" href="images/favicon.ico">
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
 </head>
 
 <body>
@@ -97,52 +97,79 @@ body {
   <!-- DASHBOARD PAGE -->
 
   <div class="container" id="dashboard" style="display: none">
-    <div class="button-bar">
-        <div class="btn-group">
-            <button class="btn btn-primary" id="create-number-button" data-pstn="false">
-                <i class="icon-plus icon-white"></i> Add number
-            </button>
-            <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
-                <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu" id="create-number-dropdown">
-                <li data-pstn="false"><a href="javascript:void(0)">Internal</a></li>
-                <li data-pstn="true"><a href="javascript:void(0)">PSTN</a></li>
-            </ul>
-        </div>
-    </div>
-
-    <table class="table table-bordered"
-           id="number-list">
+    <table class="table table-hover" id="number-list">
       <thead>
         <tr>
-          <th>Phone number</th>
-          <th>SIP Username</th>
-          <th>SIP Password</th>
-          <th>Actions</th>
-        </tr>
+          <th class="private-col"></th>
+          <th class="public-col"></th>
+      </tr>
       </thead>
       <tbody>
         <tr id="template-number-list-row" class="template">
-          <td class="number-cell">
-            <span class="pstn-badge badge" style="display:none">PSTN</span>
-            <span class="formatted-number">1 (800) 1234-555</span>
+          <td class="private-id-cell">
+            <blockquote>
+                <p><span class="pstn-badge badge" style="display:none">PSTN</span>
+                <span class="private-id">1235550000@cw-ngv.com</span></p>
+              <button class="reset-password-button btn btn-small btn-action pull-right">Reset</button>
+              <div>
+                <span>Password: </span>
+                <strong class="password">Not available</strong>
+              </div>
+              <a class="password-shown-once hovertip"
+                 data-placement="bottom"
+                 title="Passwords are stored securely and can only be displayed once. If you need a new password, click the reset password button on the right.">only shown once</a>
+            </blockquote>
           </td>
-          <td class="sip-uri-cell">sip:18001234555@a-tel.co</td>
-          <td class="sip-password-cell">
-            <button class="reset-password-button btn btn-small pull-right">Reset</button>
-            <div class="password" style="display: none;">
-            </div>
-            <a title="Passwords are stored securely and can only be displayed once."
-                  class="password-tip hovertip" style="display: none;">Password only shown once</a>
-            <span class="password-unavailable">
-                <a title="Passwords are stored securely and can only be displayed once. If you need a new password, click the reset password button on the right." class="hovertip">Not available</a>
-            </span>
+          <td class="sip-uri-cell">
+            <blockquote>
+              <p>Associated Public Identities:</p>
+              <div class="public-id-list">
+                <div id="template-public-id" class="template">
+                  <span class="sip-uri">sip:11235550000@cw-ngv.com</span>
+                  <button class="configure-button btn btn-small btn-action" href="#configure-modal" data-toggle="modal">Configure</button>
+                  <button class="delete-button btn btn-small btn-danger btn-action">Delete</button>
+                </div>
+              </div>
+              <div class="button-bar">
+                <div class="btn-group">
+                  <button class="btn btn-small add-public-id-btn" data-pstn="false">New Public Identity</button>
+                  <button class="btn btn-small dropdown-toggle" data-toggle="dropdown">
+                    <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu add-public-id-dropdown">
+                    <li data-pstn="false"><a href="javascript:void(0)">Internal</a></li>
+                    <li data-pstn="true"><a href="javascript:void(0)">PSTN</a></li>
+                  </ul>
+                </div>
+              </div>
+            </blockquote>
           </td>
-          <td class="actions-cell">
-            <button class="configure-button btn btn-small" href="#configure-modal" data-toggle="modal"><i class="icon-edit"></i> Configure</button>
-            <button class="delete-button btn btn-small btn-danger"><i class="icon-trash icon-white"></i> Delete</button>
+        </tr>
+        <tr id="add-private-id-row">
+          <td>
+            <blockquote>
+              <p>Add Private Identity</p>
+              <span class="button-bar pull-right">
+                <div class="btn-group btn-action">
+                  <button class="btn btn-small" id="create-number-button" data-pstn="false">Create</button>
+                  <button class="btn btn-small dropdown-toggle" data-toggle="dropdown">
+                    <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu" id="create-number-dropdown">
+                    <li data-pstn="false"><a href="javascript:void(0)">Internal</a></li>
+                    <li data-pstn="true"><a href="javascript:void(0)">PSTN</a></li>
+                  </ul>
+                </div>
+              </span>
+              <div>
+                <span>Create new Private Identity</span>
+              </div>
+              <a class="hovertip"
+                 data-placement="bottom"
+                 title="Use the button on the right to create a new Private Identity. A Public Identity associated with the Private Identity will be created automatically.">details</a>
+            </blockquote>
           </td>
+          <td></td>
         </tr>
       </tbody>
     </table>
@@ -315,21 +342,6 @@ body {
   <script type="text/javascript" src="js/jquery.cookie.js"></script>
   <script type="text/javascript" src="js/jquery.total-storage.min.js"></script>
   <script type="text/javascript" src="js/bootstrap.min.js"></script>
-
-  <!--
-    <script src="js/bootstrap-transition.js"></script>
-    <script src="js/bootstrap-alert.js"></script>
-    <script src="js/bootstrap-modal.js"></script>
-    <script src="js/bootstrap-dropdown.js"></script>
-    <script src="js/bootstrap-scrollspy.js"></script>
-    <script src="js/bootstrap-tab.js"></script>
-    <script src="js/bootstrap-tooltip.js"></script>
-    <script src="js/bootstrap-popover.js"></script>
-    <script src="js/bootstrap-button.js"></script>
-    <script src="js/bootstrap-collapse.js"></script>
-    <script src="js/bootstrap-carousel.js"></script>
-    <script src="js/bootstrap-typeahead.js"></script>
-    -->
 
   <script src="js/common.js"></script>
   <script src="js/app.js"></script>

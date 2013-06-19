@@ -170,3 +170,28 @@ input.barring-radio {
     margin: 0px;
     vertical-align: baseline;
 }
+
+table {
+    table-layout: fixed;
+}
+
+th.private-col {
+    width: 30%;
+}
+
+th.public-col {
+    width: 50%;
+}
+
+td .hovertip {
+    font-size: 80%;
+}
+
+td .btn-action {
+    margin: 4px;
+    min-width: 80px;
+}
+
+td.sip-uri-cell .configure-button {
+    margin-left: 60px;
+}
