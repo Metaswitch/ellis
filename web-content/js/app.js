@@ -107,10 +107,14 @@ var clearwater = (function(mod, $){
   };
 
   dashboardPage.populateTemplate = function(data) {
+    // Extract templates from HTML, sigh
     var templateRow = $("#template-number-list-row");
+    var publicIdRow = $("#template-public-id");
     var tbody = templateRow.parent();
     templateRow.remove();
     templateRow.removeClass("template");
+    publicIdRow.remove();
+    publicIdRow.removeClass("template");
     var numbers = data["numbers"];
 
     // Group numbers by private id
@@ -128,26 +132,18 @@ var clearwater = (function(mod, $){
     }
 
     for (var privateId in grouped) {
-      (function(privateId) {
+      (function(privateId, numberGroup) {
         var clone = templateRow.clone();
         var number = grouped[privateId][0];
-        log("Adding cell for " + number["number"]);
-        $(clone).find(".private-id").text(" " + number["private_id"]);
-        $(clone).find(".sip-uri").text(number["sip_uri"]);
-        var pstn_badge = $(clone).find(".pstn-badge");
-        if (number['pstn']) {
-          $(pstn_badge).show();
-        } else {
-          $(pstn_badge).hide();
-        }
-
+        // First setup UI associated with the private id
+        log("Adding cell for private id " + privateId);
+        $(clone).find(".private-id").text(privateId);
         if (knownPasswords[number["sip_uri"]]) {
           $(clone).find(".password").text(knownPasswords[number["sip_uri"]]);
           $(clone).find(".password").show();
           $(clone).find(".password-tip").show();
           $(clone).find(".password-unavailable").hide();
         }
-
         $(clone).find(".reset-password-button").click(function() {
           if (confirm("Are you sure you want to reset the password for this number?")) {
             log("Resetting password for " + number["formatted_number"]);
@@ -160,46 +156,68 @@ var clearwater = (function(mod, $){
               });
           }
         });
-        $(clone).find(".delete-button").click(function() {
-          if (confirm("Are you sure you want to delete this number?")) {
-            log("Resetting password for " + number["formatted_number"]);
-            dashboardPage.deleteHttp(accUrlPrefix + "/numbers/" +
-                                      encodeURIComponent(number["sip_uri"]))
-              .done(dashboardPage.onNumberDeleted);
-          }
-        });
-        $(clone).find(".configure-button").click(function() {
-          function displayConfigure(simservsData, gabData){
-            dashboardPage.populateConfigureModal(number["sip_uri"],
-                                                 $.parseXML(simservsData[0]),
-                                                 gabData[0]["gab_listed"]);
-          }
 
-          var simservsGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
-                                                  encodeURIComponent(number["sip_uri"]) + "/simservs",
-                                                  {});
-          var gabGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
-                                                  encodeURIComponent(number["sip_uri"]) + "/listed",
-                                                  {});
-          // Fetch data in parallel, launching modal wehn all requests complete
-          $.when(simservsGet, gabGet)
-            .done(displayConfigure)
-            .fail(function() {
-              log("Failed to retrieve simservs.");
+        // Now spin through all the numbers, adding the UI for each
+        // For now just do first number
+        for (var n in numberGroup) {
+          (function(number) {
+            log("Adding cell for public id " + number);
+            var publicIdListContainer = $(clone).find(".public-id-list");
+            var publicIdRowClone = publicIdRow.clone();
+
+            $(publicIdRowClone).find(".sip-uri").text(number["sip_uri"]);
+
+            var pstn_badge = $(publicIdRowClone).find(".pstn-badge");
+            if (number['pstn']) {
+              $(pstn_badge).show();
+            } else {
+              $(pstn_badge).hide();
+            }
+
+            $(publicIdRowClone).find(".delete-button").click(function() {
+              if (confirm("Are you sure you want to delete this number?")) {
+                log("Resetting password for " + number["formatted_number"]);
+                dashboardPage.deleteHttp(accUrlPrefix + "/numbers/" +
+                                          encodeURIComponent(number["sip_uri"]))
+                  .done(dashboardPage.onNumberDeleted);
+              }
             });
-        });
+            $(publicIdRowClone).find(".configure-button").click(function() {
+              function displayConfigure(simservsData, gabData){
+                dashboardPage.populateConfigureModal(number["sip_uri"],
+                                                     $.parseXML(simservsData[0]),
+                                                     gabData[0]["gab_listed"]);
+              }
+
+              var simservsGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
+                                                      encodeURIComponent(number["sip_uri"]) + "/simservs",
+                                                      {});
+              var gabGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
+                                                      encodeURIComponent(number["sip_uri"]) + "/listed",
+                                                      {});
+              // Fetch data in parallel, launching modal wehn all requests complete
+              $.when(simservsGet, gabGet)
+                .done(displayConfigure)
+                .fail(function() {
+                  log("Failed to retrieve simservs.");
+                });
+            });
+
+            publicIdListContainer.append(publicIdRowClone);
+          })(numberGroup[n]);
+        }
 
         tbody.find("#add-private-id-row").before(clone);
-      })(privateId);
-
-      // Must initialize bootstrap hovertips explicitly
-      $(".hovertip").tooltip();
+      })(privateId, grouped[privateId]);
     }
     if (numbers.length > 0) {
       $("#no-numbers").hide();
     } else {
       $("#no-numbers").show();
     }
+
+    // Must initialize bootstrap hovertips explicitly
+    $(".hovertip").tooltip();
   };
 
   dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed) {
