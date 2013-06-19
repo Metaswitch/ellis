@@ -224,6 +224,8 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
             len(public_ids) > 1):
             # Do not permit deletion of an original public identity if others exist
             # otherwise another may claim the same private id from the pool
+            _log.error("Failed to delete default public ID %s while other IDs are attached to the same private ID" % sip_uri);
+            _log.error("Other public IDs are %s" % ", ".join(public_ids))
             on_failure(responses[0])
         else:
             # Only delete the digest if there is only a single private identity
