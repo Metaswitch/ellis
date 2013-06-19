@@ -113,21 +113,36 @@ var clearwater = (function(mod, $){
     templateRow.removeClass("template");
     var numbers = data["numbers"];
 
-    for (var i = 0; i < numbers.length; i++) {
-      (function(i) {
+    // Group numbers by private id
+    var grouped = {};
+    for (var n in numbers) {
+      var privateId = numbers[n]["private_id"];
+      if (privateId === undefined) {
+        log("Number did not have a private id associated");
+        break;
+      }
+      if (grouped[privateId] === undefined) {
+        grouped[privateId] = [];
+      }
+      grouped[privateId].push(numbers[n]);
+    }
+
+    for (var privateId in grouped) {
+      (function(privateId) {
         var clone = templateRow.clone();
-        log("Adding cell for " + numbers[i]["number"]);
-        $(clone).find(".private-id").text(" " + numbers[i]["private_id"]);
-        $(clone).find(".sip-uri").text(numbers[i]["sip_uri"]);
+        var number = grouped[privateId][0];
+        log("Adding cell for " + number["number"]);
+        $(clone).find(".private-id").text(" " + number["private_id"]);
+        $(clone).find(".sip-uri").text(number["sip_uri"]);
         var pstn_badge = $(clone).find(".pstn-badge");
-        if (numbers[i]['pstn']) {
+        if (number['pstn']) {
           $(pstn_badge).show();
         } else {
           $(pstn_badge).hide();
         }
 
-        if (knownPasswords[numbers[i]["sip_uri"]]) {
-          $(clone).find(".password").text(knownPasswords[numbers[i]["sip_uri"]]);
+        if (knownPasswords[number["sip_uri"]]) {
+          $(clone).find(".password").text(knownPasswords[number["sip_uri"]]);
           $(clone).find(".password").show();
           $(clone).find(".password-tip").show();
           $(clone).find(".password-unavailable").hide();
@@ -135,36 +150,36 @@ var clearwater = (function(mod, $){
 
         $(clone).find(".reset-password-button").click(function() {
           if (confirm("Are you sure you want to reset the password for this number?")) {
-            log("Resetting password for " + numbers[i]["formatted_number"]);
+            log("Resetting password for " + number["formatted_number"]);
             dashboardPage.postHttp(accUrlPrefix + "/numbers/" +
-                          encodeURIComponent(numbers[i]["sip_uri"]) + "/password",
+                          encodeURIComponent(number["sip_uri"]) + "/password",
                           {})
               .done(function(data) {
-                knownPasswords[numbers[i]["sip_uri"]] = data["sip_password"];
+                knownPasswords[number["sip_uri"]] = data["sip_password"];
                 mod.goToPage(dashboardPage);
               });
           }
         });
         $(clone).find(".delete-button").click(function() {
           if (confirm("Are you sure you want to delete this number?")) {
-            log("Resetting password for " + numbers[i]["formatted_number"]);
+            log("Resetting password for " + number["formatted_number"]);
             dashboardPage.deleteHttp(accUrlPrefix + "/numbers/" +
-                                      encodeURIComponent(numbers[i]["sip_uri"]))
+                                      encodeURIComponent(number["sip_uri"]))
               .done(dashboardPage.onNumberDeleted);
           }
         });
         $(clone).find(".configure-button").click(function() {
           function displayConfigure(simservsData, gabData){
-            dashboardPage.populateConfigureModal(numbers[i]["sip_uri"],
+            dashboardPage.populateConfigureModal(number["sip_uri"],
                                                  $.parseXML(simservsData[0]),
                                                  gabData[0]["gab_listed"]);
           }
 
           var simservsGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
-                                                  encodeURIComponent(numbers[i]["sip_uri"]) + "/simservs",
+                                                  encodeURIComponent(number["sip_uri"]) + "/simservs",
                                                   {});
           var gabGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
-                                                  encodeURIComponent(numbers[i]["sip_uri"]) + "/listed",
+                                                  encodeURIComponent(number["sip_uri"]) + "/listed",
                                                   {});
           // Fetch data in parallel, launching modal wehn all requests complete
           $.when(simservsGet, gabGet)
@@ -175,7 +190,7 @@ var clearwater = (function(mod, $){
         });
 
         tbody.find("#add-private-id-row").before(clone);
-      })(i);
+      })(privateId);
 
       // Must initialize bootstrap hovertips explicitly
       $(".hovertip").tooltip();
