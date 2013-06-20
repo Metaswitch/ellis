@@ -352,7 +352,7 @@ class TestNumberHandler(BaseTest):
 
         # Asserts
         get_associated_privates.assert_called_once_with(sip_uri, ANY)
-        HTTPCallbackGroup.assert_called_once_with(ANY, on_failure_handler)
+        HTTPCallbackGroup.assert_called_once_with(ANY, ANY)
 
         # Extract inner function and can call it with response
         on_get_privates_success = HTTPCallbackGroup.call_args[0][0]
@@ -381,6 +381,37 @@ class TestNumberHandler(BaseTest):
                                                    last_public_id,
                                                    on_success_handler,
                                                    on_failure_handler)
+
+    @patch("metaswitch.ellis.remote.homestead.get_associated_privates")
+    @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
+    @patch("metaswitch.ellis.data.numbers.remove_owner")
+    def test_remove_broken_public_id(self, remove_owner,
+                                           HTTPCallbackGroup,
+                                           get_associated_privates):
+        # Setup
+        HTTPCallbackGroup.return_value = MagicMock()
+        on_success_handler = MagicMock()
+        on_failure_handler = MagicMock()
+        self.handler.send_error = MagicMock()
+        sip_uri = SIP_URI2
+
+        # Test
+        numbers.remove_public_id(self.db_sess,
+                                 sip_uri,
+                                 on_success_handler,
+                                 on_failure_handler)
+
+        # Fail the Priv->Pub lookup
+        get_associated_privates.assert_called_once_with(sip_uri, ANY)
+        HTTPCallbackGroup.assert_called_once_with(ANY, ANY)
+        failure_callback = HTTPCallbackGroup.call_args[0][1]
+        failure_callback({})
+
+        # Asserts
+        remove_owner.assert_called_once_with(self.db_sess, sip_uri)
+        self.db_sess.commit.assert_called_once()
+        on_success_handler.assert_called_once_with({})
+
 
     def test_delete_number(self):
         self.delete_number(True)
