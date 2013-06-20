@@ -239,6 +239,7 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
         _log.debug("Returning %s to the pool" % sip_uri)
         numbers.remove_owner(db_sess, sip_uri)
         db_sess.commit()
+        on_success({})
 
     request_group = HTTPCallbackGroup(_on_get_privates_success, on_failure)
     homestead.get_associated_privates(sip_uri, request_group.callback())
