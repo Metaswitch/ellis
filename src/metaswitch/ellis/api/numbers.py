@@ -213,7 +213,7 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
         # We only support one private id per public id, so only pull out first in list
         private_id = parsed_body["private_ids"][0]
         request_group2 = HTTPCallbackGroup(_on_get_publics_success, on_failure)
-        homestead.get_associated_publics(private_id, request_group2)
+        homestead.get_associated_publics(private_id, request_group2.callback())
 
     def _on_get_publics_success(responses):
         _log.debug("Got related public ids")
@@ -224,6 +224,8 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
             len(public_ids) > 1):
             # Do not permit deletion of an original public identity if others exist
             # otherwise another may claim the same private id from the pool
+            _log.error("Failed to delete default public ID %s while other IDs are attached to the same private ID" % sip_uri);
+            _log.error("Other public IDs are %s" % ", ".join(public_ids))
             on_failure(responses[0])
         else:
             # Only delete the digest if there is only a single private identity
@@ -232,7 +234,7 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
             _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure)
 
     request_group = HTTPCallbackGroup(_on_get_privates_success, on_failure)
-    homestead.get_associated_privates(sip_uri, request_group)
+    homestead.get_associated_privates(sip_uri, request_group.callback())
 
 def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure):
     """
@@ -245,9 +247,8 @@ def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_f
     # Concurrently, delete data from Homestead and Homer
     request_group = HTTPCallbackGroup(on_success, on_failure)
     if delete_digest:
-        homestead.delete_password(private_id, sip_uri, request_group.callback())
-    else:
-        homestead.delete_associated_public(private_id, sip_uri, request_group.callback())
+        homestead.delete_password(private_id, request_group.callback())
+    homestead.delete_associated_public(private_id, sip_uri, request_group.callback())
     homestead.delete_filter_criteria(sip_uri, request_group.callback())
     xdm.delete_simservs(sip_uri, request_group.callback())
 
