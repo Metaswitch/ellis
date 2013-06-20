@@ -252,6 +252,39 @@ class TestNumbersHandler(BaseTest):
             post_response["private_id"] = "generated_private_id"
         self.handler.finish.assert_called_once_with(post_response)
 
+    @patch("metaswitch.ellis.remote.homestead.post_associated_public")
+    @patch("metaswitch.common.utils.generate_sip_password")
+    @patch("metaswitch.common.utils.sip_public_id_to_private")
+    @patch("metaswitch.ellis.data.numbers.allocate_number")
+    @patch("metaswitch.ellis.data.numbers.get_number")
+    @patch("metaswitch.ellis.api.numbers.remove_public_id")
+    def test_post_homestead_failure(self, remove_public_id,
+                                          get_number,
+                                          allocate_number,
+                                          sip_pub_to_priv,
+                                          gen_sip_pass,
+                                          post_associated_public):
+        # Setup
+        self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
+        self.request.arguments = {}
+        self.request.arguments["private_id"] = [PRIVATE_ID]
+        allocate_number.return_value = NUMBER_ID
+        gen_sip_pass.return_value = "sip_pass"
+        sip_pub_to_priv.return_value = "generated_private_id"
+        get_number.return_value = SIP_URI
+
+        # Test
+        self.handler.post("foobar")
+
+        # Asserts
+        self.handler.get_and_check_user_id.assert_called_once_with("foobar")
+        allocate_number.assert_called_once_with(self.db_sess, USER_ID, False)
+        get_number.assert_called_once_with(self.db_sess, NUMBER_ID, USER_ID)
+        post_associated_public.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+
+        self.handler._on_post_failure({})
+        remove_public_id.assert_called_once_with(self.db_sess, SIP_URI, ANY, ANY)
+
 
 class TestNumberHandler(BaseTest):
     def setUp(self):

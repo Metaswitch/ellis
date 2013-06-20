@@ -212,7 +212,7 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
         parsed_body = json.loads(responses[0].body)
         # We only support one private id per public id, so only pull out first in list
         private_id = parsed_body["private_ids"][0]
-        request_group2 = HTTPCallbackGroup(_on_get_publics_success, on_failure)
+        request_group2 = HTTPCallbackGroup(_on_get_publics_success, _on_get_privates_failure)
         homestead.get_associated_publics(private_id, request_group2.callback())
 
     def _on_get_publics_success(responses):
@@ -232,6 +232,13 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
             # associated with our sip_uri (i.e. this is the last public id)
             delete_digest = (len(public_ids) == 1)
             _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure)
+
+    def _on_get_privates_failure(responses):
+        # The number has no records in Homestead
+        _log.debug("Failed to retrieve private IDs for a public ID")
+        _log.debug("Returning %s to the pool" % sip_uri)
+        numbers.remove_owner(db_sess, sip_uri)
+        db_sess.commit()
 
     request_group = HTTPCallbackGroup(_on_get_privates_success, on_failure)
     homestead.get_associated_privates(sip_uri, request_group.callback())
