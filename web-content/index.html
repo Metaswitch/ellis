@@ -184,6 +184,7 @@
                 <li class="active"><a href="#privacy-pane" data-toggle="tab">Privacy</a></li>
                 <li><a href="#redirect-pane" data-toggle="tab">Redirect</a></li>
                 <li><a href="#barring-pane" data-toggle="tab">Barring</a></li>
+                <li><a href="#as-pane" data-toggle="tab">Application Servers</a></li>
             </ul>
             <div class="tab-content">
                 <div id="privacy-pane" class="tab-pane fade in active">
@@ -312,6 +313,22 @@
                         </div>
                     </form>
                 </div>
+
+                <div id="as-pane" class="tab-pane fade">
+
+    		    <p class="alert alert-info" style="display: none" id="no-as">
+      			  <strong>Information:</strong> there are no configured Application Servers to select.
+		    </p>
+                    <form class="form-horizontal">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" id="template-as-row">
+                                    <input class="template" type="checkbox" name="as-checkbox" id="as-row" value="as1">  <span class="name">TEMPLATE</span>
+				</label>
+                           </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
         <div class="modal-footer">
@@ -344,6 +361,7 @@
   <script type="text/javascript" src="js/bootstrap.min.js"></script>
 
   <script src="js/common.js"></script>
+  <script src="js/app-servers.json"></script>
   <script src="js/app.js"></script>
 
 </body>

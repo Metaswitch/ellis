@@ -241,6 +241,50 @@ var clearwater = (function(mod, $){
     $(".hovertip").tooltip();
   };
 
+    var activeAppServers = JSON.decode("{}"); // TODO: get this with getHttp
+
+  dashboardPage.populateASTemplate = function() {
+    var templateRow = $("#template-as-row");
+    var tbody = templateRow.parent();
+    templateRow.remove();
+    templateRow.removeClass("template");
+
+    var names = [];
+    for (var k in allAppServers) {
+      if (allAppServers.hasOwnProperty(k)) {
+        names.push(k);
+      }
+    }
+
+    // Loop through all possible ASes in the config file and create a checkbox for each
+    for (var i = 0; i < names.length; i++) {
+      (function(i) {
+        var clone = templateRow.clone();
+        $(clone).find(".name").text(" " + names[i]);
+        var ASCheckBox = $(clone).find("#as-row");
+        // If this AS is already in the iFCs, pre-check this box
+        if (activeAppServers[names[i]]) {
+          ASCheckBox.prop("checked", "true");
+        } else {
+          ASCheckBox.removeProp("checked");
+        }
+	ASCheckBox.click(function(){
+          if (ASCheckBox.prop("checked")) {
+            activeAppServers[names[i]] = allAppServers[names[i]];
+          } else {
+            delete activeAppServers[names[i]];
+          }
+        });
+        tbody.append(clone);
+      })(i);
+    }
+    if (names.length > 0) {
+      $("#no-as").hide();
+    } else {
+      $("#no-as").show();
+    }
+  };
+
   dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed) {
     // We reuse the modal dialog, so be sure to cleanup when closing, see the cleanup() function below
     var configureModal = $("#configure-modal");
@@ -248,12 +292,15 @@ var clearwater = (function(mod, $){
       var putSimservs = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
                                               encodeURIComponent(sip_uri) + "/simservs",
                                               new XMLSerializer().serializeToString(xml));
+      var putiFCs = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
+                                              encodeURIComponent(sip_uri) + "/ifcs",
+                                              JSON.stringify(activeAppServers));
       var gabListed = gabCheckBox.is(':checked') ? 1 : 0;
       var putGab = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
                                          encodeURIComponent(sip_uri) + "/listed/" +
                                          gabListed + "/", {});
 
-      $.when(putSimservs, putGab)
+      $.when(putSimservs, putGab, putiFCs)
         .done(function(){
           log("Updated configuration on server");
           configureModal.modal("hide");
@@ -263,6 +310,7 @@ var clearwater = (function(mod, $){
         });
     };
 
+    dashboardPage.populateASTemplate();
     // Bind action to put xml to save button
     configureModal.find("#save-configure-button").click(saveConfiguration);
 

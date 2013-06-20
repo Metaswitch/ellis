@@ -1,0 +1,4 @@
+var allAppServers = {
+"OpenSIPS" : "<some_xml/>",
+"CFS" : "<other_xml/>"
+}
