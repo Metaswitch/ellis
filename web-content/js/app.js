@@ -112,7 +112,9 @@ var clearwater = (function(mod, $){
   };
 
   dashboardPage.onNumberCreated = function(data) {
-    knownPasswords[data["sip_uri"]] = data["sip_password"];
+    if (data["sip_password"] != undefined) {
+      knownPasswords[data["private_id"]] = data["sip_password"];
+    }
     mod.goToPage(dashboardPage);
   };
 
@@ -149,8 +151,8 @@ var clearwater = (function(mod, $){
         // First setup UI associated with the private id
         log("Adding cell for private id " + privateId);
         $(clone).find(".private-id").text(privateId);
-        if (knownPasswords[number["sip_uri"]]) {
-          $(clone).find(".password").text(knownPasswords[number["sip_uri"]]);
+        if (knownPasswords[number["private_id"]]) {
+          $(clone).find(".password").text(knownPasswords[number["private_id"]]);
           $(clone).find(".password").show();
           $(clone).find(".password-tip").show();
           $(clone).find(".password-unavailable").hide();
@@ -162,7 +164,7 @@ var clearwater = (function(mod, $){
                           encodeURIComponent(number["sip_uri"]) + "/password",
                           {})
               .done(function(data) {
-                knownPasswords[number["sip_uri"]] = data["sip_password"];
+                knownPasswords[number["private_id"]] = data["sip_password"];
                 mod.goToPage(dashboardPage);
               });
           }
@@ -625,7 +627,7 @@ var clearwater = (function(mod, $){
     var url = location.href.toString().replace("first", "");
     dashboardPage.postHttp(numbersUrl, {})
       .done(function(data) {
-        knownPasswords[data["sip_uri"]] = data["sip_password"];
+        knownPasswords[data["private_id"]] = data["sip_password"];
         window.location.replace(url);
         mod.setDefaultPage(dashboardPage);
     });
