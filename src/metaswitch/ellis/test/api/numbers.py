@@ -313,9 +313,9 @@ class TestNumberHandler(BaseTest):
 
         # Test
         numbers.remove_public_id(self.db_sess,
-                                  sip_uri,
-                                  on_success_handler,
-                                  on_failure_handler)
+                                 sip_uri,
+                                 on_success_handler,
+                                 on_failure_handler)
 
         # Asserts
         get_associated_privates.assert_called_once_with(sip_uri, ANY)
@@ -385,7 +385,7 @@ class TestNumberHandler(BaseTest):
         HTTPCallbackGroup.assert_called_once_with(on_success_handler,
                                                   on_failure_handler)
         if delete_digest:
-            delete_password.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+            delete_password.assert_called_once_with(PRIVATE_ID, ANY)
         else:
             delete_associated_public.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
         delete_filter_criteria.assert_called_once_with(SIP_URI, ANY)

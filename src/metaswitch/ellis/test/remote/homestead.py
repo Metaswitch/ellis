@@ -38,6 +38,7 @@
 import urllib
 
 import unittest
+import json
 from mock import MagicMock, Mock, patch, ANY
 
 from metaswitch.ellis import settings
@@ -99,7 +100,7 @@ class TestHomestead(unittest.TestCase):
     def test_put_password_mainline(self, settings, md5, AsyncHTTPClient):
         self.standard_setup(settings, AsyncHTTPClient)
         md5.return_value = "md5_hash"
-        body = urllib.urlencode({"digest" : "md5_hash"})
+        body = json.dumps({"digest" : "md5_hash"})
         callback = Mock()
         homestead.put_password(PRIVATE_URI, "pw", callback)
         md5.assert_called_once_with("pri@foo.bar:%s:pw" % settings.SIP_DIGEST_REALM)
@@ -107,7 +108,8 @@ class TestHomestead(unittest.TestCase):
           'http://homestead/privatecredentials/pri%40foo.bar/digest',
           callback,
           method='PUT',
-          body=body)
+          body=body,
+          headers={'Content-Type': 'application/json'})
 
     @patch("tornado.httpclient.AsyncHTTPClient")
     @patch("metaswitch.ellis.remote.homestead.settings")
