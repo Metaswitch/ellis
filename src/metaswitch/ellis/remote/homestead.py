@@ -76,11 +76,9 @@ def url_prefix():
             (scheme, settings.HOMESTEAD_URL)
     return url
 
-def digest_url(private_id, public_id):
+def digest_url(private_id):
     encoded_private_id = urllib.quote_plus(private_id)
-    encoded_public_id = urllib.quote_plus(public_id)
-    url = url_prefix() + ("credentials/%s/%s/digest" %
-                                       (encoded_private_id, encoded_public_id))
+    url = url_prefix() + ("privatecredentials/%s/digest" % encoded_private_id)
     return url
 
 def filter_url(public_id):
@@ -88,31 +86,120 @@ def filter_url(public_id):
     url = url_prefix() + "filtercriteria/%s" % (encoded_public_id)
     return url
 
-def get_digest(private_id, public_id, callback):
+def associated_public_url(private_id, public_id=None):
+    encoded_private_id = urllib.quote_plus(private_id)
+    url = url_prefix() + "associatedpublic/%s" % (encoded_private_id)
+    if public_id:
+        encoded_public_id = urllib.quote_plus(public_id)
+        url += "/%s" % (encoded_public_id)
+    return url
+
+def associated_private_url(public_id, private_id=None):
+    encoded_public_id = urllib.quote_plus(public_id)
+    url = url_prefix() + "associatedprivate/%s" % (encoded_public_id)
+    if private_id:
+        encoded_private_id = urllib.quote_plus(private_id)
+        url += "/%s" % (encoded_private_id)
+    return url
+
+def get_digest(private_id, callback):
     """
-    Retreives a digest from Homestead for a given private & public id pair
+    Retreives a digest from Homestead for a given private id
     callback receives the HTTPResponse object. Note the homestead api returns
     {"digest": "<digest>"}, rather than just the digest
     """
-    url = digest_url(private_id, public_id)
+    url = digest_url(private_id)
     fetch(url, callback, method='GET')
 
-def post_password(private_id, public_id, password, callback):
+def put_password(private_id, password, callback):
     """
-    Posts a new password to Homestead for a given private & public id pair
+    Posts a new password to Homestead for a given private id
     callback receives the HTTPResponse object.
     """
-    url = digest_url(private_id, public_id)
+    url = digest_url(private_id)
     digest = utils.md5("%s:%s:%s" % (private_id, settings.SIP_DIGEST_REALM, password))
-    body = urllib.urlencode({"digest" : digest})
+    body = json.dumps({"digest" : digest})
+    headers = {"Content-Type": "application/json"}
+    fetch(url, callback, method='PUT', headers=headers, body=body)
+
+def delete_password(private_id, callback):
+    """
+    Deletes a password from Homestead for a given private id
+    callback receives the HTTPResponse object.
+    """
+    url = digest_url(private_id)
+    fetch(url, callback, method='DELETE')
+
+def get_associated_publics(private_id, callback):
+    """
+    Retreives the associated public identities for a given private identity
+    from Homestead.
+    callback receives the HTTPResponse object.
+    """
+    url = associated_public_url(private_id)
+    fetch(url, callback, method='GET')
+
+def post_associated_public(private_id, public_id, callback):
+    """
+    Posts a new public identity to associate with a given private identity
+    to Homestead.
+    callback receives the HTTPResponse object.
+    """
+    url = associated_public_url(private_id)
+    body = urllib.urlencode({"public_id" : public_id})
     fetch(url, callback, method='POST', body=body)
 
-def delete_password(private_id, public_id, callback):
+def delete_associated_public(private_id, public_id, callback):
     """
-    Deletes a password from Homestead for a given private & public id pair
+    Deletes an association between a public and private identity in Homestead
     callback receives the HTTPResponse object.
     """
-    url = digest_url(private_id, public_id)
+    url = associated_public_url(private_id, public_id)
+    fetch(url, callback, method='DELETE')
+
+def delete_associated_publics(private_id, callback):
+    """
+    Deletes all associations between public and private
+    identities for the given private identity in Homestead
+    callback receives the HTTPResponse object.
+    """
+    url = associated_public_url(private_id)
+    fetch(url, callback, method='DELETE')
+
+def get_associated_privates(public_id, callback):
+    """
+    Retreives the associated private identities for a given public identity
+    from Homestead.
+    callback receives the HTTPResponse object.
+    """
+    url = associated_private_url(public_id)
+    fetch(url, callback, method='GET')
+
+def post_associated_private(public_id, private_id, callback):
+    """
+    Posts a new private identity to associate with a given public identity
+    to Homestead.
+    callback receives the HTTPResponse object.
+    """
+    url = associated_private_url(public_id)
+    body = urllib.urlencode({"private_id" : private_id})
+    fetch(url, callback, method='POST', body=body)
+
+def delete_associated_private(public_id, private_id, callback):
+    """
+    Deletes an association between a private and public identity in Homestead
+    callback receives the HTTPResponse object.
+    """
+    url = associated_private_url(public_id, private_id)
+    fetch(url, callback, method='DELETE')
+
+def delete_associated_privates(public_id, callback):
+    """
+    Deletes all associations between private and public
+    identities for the given public identity in Homestead
+    callback receives the HTTPResponse object.
+    """
+    url = associated_private_url(public_id)
     fetch(url, callback, method='DELETE')
 
 def get_filter_criteria(public_id, callback):

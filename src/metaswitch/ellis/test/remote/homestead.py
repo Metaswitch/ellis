@@ -38,6 +38,7 @@
 import urllib
 
 import unittest
+import json
 from mock import MagicMock, Mock, patch, ANY
 
 from metaswitch.ellis import settings
@@ -83,31 +84,145 @@ class TestHomestead(unittest.TestCase):
         self.mock_httpclient.fetch.assert_called_once_with("http://homestead/ping", ANY)
 
     @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_get_password(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        homestead.get_digest(PRIVATE_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(
+          'http://homestead/privatecredentials/pri%40foo.bar/digest',
+          callback,
+          method='GET')
+
+    @patch("tornado.httpclient.AsyncHTTPClient")
     @patch("metaswitch.common.utils.md5")
     @patch("metaswitch.ellis.remote.homestead.settings")
-    def test_post_password_mainline(self, settings, md5, AsyncHTTPClient):
+    def test_put_password_mainline(self, settings, md5, AsyncHTTPClient):
         self.standard_setup(settings, AsyncHTTPClient)
         md5.return_value = "md5_hash"
-        body = urllib.urlencode({"digest" : "md5_hash"})
+        body = json.dumps({"digest" : "md5_hash"})
         callback = Mock()
-        homestead.post_password(PRIVATE_URI, PUBLIC_URI, "pw", callback)
+        homestead.put_password(PRIVATE_URI, "pw", callback)
         md5.assert_called_once_with("pri@foo.bar:%s:pw" % settings.SIP_DIGEST_REALM)
         self.mock_httpclient.fetch.assert_called_once_with(
-          'http://homestead/credentials/pri%40foo.bar/sip%3Apub%40foo.bar/digest',
+          'http://homestead/privatecredentials/pri%40foo.bar/digest',
           callback,
-          method='POST',
-          body=body)
+          method='PUT',
+          body=body,
+          headers={'Content-Type': 'application/json'})
 
     @patch("tornado.httpclient.AsyncHTTPClient")
     @patch("metaswitch.ellis.remote.homestead.settings")
     def test_delete_password_mainline(self, settings, AsyncHTTPClient):
         self.standard_setup(settings, AsyncHTTPClient)
         callback = Mock()
-        homestead.delete_password(PRIVATE_URI, PUBLIC_URI, callback)
+        homestead.delete_password(PRIVATE_URI, callback)
         self.mock_httpclient.fetch.assert_called_once_with(
-          'http://homestead/credentials/pri%40foo.bar/sip%3Apub%40foo.bar/digest',
+          'http://homestead/privatecredentials/pri%40foo.bar/digest',
           callback,
           method='DELETE')
+
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_get_associated_public_mainline(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        homestead.get_associated_publics(PRIVATE_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(
+          'http://homestead/associatedpublic/pri%40foo.bar',
+          callback,
+          method='GET')
+
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_post_associated_public_mainline(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        body = urllib.urlencode({"public_id" : PUBLIC_URI})
+        callback = Mock()
+        homestead.post_associated_public(PRIVATE_URI, PUBLIC_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(
+          'http://homestead/associatedpublic/pri%40foo.bar',
+          callback,
+          method='POST',
+          body=body)
+
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_delete_associated_public_mainline(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        homestead.delete_associated_public(PRIVATE_URI, PUBLIC_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(
+          'http://homestead/associatedpublic/pri%40foo.bar/sip%3Apub%40foo.bar',
+          callback,
+          method='DELETE')
+
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_delete_associated_publics_mainline(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        homestead.delete_associated_publics(PRIVATE_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(
+          'http://homestead/associatedpublic/pri%40foo.bar',
+          callback,
+          method='DELETE')
+
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_get_associated_private_mainline(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        homestead.get_associated_privates(PUBLIC_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(
+          'http://homestead/associatedprivate/sip%3Apub%40foo.bar',
+          callback,
+          method='GET')
+
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_post_associated_private_mainline(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        body = urllib.urlencode({"private_id" : PRIVATE_URI})
+        callback = Mock()
+        homestead.post_associated_private(PUBLIC_URI, PRIVATE_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(
+          'http://homestead/associatedprivate/sip%3Apub%40foo.bar',
+          callback,
+          method='POST',
+          body=body)
+
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_delete_associated_private_mainline(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        homestead.delete_associated_private(PUBLIC_URI, PRIVATE_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(
+          'http://homestead/associatedprivate/sip%3Apub%40foo.bar/pri%40foo.bar',
+          callback,
+          method='DELETE')
+
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_delete_associated_privates_mainline(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        homestead.delete_associated_privates(PUBLIC_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(
+          'http://homestead/associatedprivate/sip%3Apub%40foo.bar',
+          callback,
+          method='DELETE')
+
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_get_ifcs(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        homestead.get_filter_criteria(PUBLIC_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(IFC_URL,
+                                                           callback,
+                                                           method="GET")
 
     @patch("tornado.httpclient.AsyncHTTPClient")
     @patch("metaswitch.ellis.remote.homestead.settings")

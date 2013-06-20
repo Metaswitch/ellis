@@ -35,6 +35,7 @@
 
 import logging
 import httplib
+import json
 
 from tornado.web import HTTPError, asynchronous
 
@@ -56,19 +57,55 @@ class NumbersHandler(_base.LoggedInHandler):
         super(NumbersHandler, self).__init__(application, request, **kwargs)
         self._request_group = None
         self.__response = None
+        self._numbers = None
 
+    @asynchronous
     def get(self, username):
         """Retrieve list of phone numbers."""
         user_id = self.get_and_check_user_id(username)
-        nums = numbers.get_numbers(self.db_session(), user_id)
-        for number in nums:
+        self._request_group = HTTPCallbackGroup(self._on_get_success, self._on_get_failure)
+        self._numbers = numbers.get_numbers(self.db_session(), user_id)
+        if len(self._numbers) == 0:
+            self.finish({"numbers": []})
+            return
+
+        for number in self._numbers:
             number["number_id"] = number["number_id"].hex
             number["sip_uri"] = number["number"]
             number["sip_username"] = utils.sip_uri_to_phone_number(number["number"])
             number["domain"] = utils.sip_uri_to_domain(number["number"])
             number["number"] = utils.sip_uri_to_phone_number(number["number"])
             number["formatted_number"] = utils.format_phone_number(number["number"])
-        self.finish({"numbers": nums})
+
+            # We only store the public identities in Ellis, and must query
+            # Homestead for the associated private identities
+            homestead.get_associated_privates(number["sip_uri"],
+                                              self._request_group.callback())
+
+    def _on_get_success(self, responses):
+        _log.debug("Successfully fetched associated private identities")
+        for response in responses:
+            try:
+                # Body is of format {"public_id": "<public_id>",
+                #                    "private_ids": ["<private_id_1>", "<private_id_2>"...]}
+                parsed_body = json.loads(response.body)
+                public_id = parsed_body["public_id"]
+                # We only support one private id per public id, so only pull out first in list
+                private_id = parsed_body["private_ids"][0]
+                for number in [n for n in self._numbers if n["sip_uri"] == public_id]:
+                    number["private_id"] = private_id
+
+            except (TypeError, KeyError) as e:
+                _log.error("Could not parse response: %s", response.body)
+                self.send_error(httplib.BAD_GATEWAY,
+                                reason="Upstream request failed: could not parse private identity list")
+                return
+
+        self.finish({"numbers": self._numbers})
+
+    def _on_get_failure(self, response):
+        _log.warn("Failed to fetch private identities from homestead")
+        self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
     @asynchronous
     def post(self, username):
@@ -77,6 +114,7 @@ class NumbersHandler(_base.LoggedInHandler):
         user_id = self.get_and_check_user_id(username)
         db_sess = self.db_session()
         pstn = self.get_argument('pstn', 'false') == 'true'
+        private_id = self.get_argument('private_id', None)
         try:
             number_id = numbers.allocate_number(db_sess, user_id, pstn)
             sip_uri = numbers.get_number(db_sess, number_id, user_id)
@@ -100,7 +138,6 @@ class NumbersHandler(_base.LoggedInHandler):
 
         # Work out the response we'll send if the upstream requests
         # are successful.
-        sip_password = utils.generate_sip_password()
         number = utils.sip_uri_to_phone_number(sip_uri)
         pretty_number = utils.format_phone_number(number)
         self.__response = {"sip_uri": sip_uri,
@@ -108,17 +145,28 @@ class NumbersHandler(_base.LoggedInHandler):
                            "number": number,
                            "pstn": pstn,
                            "formatted_number": pretty_number,
-                           "number_id": number_id.hex,
-                           "sip_password": sip_password}
+                           "number_id": number_id.hex}
 
         # Generate a random password and store it in Homestead.
         _log.debug("Populating other servers...")
         self._request_group = HTTPCallbackGroup(self._on_post_success,
                                                 self._on_post_failure)
-        homestead.post_password(utils.sip_public_id_to_private(sip_uri),
-                                sip_uri,
-                                sip_password,
-                                self._request_group.callback())
+        if private_id == None:
+            # No private id was provided, so we need to create a new
+            # digest in Homestead
+            private_id = utils.sip_public_id_to_private(sip_uri)
+            sip_password = utils.generate_sip_password()
+            homestead.put_password(private_id,
+                                   sip_password,
+                                   self._request_group.callback())
+            self.__response["sip_password"] = sip_password
+
+        # Associate the new public identity with the private identity in Homestead
+        homestead.post_associated_public(private_id,
+                                         sip_uri,
+                                         self._request_group.callback())
+
+        self.__response["private_id"] = private_id
 
         # Store the iFCs in homestead.
         homestead.put_filter_criteria(sip_uri,
@@ -137,11 +185,8 @@ class NumbersHandler(_base.LoggedInHandler):
     def _on_post_failure(self, response):
         _log.warn("Failed to update all the backends")
         # Try to back out the changes so we don't leave orphaned data.
-        _delete_number(self.db_session(),
-                       self.sip_uri,
-                       self._on_backout_success,
-                       self._on_backout_failure)
-        self.db_session().commit()
+        remove_public_id(self.db_session(), self.sip_uri,
+                         self._on_backout_success, self._on_backout_failure)
 
     def _on_backout_success(self, responses):
         _log.warn("Backed out changes after failure")
@@ -151,19 +196,60 @@ class NumbersHandler(_base.LoggedInHandler):
         _log.warn("Failed to back out changes after failure")
         self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
 
-def _delete_number(db_sess, sip_uri, on_success, on_failure):
-    numbers.remove_owner(db_sess, sip_uri)
+def remove_public_id(db_sess, sip_uri, on_success, on_failure):
+    """
+       Looks up the private id related to the sip_uri, and then the public ids
+       related the retrieved private id. If there are multiple public ids, then
+       only the sip_uri is is removed from Homestead, and the association to its
+       private id is destroyed. If this is the only public id associated with the
+       private id, then both the private and public ids are removed from Homestead
+       along with their associations
+    """
+    def _on_get_privates_success(responses):
+        _log.debug("Got related private ids")
+        # Body is of format {"public_id": "<public_id>",
+        #                    "private_ids": ["<private_id_1>", "<private_id_2>"...]}
+        parsed_body = json.loads(responses[0].body)
+        # We only support one private id per public id, so only pull out first in list
+        private_id = parsed_body["private_ids"][0]
+        request_group2 = HTTPCallbackGroup(_on_get_publics_success, on_failure)
+        homestead.get_associated_publics(private_id, request_group2.callback())
 
-    # Delete the password from homestead
-    request_group = HTTPCallbackGroup(on_success,
-                                      on_failure)
-    homestead.delete_password(utils.sip_public_id_to_private(sip_uri),
-                              sip_uri,
-                              request_group.callback())
-    # Delete the iFCs from homestead.
-    homestead.delete_filter_criteria(sip_uri,
-                                     request_group.callback())
-    # Concurrently, delete privacy settings in XDM.
+    def _on_get_publics_success(responses):
+        _log.debug("Got related public ids")
+        parsed_body = json.loads(responses[0].body)
+        private_id = parsed_body["private_id"]
+        public_ids = parsed_body["public_ids"]
+        if (utils.sip_public_id_to_private(sip_uri) == private_id and
+            len(public_ids) > 1):
+            # Do not permit deletion of an original public identity if others exist
+            # otherwise another may claim the same private id from the pool
+            _log.error("Failed to delete default public ID %s while other IDs are attached to the same private ID" % sip_uri);
+            _log.error("Other public IDs are %s" % ", ".join(public_ids))
+            on_failure(responses[0])
+        else:
+            # Only delete the digest if there is only a single private identity
+            # associated with our sip_uri (i.e. this is the last public id)
+            delete_digest = (len(public_ids) == 1)
+            _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure)
+
+    request_group = HTTPCallbackGroup(_on_get_privates_success, on_failure)
+    homestead.get_associated_privates(sip_uri, request_group.callback())
+
+def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure):
+    """
+       Deletes all information associated with a private/public identity
+       pair, optionally deleting the digest associated with the private identity
+    """
+    numbers.remove_owner(db_sess, sip_uri)
+    db_sess.commit()
+
+    # Concurrently, delete data from Homestead and Homer
+    request_group = HTTPCallbackGroup(on_success, on_failure)
+    if delete_digest:
+        homestead.delete_password(private_id, request_group.callback())
+    homestead.delete_associated_public(private_id, sip_uri, request_group.callback())
+    homestead.delete_filter_criteria(sip_uri, request_group.callback())
     xdm.delete_simservs(sip_uri, request_group.callback())
 
 class NumberHandler(_base.LoggedInHandler):
@@ -179,9 +265,7 @@ class NumberHandler(_base.LoggedInHandler):
         _log.info("Request to delete %s by %s", sip_uri, username)
         user_id = self.get_and_check_user_id(username)
         self.check_number_ownership(sip_uri, user_id)
-        db_sess = self.db_session()
-        _delete_number(db_sess, sip_uri, self._on_delete_success, self._on_delete_failure)
-        db_sess.commit()
+        remove_public_id(self.db_session(), sip_uri, self._on_delete_success, self._on_delete_failure)
 
     def _on_delete_success(self, responses):
         _log.debug("All requests successful.")
@@ -200,18 +284,34 @@ class SipPasswordHandler(_base.LoggedInHandler):
         self.check_number_ownership(sip_uri, user_id)
         self.sip_password = utils.generate_sip_password()
 
-        # Do not expect a response body, as long as there is no error, we are fine
-        homestead.post_password(utils.sip_public_id_to_private(sip_uri),
-                                sip_uri,
-                                self.sip_password,
-                                self.on_password_response)
+        # Fetch private ID from Homestead for this public ID
+        self._request_group = HTTPCallbackGroup(self.on_get_privates_success,
+                                                self.on_get_privates_failure)
+        homestead.get_associated_privates(sip_uri, self._request_group.callback())
 
-    def on_password_response(self, response):
-        if response.code // 100 == 2:
-            self.finish({"sip_password": self.sip_password})
-        else:
-            _log.error("failed to set password in homestead %s", response)
-            self.send_error(httplib.BAD_GATEWAY)
+    def on_get_privates_success(self, responses):
+        _log.debug("Got related private ids")
+        # Body is of format {"public_id": "<public_id>",
+        #                    "private_ids": ["<private_id_1>", "<private_id_2>"...]}
+        parsed_body = json.loads(responses[0].body)
+        # We only support one private id per public id, so only pull out first in list
+        private_id = parsed_body["private_ids"][0]
+
+        # Do not expect a response body, as long as there is no error, we are fine
+        self._request_group = HTTPCallbackGroup(self.on_put_password_success,
+                                                self.on_put_password_failure)
+        homestead.put_password(private_id, self.sip_password, self._request_group.callback())
+
+    def on_get_privates_failure(self, responses):
+        _log.error("Failed to get associated private ID from homestead %s", responses[0])
+        self.send_error(httplib.BAD_GATEWAY)
+
+    def on_put_password_success(self, responses):
+        self.finish({"sip_password": self.sip_password})
+
+    def on_put_password_failure(self, responses):
+        _log.error("Failed to set password in homestead %s", responses[0])
+        self.send_error(httplib.BAD_GATEWAY)
 
 class RemoteProxyHandler(_base.LoggedInHandler):
     def __init__(self, application, request, **kwargs):

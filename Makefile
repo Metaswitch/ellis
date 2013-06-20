@@ -17,6 +17,10 @@ all: help
 help:
 	@cat docs/development.md
 
+.PHONY: run
+run: bin/python setup.py
+	PYTHONPATH=src bash -c 'bin/python src/metaswitch/ellis/main.py'
+
 .PHONY: test
 test: bin/python setup.py
 	bin/python setup.py test

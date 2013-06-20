@@ -44,6 +44,7 @@ from tornado.web import HTTPError, asynchronous
 from metaswitch.common.throttler import Throttler
 
 from metaswitch.ellis.api import _base
+from metaswitch.ellis.api import numbers as api_numbers
 from metaswitch.ellis.api._base import HTTPErrorEx
 from metaswitch.ellis.api.utils import HTTPCallbackGroup
 from metaswitch.ellis.api.validation import REQUIRED, OPTIONAL, STRING, validate
@@ -174,7 +175,8 @@ class AccountHandler(_base.LoggedInHandler):
     def _do_delete_work(self):
         # If there are still numbers to delete, do so.  If not, delete the user and return.
         if len(self._numbers) > 0:
-            self._delete_number_remote(self._numbers.pop()["number"])
+            api_numbers.remove_public_id(self.db_session(), self._numbers.pop()["number"],
+                                         self._on_delete_post_success, self._on_delete_post_failure)
         else:
             _log.debug("Deleting user %s", self._user_id)
             db_sess = self.db_session()
@@ -182,23 +184,9 @@ class AccountHandler(_base.LoggedInHandler):
             db_sess.commit()
             self.send_success(httplib.NO_CONTENT)
 
-    def _delete_number_remote(self, sip_uri):
-        _log.debug("Removing %s from all backends", sip_uri)
-        self._sip_uri = sip_uri
-        self._request_group = HTTPCallbackGroup(self._on_delete_post_success,
-                                                self._on_delete_post_failure)
-        homestead.delete_password(utils.sip_public_id_to_private(sip_uri),
-                                  sip_uri,
-                                  self._request_group.callback())
-        homestead.delete_filter_criteria(sip_uri, self._request_group.callback())
-        xdm.delete_simservs(sip_uri, self._request_group.callback())
-
     def _on_delete_post_success(self, responses):
         _log.debug("Successfully updated all the backends for %s", self._sip_uri)
-        # We've updated all the backends, so delete the number and do some more work.
-        db_sess = self.db_session()
-        numbers.remove_owner(db_sess, self._sip_uri)
-        db_sess.commit()
+        # We've updated all the backends, so delete the next number
         self._do_delete_work()
 
     def _on_delete_post_failure(self, response):

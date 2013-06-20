@@ -142,10 +142,9 @@ Startup logs (from Monit) are written to `/var/log/monit.log` and
 
 Ellis logs are written to `/var/log/ellis/`.
 
-To run the server manually, you should execute `bin/python
-src/metaswitch/ellis/main.py`. You must use the local `bin/python`
-binary rather than the system-wide one to ensure you pick up the
-correct libraries from `_env/`.
+To run the server as part of development use:
+
+    make run
 
 Testing
 =======
