@@ -219,6 +219,11 @@ var clearwater = (function(mod, $){
           })(numberGroup[n]);
         }
 
+        if (numberGroup.length >= 5) {
+          // Limit to creating 5 public ids
+          $(clone).find(".button-bar").hide();
+        }
+
         var handler = dashboardPage.numberCreator(privateId);
         $(clone).find(".add-public-id-btn").click(handler);
         $(clone).find(".add-public-id-dropdown li").click(handler);
