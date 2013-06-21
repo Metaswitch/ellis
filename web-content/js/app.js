@@ -195,10 +195,11 @@ var clearwater = (function(mod, $){
               }
             });
             $(publicIdRowClone).find(".configure-button").click(function() {
-              function displayConfigure(simservsData, gabData){
+              function displayConfigure(simservsData, gabData, iFCData){
                 dashboardPage.populateConfigureModal(number["sip_uri"],
                                                      $.parseXML(simservsData[0]),
-                                                     gabData[0]["gab_listed"]);
+                                                     gabData[0]["gab_listed"],
+                                                     $.parseXML(iFCData[0]));
               }
 
               var simservsGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
@@ -207,11 +208,14 @@ var clearwater = (function(mod, $){
               var gabGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
                                                       encodeURIComponent(number["sip_uri"]) + "/listed",
                                                       {});
-              // Fetch data in parallel, launching modal wehn all requests complete
-              $.when(simservsGet, gabGet)
+              var iFCGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
+                                                      encodeURIComponent(number["sip_uri"]) + "/ifcs",
+                                                      {});
+              // Fetch data in parallel, launching modal when all requests complete
+              $.when(simservsGet, gabGet, iFCGet)
                 .done(displayConfigure)
                 .fail(function() {
-                  log("Failed to retrieve simservs.");
+                  log("Failed to retrieve configuration from server.");
                 });
             });
 
@@ -241,18 +245,22 @@ var clearwater = (function(mod, $){
     $(".hovertip").tooltip();
   };
 
-  var activeAppServers = JSON.parse("{}"); // TODO: get this with getHttp
-
-  dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed) {
+    dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed, iFCXML) {
     // We reuse the modal dialog, so be sure to cleanup when closing, see the cleanup() function below
     var configureModal = $("#configure-modal");
+    var activeAppServers = []; //Populated when we create the checkboxes for the AS tab
+    
     var saveConfiguration = function(){
+      for (var name in activeAppServers) {
+          $(iFCXML).find("ServiceProfile").append($($.parseXML(allAppServers[name])));
+      }
+    
       var putSimservs = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
                                               encodeURIComponent(sip_uri) + "/simservs",
                                               new XMLSerializer().serializeToString(xml));
       var putiFCs = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
                                               encodeURIComponent(sip_uri) + "/ifcs",
-                                              JSON.stringify(activeAppServers));
+                                              new XMLSerializer().serializeToString(iFCXML));
       var gabListed = gabCheckBox.is(':checked') ? 1 : 0;
       var putGab = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
                                          encodeURIComponent(sip_uri) + "/listed/" +
@@ -313,6 +321,14 @@ var clearwater = (function(mod, $){
       }
     }
 
+    var inXML = function(xml, node) {
+        return $xml.find('InitialFilterCriteria').filter(function() {return $(this).text() == node.text()}).text() != ""
+    }
+    
+    var removeFromXML = function(xml, node) {
+        $xml.find('InitialFilterCriteria').filter(function() {return $(this).text() == node.text()}).remove()
+    }
+    
     // Privacy
     // Connect caller ID checkbox to XML attribute
     var callerIdCheckBox = configureModal.find("#callerIdCheckBox");
@@ -628,16 +644,20 @@ var clearwater = (function(mod, $){
 		     $(clone).find(".name").text(" " + names[i]);
 		     var ASCheckBox = $(clone).find("#as-row");
 		     // If this AS is already in the iFCs, pre-check this box
-		     if (activeAppServers[names[i]]) {
+             var node = $($.parseXML(allAppServers[names[i]])
+		     if (inXML($(iFCXML), node) {
 		     ASCheckBox.prop("checked", "true");
+             activeAppServers.push(names[i]);
+             removeFromXML($(iFCXML), node)
 		     } else {
 		     ASCheckBox.removeProp("checked");
 		     }
 		     ASCheckBox.click(function(){
 			     if (ASCheckBox.prop("checked")) {
-			     activeAppServers[names[i]] = allAppServers[names[i]];
+			     activeAppServers.push(names[i]);
 			     } else {
-			     delete activeAppServers[names[i]];
+			     var index activeAppServers.indexOf(names[i]);
+                 activeAppServers.splice(index, 1);
 			     }
 			     });
 		     tbody.append(clone);
