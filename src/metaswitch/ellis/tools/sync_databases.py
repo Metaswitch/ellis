@@ -60,7 +60,8 @@ pending_requests = 0
 inconsistent_uris = set()
 stats = {"Assigned numbers in Ellis": 0,
          "Unassigned numbers in Ellis": 0,
-         "Lines deleted": 0,
+         "Credentials & associations deleted": 0,
+         "Simservs & iFCs deleted": 0,
          "Missing IFCs re-created": 0,
          "Errors": 0}
 
@@ -149,11 +150,12 @@ def number_deleter(private_id, sip_uri):
         numbers.remove_owner(db_session, sip_uri)
         # Attempt to delete info about line from remotes
         global pending_requests
-        stats["Lines deleted"] += 1
         if private_id:
+            stats["Credentials & associations deleted"] += 1
             pending_requests += 2
             homestead.delete_password(private_id, logging_handler)
             homestead.delete_associated_public(private_id, sip_uri, logging_handler)
+        stats["Simservs & iFCs deleted"] += 1
         pending_requests += 2
         homestead.delete_filter_criteria(sip_uri, logging_handler)
         xdm.delete_simservs(sip_uri, logging_handler)
@@ -219,7 +221,7 @@ def on_complete():
     db_session.commit()
     # To avoid counting the lines deleted as part of the unassigned, subtract these
     # from the line delete count
-    stats["Lines deleted"] -= stats["Unassigned numbers in Ellis"]
+    stats["Simservs & iFCs deleted"] -= stats["Unassigned numbers in Ellis"]
     print "\nSummary:"
     table_format = "{:<40}{}"
     for s in stats:
