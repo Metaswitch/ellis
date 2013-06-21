@@ -241,7 +241,7 @@ var clearwater = (function(mod, $){
     $(".hovertip").tooltip();
   };
 
-    var activeAppServers = JSON.decode("{}"); // TODO: get this with getHttp
+    var activeAppServers = JSON.parse("{}"); // TODO: get this with getHttp
 
   dashboardPage.populateASTemplate = function() {
     var templateRow = $("#template-as-row");
