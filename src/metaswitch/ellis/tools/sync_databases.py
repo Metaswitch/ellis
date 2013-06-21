@@ -38,6 +38,7 @@
 import logging
 import sys
 import random
+import json
 
 from tornado.ioloop import IOLoop
 from tornado.httpclient import AsyncHTTPClient
@@ -66,6 +67,8 @@ stats = {"Assigned numbers in Ellis": 0,
 def create_get_handler(sip_uri, on_found=None, on_not_found=None):
     """
     Handler that asserts that a resource exists, executing the on_not_found handler if not
+    Pass keys in extract_keys for items to be extracted from the response and passed to 
+    the handler, e.g. the private id
     """
     def handle_get(response):
         global pending_requests
@@ -73,7 +76,8 @@ def create_get_handler(sip_uri, on_found=None, on_not_found=None):
         if not response.error:
             print "Succesful GET from %s" % url
             if on_found:
-                on_found(sip_uri)
+                data = json.loads(response.body)
+                on_found(sip_uri, **data)
         elif response.code == 404:
             print "404 for %s" % url
             if on_not_found:
@@ -110,11 +114,10 @@ def validate_line(sip_uri):
     # Verify the password for this line exists in homestead, delete the line otherwise
     global pending_requests
     pending_requests += 1
-    homestead.get_digest(utils.sip_public_id_to_private(sip_uri),
-                         sip_uri,
-                         create_get_handler(sip_uri,
-                                           on_found=ensure_valid_ifc,
-                                           on_not_found=delete_line))
+    homestead.get_associated_privates(sip_uri,
+                                      create_get_handler(sip_uri,
+                                                         on_found=ensure_digest_exists,
+                                                         on_not_found=delete_line))
 
 def delete_line(sip_uri):
     """
@@ -127,10 +130,17 @@ def delete_line(sip_uri):
     pending_requests += 3
     stats["Lines deleted"] += 1
     homestead.delete_password(utils.sip_public_id_to_private(sip_uri),
-                              sip_uri,
+                              #sip_uri,
                               logging_handler)
     homestead.delete_filter_criteria(sip_uri, logging_handler)
     xdm.delete_simservs(sip_uri, logging_handler)
+
+def ensure_digest_exists(sip_uri, **kwargs):
+    private_id = kwargs["private_ids"][0]
+    homestead.get_digest(private_id,
+                         create_get_handler(sip_uri,
+                                            on_found=ensure_valid_ifc,
+                                            on_not_found=delete_line))
 
 def ensure_valid_ifc(sip_uri):
     """
