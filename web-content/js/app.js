@@ -241,49 +241,7 @@ var clearwater = (function(mod, $){
     $(".hovertip").tooltip();
   };
 
-    var activeAppServers = JSON.parse("{}"); // TODO: get this with getHttp
-
-  dashboardPage.populateASTemplate = function() {
-    var templateRow = $("#template-as-row");
-    var tbody = templateRow.parent();
-    templateRow.remove();
-    templateRow.removeClass("template");
-
-    var names = [];
-    for (var k in allAppServers) {
-      if (allAppServers.hasOwnProperty(k)) {
-        names.push(k);
-      }
-    }
-
-    // Loop through all possible ASes in the config file and create a checkbox for each
-    for (var i = 0; i < names.length; i++) {
-      (function(i) {
-        var clone = templateRow.clone();
-        $(clone).find(".name").text(" " + names[i]);
-        var ASCheckBox = $(clone).find("#as-row");
-        // If this AS is already in the iFCs, pre-check this box
-        if (activeAppServers[names[i]]) {
-          ASCheckBox.prop("checked", "true");
-        } else {
-          ASCheckBox.removeProp("checked");
-        }
-	ASCheckBox.click(function(){
-          if (ASCheckBox.prop("checked")) {
-            activeAppServers[names[i]] = allAppServers[names[i]];
-          } else {
-            delete activeAppServers[names[i]];
-          }
-        });
-        tbody.append(clone);
-      })(i);
-    }
-    if (names.length > 0) {
-      $("#no-as").hide();
-    } else {
-      $("#no-as").show();
-    }
-  };
+  var activeAppServers = JSON.parse("{}"); // TODO: get this with getHttp
 
   dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed) {
     // We reuse the modal dialog, so be sure to cleanup when closing, see the cleanup() function below
@@ -310,7 +268,6 @@ var clearwater = (function(mod, $){
         });
     };
 
-    dashboardPage.populateASTemplate();
     // Bind action to put xml to save button
     configureModal.find("#save-configure-button").click(saveConfiguration);
 
@@ -651,6 +608,53 @@ var clearwater = (function(mod, $){
     setupBarring('incoming');
     setupBarring('outgoing');
 
+    dashboardPage.populateASTemplate = function() {
+	    var templateRow = configureModal.find(".as-row.template");
+	    var tbody = templateRow.parent();
+
+            // Build a list of names of all the app servers
+	    var names = [];
+	    for (var k in allAppServers) {
+		    if (allAppServers.hasOwnProperty(k)) {
+			    names.push(k);
+		    }
+	    }
+
+	    // Loop through all possible ASes in the config file and create a checkbox for each
+	    for (var i = 0; i < names.length; i++) {
+		    (function(i) {
+		     var clone = templateRow.clone();
+		     clone.removeClass("template");
+		     $(clone).find(".name").text(" " + names[i]);
+		     var ASCheckBox = $(clone).find("#as-row");
+		     // If this AS is already in the iFCs, pre-check this box
+		     if (activeAppServers[names[i]]) {
+		     ASCheckBox.prop("checked", "true");
+		     } else {
+		     ASCheckBox.removeProp("checked");
+		     }
+		     ASCheckBox.click(function(){
+			     if (ASCheckBox.prop("checked")) {
+			     activeAppServers[names[i]] = allAppServers[names[i]];
+			     } else {
+			     delete activeAppServers[names[i]];
+			     }
+			     });
+		     tbody.append(clone);
+		     })(i);
+	    }
+
+            // If we don't have any configured, show an informative message rather than a blank tab
+	    if (names.length > 0) {
+		    $("#no-as").hide();
+	    } else {
+		    $("#no-as").show();
+	    }
+    };
+
+    dashboardPage.populateASTemplate();
+
+
     // As we reuse the same modal dialog we need to do some cleanup, eg unbind click handlers
     // so they don't get duplicated and any elements cloned from templates
     var cleanup = function(){
@@ -661,6 +665,7 @@ var clearwater = (function(mod, $){
       barringPane.find(".barring-radio").unbind("click");
       configureModal.find(".redirect-rule:not(.template)").remove();
       configureModal.find(".redirect-condition:not(.template)").remove();
+      configureModal.find(".as-row:not(.template)").remove();
     };
 
     configureModal.on('hidden', function(){
