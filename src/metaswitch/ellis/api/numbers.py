@@ -233,7 +233,15 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
             delete_digest = (len(public_ids) == 1)
             _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure)
 
-    request_group = HTTPCallbackGroup(_on_get_privates_success, on_failure)
+    def _on_get_privates_failure(responses):
+        # The number has no records in Homestead
+        _log.debug("Failed to retrieve private IDs for a public ID")
+        _log.debug("Returning %s to the pool" % sip_uri)
+        numbers.remove_owner(db_sess, sip_uri)
+        db_sess.commit()
+        on_success({})
+
+    request_group = HTTPCallbackGroup(_on_get_privates_success, _on_get_privates_failure)
     homestead.get_associated_privates(sip_uri, request_group.callback())
 
 def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure):
