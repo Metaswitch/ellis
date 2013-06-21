@@ -252,6 +252,39 @@ class TestNumbersHandler(BaseTest):
             post_response["private_id"] = "generated_private_id"
         self.handler.finish.assert_called_once_with(post_response)
 
+    @patch("metaswitch.ellis.remote.homestead.post_associated_public")
+    @patch("metaswitch.common.utils.generate_sip_password")
+    @patch("metaswitch.common.utils.sip_public_id_to_private")
+    @patch("metaswitch.ellis.data.numbers.allocate_number")
+    @patch("metaswitch.ellis.data.numbers.get_number")
+    @patch("metaswitch.ellis.api.numbers.remove_public_id")
+    def test_post_homestead_failure(self, remove_public_id,
+                                          get_number,
+                                          allocate_number,
+                                          sip_pub_to_priv,
+                                          gen_sip_pass,
+                                          post_associated_public):
+        # Setup
+        self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
+        self.request.arguments = {}
+        self.request.arguments["private_id"] = [PRIVATE_ID]
+        allocate_number.return_value = NUMBER_ID
+        gen_sip_pass.return_value = "sip_pass"
+        sip_pub_to_priv.return_value = "generated_private_id"
+        get_number.return_value = SIP_URI
+
+        # Test
+        self.handler.post("foobar")
+
+        # Asserts
+        self.handler.get_and_check_user_id.assert_called_once_with("foobar")
+        allocate_number.assert_called_once_with(self.db_sess, USER_ID, False)
+        get_number.assert_called_once_with(self.db_sess, NUMBER_ID, USER_ID)
+        post_associated_public.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+
+        self.handler._on_post_failure({})
+        remove_public_id.assert_called_once_with(self.db_sess, SIP_URI, ANY, ANY)
+
 
 class TestNumberHandler(BaseTest):
     def setUp(self):
@@ -319,7 +352,7 @@ class TestNumberHandler(BaseTest):
 
         # Asserts
         get_associated_privates.assert_called_once_with(sip_uri, ANY)
-        HTTPCallbackGroup.assert_called_once_with(ANY, on_failure_handler)
+        HTTPCallbackGroup.assert_called_once_with(ANY, ANY)
 
         # Extract inner function and can call it with response
         on_get_privates_success = HTTPCallbackGroup.call_args[0][0]
@@ -348,6 +381,37 @@ class TestNumberHandler(BaseTest):
                                                    last_public_id,
                                                    on_success_handler,
                                                    on_failure_handler)
+
+    @patch("metaswitch.ellis.remote.homestead.get_associated_privates")
+    @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
+    @patch("metaswitch.ellis.data.numbers.remove_owner")
+    def test_remove_broken_public_id(self, remove_owner,
+                                           HTTPCallbackGroup,
+                                           get_associated_privates):
+        # Setup
+        HTTPCallbackGroup.return_value = MagicMock()
+        on_success_handler = MagicMock()
+        on_failure_handler = MagicMock()
+        self.handler.send_error = MagicMock()
+        sip_uri = SIP_URI2
+
+        # Test
+        numbers.remove_public_id(self.db_sess,
+                                 sip_uri,
+                                 on_success_handler,
+                                 on_failure_handler)
+
+        # Fail the Priv->Pub lookup
+        get_associated_privates.assert_called_once_with(sip_uri, ANY)
+        HTTPCallbackGroup.assert_called_once_with(ANY, ANY)
+        failure_callback = HTTPCallbackGroup.call_args[0][1]
+        failure_callback({})
+
+        # Asserts
+        remove_owner.assert_called_once_with(self.db_sess, sip_uri)
+        self.db_sess.commit.assert_called_once()
+        on_success_handler.assert_called_once_with({})
+
 
     def test_delete_number(self):
         self.delete_number(True)
