@@ -644,8 +644,8 @@ var clearwater = (function(mod, $){
 		     $(clone).find(".name").text(" " + names[i]);
 		     var ASCheckBox = $(clone).find("#as-row");
 		     // If this AS is already in the iFCs, pre-check this box
-             var node = $($.parseXML(allAppServers[names[i]])
-		     if (inXML($(iFCXML), node) {
+             var node = $($.parseXML(allAppServers[names[i]]));
+		     if (inXML($(iFCXML), node)) {
 		     ASCheckBox.prop("checked", "true");
              activeAppServers.push(names[i]);
              removeFromXML($(iFCXML), node)
@@ -656,7 +656,7 @@ var clearwater = (function(mod, $){
 			     if (ASCheckBox.prop("checked")) {
 			     activeAppServers.push(names[i]);
 			     } else {
-			     var index activeAppServers.indexOf(names[i]);
+			     var index = activeAppServers.indexOf(names[i]);
                  activeAppServers.splice(index, 1);
 			     }
 			     });
