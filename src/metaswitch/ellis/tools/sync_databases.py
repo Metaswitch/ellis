@@ -68,8 +68,6 @@ stats = {"Assigned numbers in Ellis": 0,
 def create_get_handler(sip_uri, on_found=None, on_not_found=None):
     """
     Handler that asserts that a resource exists, executing the on_not_found handler if not
-    Pass keys in extract_keys for items to be extracted from the response and passed to
-    the handler, e.g. the private id
     """
     def handle_get(response):
         global pending_requests
