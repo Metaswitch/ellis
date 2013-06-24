@@ -251,8 +251,9 @@ var clearwater = (function(mod, $){
     var activeAppServers = []; //Populated when we create the checkboxes for the AS tab
     
     var saveConfiguration = function(){
-      for (var name in activeAppServers) {
-          $(iFCXML).find("ServiceProfile").append($($.parseXML(allAppServers[name])));
+      for (var i = 0; i < activeAppServers.length; i++) {
+          var name = activeAppServers[i];
+          $(iFCXML).find("ServiceProfile").append(allAppServers[name]);
       }
     
       var putSimservs = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
@@ -321,12 +322,14 @@ var clearwater = (function(mod, $){
       }
     }
 
-    var inXML = function(xml, node) {
-        return $xml.find('InitialFilterCriteria').filter(function() {return $(this).text() == node.text()}).text() != ""
-    }
-    
+    var XMLcontains = function(container, contained) {
+        var container_str = new XMLSerializer().serializeToString(container);
+        var contained_str = new XMLSerializer().serializeToString(contained);
+        return (container_str.indexOf(contained_str) != -1);
+   }
+
     var removeFromXML = function(xml, node) {
-        $xml.find('InitialFilterCriteria').filter(function() {return $(this).text() == node.text()}).remove()
+        $(xml).find('InitialFilterCriteria').filter(function() {return new XMLSerializer().serializeToString(this) == new XMLSerializer().serializeToString(node)}).remove()
     }
     
     // Privacy
@@ -644,11 +647,11 @@ var clearwater = (function(mod, $){
 		     $(clone).find(".name").text(" " + names[i]);
 		     var ASCheckBox = $(clone).find("#as-row");
 		     // If this AS is already in the iFCs, pre-check this box
-             var node = $($.parseXML(allAppServers[names[i]]));
-		     if (inXML($(iFCXML), node)) {
+             var node = $.parseXML(allAppServers[names[i]]);
+		     if (XMLcontains(iFCXML, node)) {
 		     ASCheckBox.prop("checked", "true");
              activeAppServers.push(names[i]);
-             removeFromXML($(iFCXML), node)
+             removeFromXML(iFCXML, node)
 		     } else {
 		     ASCheckBox.removeProp("checked");
 		     }
