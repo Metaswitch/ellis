@@ -52,15 +52,22 @@ Homestead (the Clearwater HSS cache).
 Ellis generates a secure password for the new private identity, stores
 it in Homestead, and reveals it once to the user (without storing it).
 
-Ellis also sets the Initial Filter Criteria (iFCs) for the number to a
-default value, specifying the use of Clearwater's built-in MMTEL
-application server.
-
 Ellis provides the ability to reset the password to a new value (e.g.,
 if the user has forgotten it).
 
 When a number is deleted in Ellis, Ellis deletes it from Homestead as
 well.
+
+Ellis also sets the Initial Filter Criteria (iFCs) for the number to a
+default value, specifying the use of Clearwater's built-in MMTEL
+application server.
+
+By editing the /usr/share/clearwater/ellis/web-content/js/app-servers.json
+file, additional user-configurable application servers can be added. This file
+maps user-friendly application-server names (e.g. "Voicemail server") to an
+InitialFilterCriteria XML node, which will be added to or removed from the list
+of iFCs on Homestead as the ser selects or unselects it in the configuration
+dialog.
 
 Homer
 -----
