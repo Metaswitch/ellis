@@ -628,51 +628,51 @@ var clearwater = (function(mod, $){
     setupBarring('outgoing');
 
     dashboardPage.populateASTemplate = function() {
-	    var templateRow = configureModal.find(".as-row.template");
-	    var tbody = templateRow.parent();
+        var templateRow = configureModal.find(".as-row.template");
+        var tbody = templateRow.parent();
 
-            // Build a list of names of all the app servers
-	    var names = [];
-	    for (var k in allAppServers) {
-		    if (allAppServers.hasOwnProperty(k)) {
-			    names.push(k);
-		    }
-	    }
+        // Build a list of names of all the app servers
+        var names = [];
+        for (var k in allAppServers) {
+            if (allAppServers.hasOwnProperty(k)) {
+                names.push(k);
+            }
+        }
 
-	    // Loop through all possible ASes in the config file and create a checkbox for each
-	    for (var i = 0; i < names.length; i++) {
-		    (function(i) {
-		     var clone = templateRow.clone();
-		     clone.removeClass("template");
-		     $(clone).find(".name").text(" " + names[i]);
-		     var ASCheckBox = $(clone).find("#as-row");
-		     // If this AS is already in the iFCs, pre-check this box
-             var node = $.parseXML(allAppServers[names[i]]);
-		     if (XMLcontains(iFCXML, node)) {
-		     ASCheckBox.prop("checked", "true");
-             activeAppServers.push(names[i]);
-             removeFromXML(iFCXML, node)
-		     } else {
-		     ASCheckBox.removeProp("checked");
-		     }
-		     ASCheckBox.click(function(){
-			     if (ASCheckBox.prop("checked")) {
-			     activeAppServers.push(names[i]);
-			     } else {
-			     var index = activeAppServers.indexOf(names[i]);
-                 activeAppServers.splice(index, 1);
-			     }
-			     });
-		     tbody.append(clone);
-		     })(i);
-	    }
+        // Loop through all possible ASes in the config file and create a checkbox for each
+        for (var i = 0; i < names.length; i++) {
+            (function(i) {
+                var clone = templateRow.clone();
+                clone.removeClass("template");
+                $(clone).find(".name").text(" " + names[i]);
+                var ASCheckBox = $(clone).find("#as-row");
+                // If this AS is already in the iFCs, pre-check this box
+                var node = $.parseXML(allAppServers[names[i]]);
+                if (XMLcontains(iFCXML, node)) {
+                    ASCheckBox.prop("checked", "true");
+                    activeAppServers.push(names[i]);
+                    removeFromXML(iFCXML, node)
+                } else {
+                    ASCheckBox.removeProp("checked");
+                }
+                ASCheckBox.click(function(){
+                    if (ASCheckBox.prop("checked")) {
+                        activeAppServers.push(names[i]);
+                    } else {
+                        var index = activeAppServers.indexOf(names[i]);
+                        activeAppServers.splice(index, 1);
+                    }
+                });
+                tbody.append(clone);
+            })(i);
+        }
 
-            // If we don't have any configured, show an informative message rather than a blank tab
-	    if (names.length > 0) {
-		    $("#no-as").hide();
-	    } else {
-		    $("#no-as").show();
-	    }
+        // If we don't have any configured, show an informative message rather than a blank tab
+        if (names.length > 0) {
+            $("#no-as").hide();
+        } else {
+            $("#no-as").show();
+        }
     };
 
     dashboardPage.populateASTemplate();
