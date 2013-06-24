@@ -38,6 +38,7 @@
 import logging
 import sys
 import random
+import json
 
 from tornado.ioloop import IOLoop
 from tornado.httpclient import AsyncHTTPClient
@@ -59,7 +60,8 @@ pending_requests = 0
 inconsistent_uris = set()
 stats = {"Assigned numbers in Ellis": 0,
          "Unassigned numbers in Ellis": 0,
-         "Lines deleted": 0,
+         "Credentials & associations deleted": 0,
+         "Simservs & iFCs deleted": 0,
          "Missing IFCs re-created": 0,
          "Errors": 0}
 
@@ -71,13 +73,14 @@ def create_get_handler(sip_uri, on_found=None, on_not_found=None):
         global pending_requests
         url = response.request.url
         if not response.error:
-            print "Succesful GET from %s" % url
+            print "Successful GET from %s" % url
             if on_found:
-                on_found(sip_uri)
+                data = json.loads(response.body)
+                on_found(sip_uri, **data)
         elif response.code == 404:
             print "404 for %s" % url
             if on_not_found:
-                on_not_found(sip_uri)
+                on_not_found()
         else:
             print "Error %s while GET %s" % (response.error, url)
             stats["Errors"] += 1
@@ -94,7 +97,7 @@ def logging_handler(response):
     url = response.request.url
     method = response.request.method
     if not response.error:
-        print "Succesful %s from %s" % (method, url)
+        print "Successful %s from %s" % (method, url)
     else:
         print "Error %s while %s %s" % (response.error, method, url)
         stats["Errors"] += 1
@@ -107,41 +110,79 @@ def validate_line(sip_uri):
     Validate details about line in homestead
     """
     print "Validating %s " % sip_uri
-    # Verify the password for this line exists in homestead, delete the line otherwise
+    # Verify the private id exists for this line exists in homestead, delete the line otherwise
     global pending_requests
     pending_requests += 1
-    homestead.get_digest(utils.sip_public_id_to_private(sip_uri),
-                         sip_uri,
-                         create_get_handler(sip_uri,
-                                           on_found=ensure_valid_ifc,
-                                           on_not_found=delete_line))
+    delete_line = number_deleter(None, sip_uri)
+    homestead.get_associated_privates(sip_uri,
+                                      create_get_handler(sip_uri,
+                                                         on_found=ensure_digest_exists,
+                                                         on_not_found=delete_line))
 
-def delete_line(sip_uri):
+def invalidate_line(sip_uri):
     """
-    Remove details about line from ellis, homestead and homer
+    Try to get private id and then delete all details from Homestead
     """
-    print "Deleting %s" % sip_uri
-    numbers.remove_owner(db_session, sip_uri)
-    # Attempt to delete info about line from remotes
+    print "Invalidating %s " % sip_uri
+    # Verify the private id exists for this line exists in homestead, delete the line otherwise
     global pending_requests
-    pending_requests += 3
-    stats["Lines deleted"] += 1
-    homestead.delete_password(utils.sip_public_id_to_private(sip_uri),
-                              sip_uri,
-                              logging_handler)
-    homestead.delete_filter_criteria(sip_uri, logging_handler)
-    xdm.delete_simservs(sip_uri, logging_handler)
+    pending_requests += 1
+    delete_line = number_deleter(None, sip_uri)
 
-def ensure_valid_ifc(sip_uri):
+    def extract_private_and_delete(sip_uri, **kwargs):
+        private_id = kwargs["private_ids"][0]
+        delete_line_with_private = number_deleter(private_id, sip_uri)
+        delete_line_with_private()
+
+    homestead.get_associated_privates(sip_uri,
+                                      create_get_handler(sip_uri,
+                                                         on_found=extract_private_and_delete,
+                                                         on_not_found=delete_line))
+
+def number_deleter(private_id, sip_uri):
+    def delete_line():
+        """
+        Remove details about line from ellis, homestead and homer
+        """
+        print "Deleting %s %s" % (private_id, sip_uri)
+        numbers.remove_owner(db_session, sip_uri)
+        # Attempt to delete info about line from remotes
+        global pending_requests
+        if private_id:
+            stats["Credentials & associations deleted"] += 1
+            pending_requests += 2
+            homestead.delete_password(private_id, logging_handler)
+            homestead.delete_associated_public(private_id, sip_uri, logging_handler)
+        stats["Simservs & iFCs deleted"] += 1
+        pending_requests += 2
+        homestead.delete_filter_criteria(sip_uri, logging_handler)
+        xdm.delete_simservs(sip_uri, logging_handler)
+
+    return delete_line
+
+def ensure_digest_exists(sip_uri, **kwargs):
+    private_id = kwargs["private_ids"][0]
+    print "Verifying digest exists for %s" % private_id
+    global pending_requests
+    pending_requests+=1
+    delete_line = number_deleter(private_id, sip_uri)
+    homestead.get_digest(private_id,
+                         create_get_handler(sip_uri,
+                                            on_found=ensure_valid_ifc,
+                                            on_not_found=delete_line))
+
+def ensure_valid_ifc(sip_uri, **kwargs):
     """
     Check if a line has valid IFC, populate with default if not
     """
     print "Verifying IFC for %s" % sip_uri
     global pending_requests
     pending_requests+=1
-    def put_default_ifc(sip_uri):
+    def put_default_ifc():
         print "Adding default IFC for %s" % sip_uri
         stats["Missing IFCs re-created"] += 1
+        global pending_requests
+        pending_requests+=1
         homestead.put_filter_criteria(sip_uri,
                                       ifcs.generate_ifcs(settings.SIP_DIGEST_REALM),
                                       logging_handler)
@@ -168,7 +209,7 @@ def remove_nonexisting_uris():
     unassigned_numbers = [row[0] for row in cursor.fetchall()]
     stats["Unassigned numbers in Ellis"] = len(unassigned_numbers)
     for sip_uri in unassigned_numbers:
-        delete_line(sip_uri)
+        invalidate_line(sip_uri)
 
 def on_complete():
     """
@@ -178,7 +219,7 @@ def on_complete():
     db_session.commit()
     # To avoid counting the lines deleted as part of the unassigned, subtract these
     # from the line delete count
-    stats["Lines deleted"] -= stats["Unassigned numbers in Ellis"]
+    stats["Simservs & iFCs deleted"] -= stats["Unassigned numbers in Ellis"]
     print "\nSummary:"
     table_format = "{:<40}{}"
     for s in stats:
