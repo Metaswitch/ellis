@@ -650,7 +650,7 @@ var clearwater = (function(mod, $){
                 var clone = templateRow.clone();
                 clone.removeClass("template");
                 $(clone).find(".name").text(" " + name);
-                var ASCheckBox = $(clone).find("#as-row");
+                var ASCheckBox = $(clone).find(".as-checkbox");
                 // If this AS is already in the iFCs, pre-check this box
                 var node = $.parseXML(allAppServers[name]);
                 if (XMLContains(iFCXML, node)) {
