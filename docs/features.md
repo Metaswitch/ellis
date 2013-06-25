@@ -66,7 +66,7 @@ By editing the /usr/share/clearwater/ellis/web-content/js/app-servers.json
 file, additional user-configurable application servers can be added. This file
 maps user-friendly application-server names (e.g. "Voicemail server") to an
 InitialFilterCriteria XML node, which will be added to or removed from the list
-of iFCs on Homestead as the ser selects or unselects it in the configuration
+of iFCs on Homestead as the user selects or unselects it in the configuration
 dialog.
 
 Homer

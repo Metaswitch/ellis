@@ -195,11 +195,12 @@ var clearwater = (function(mod, $){
               }
             });
             $(publicIdRowClone).find(".configure-button").click(function() {
-              function displayConfigure(simservsData, gabData, iFCData){
+              function displayConfigure(simservsData, gabData, iFCData, iFCJSONData){
                 dashboardPage.populateConfigureModal(number["sip_uri"],
                                                      $.parseXML(simservsData[0]),
                                                      gabData[0]["gab_listed"],
-                                                     $.parseXML(iFCData[0]));
+                                                     $.parseXML(iFCData[0]),
+                                                     iFCJSONData[0]);
               }
 
               var simservsGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
@@ -211,8 +212,11 @@ var clearwater = (function(mod, $){
               var iFCGet = dashboardPage.getHttp(accUrlPrefix + "/numbers/" +
                                                       encodeURIComponent(number["sip_uri"]) + "/ifcs",
                                                       {});
+
+              // Gets the mapping of AS names to iFC XML fragments
+              var iFCJSONGet = dashboardPage.getHttp("/js/app-servers.json", {});
               // Fetch data in parallel, launching modal when all requests complete
-              $.when(simservsGet, gabGet, iFCGet)
+              $.when(simservsGet, gabGet, iFCGet, iFCJSONGet)
                 .done(displayConfigure)
                 .fail(function() {
                   log("Failed to retrieve configuration from server.");
@@ -245,15 +249,19 @@ var clearwater = (function(mod, $){
     $(".hovertip").tooltip();
   };
 
-    dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed, iFCXML) {
+    dashboardPage.populateConfigureModal = function(sip_uri, xml, gabListed, iFCXML, iFCJSONMapping) {
     // We reuse the modal dialog, so be sure to cleanup when closing, see the cleanup() function below
     var configureModal = $("#configure-modal");
-    var activeAppServers = []; //Populated when we create the checkboxes for the AS tab
+    var activeAppServers = {}; //Populated when we create the checkboxes for the AS tab
+    var allAppServers = iFCJSONMapping;
     
     var saveConfiguration = function(){
-      for (var i = 0; i < activeAppServers.length; i++) {
-          var name = activeAppServers[i];
-          $(iFCXML).find("ServiceProfile").append(allAppServers[name]);
+      var names = Object.keys(allAppServers);
+      for (var i = 0; i < names.length; i++) {
+          var name = names[i];
+          if (activeAppServers[name]) {
+              $(iFCXML).find("ServiceProfile").append(allAppServers[name]);
+          }
       }
     
       var putSimservs = dashboardPage.putHttp(accUrlPrefix + "/numbers/" +
@@ -322,14 +330,18 @@ var clearwater = (function(mod, $){
       }
     }
 
-    var XMLcontains = function(container, contained) {
-        var container_str = new XMLSerializer().serializeToString(container);
-        var contained_str = new XMLSerializer().serializeToString(contained);
-        return (container_str.indexOf(contained_str) != -1);
+    var XMLContains = function(container, contained) {
+        var containerStr = new XMLSerializer().serializeToString(container);
+        var containedStr = new XMLSerializer().serializeToString(contained);
+        return (containerStr.indexOf(containedStr) != -1);
    }
 
     var removeFromXML = function(xml, node) {
-        $(xml).find('InitialFilterCriteria').filter(function() {return new XMLSerializer().serializeToString(this) == new XMLSerializer().serializeToString(node)}).remove()
+        var iFCNodes = $(xml).find('InitialFilterCriteria');
+        var matchingiFCNodes = iFCNodes.filter(function() {
+          return new XMLSerializer().serializeToString(this) == new XMLSerializer().serializeToString(node)
+        });
+        matchingiFCNodes.remove();
     }
     
     // Privacy
@@ -627,44 +639,36 @@ var clearwater = (function(mod, $){
     setupBarring('incoming');
     setupBarring('outgoing');
 
-    dashboardPage.populateASTemplate = function() {
+    populateASTemplate = function(allAppServers) {
         var templateRow = configureModal.find(".as-row.template");
         var tbody = templateRow.parent();
-
-        // Build a list of names of all the app servers
-        var names = [];
-        for (var k in allAppServers) {
-            if (allAppServers.hasOwnProperty(k)) {
-                names.push(k);
-            }
-        }
+        var names = Object.keys(allAppServers);
 
         // Loop through all possible ASes in the config file and create a checkbox for each
         for (var i = 0; i < names.length; i++) {
-            (function(i) {
+            (function(name) {
                 var clone = templateRow.clone();
                 clone.removeClass("template");
-                $(clone).find(".name").text(" " + names[i]);
+                $(clone).find(".name").text(" " + name);
                 var ASCheckBox = $(clone).find("#as-row");
                 // If this AS is already in the iFCs, pre-check this box
-                var node = $.parseXML(allAppServers[names[i]]);
-                if (XMLcontains(iFCXML, node)) {
+                var node = $.parseXML(allAppServers[name]);
+                if (XMLContains(iFCXML, node)) {
                     ASCheckBox.prop("checked", "true");
-                    activeAppServers.push(names[i]);
+                    activeAppServers[name] = true;
                     removeFromXML(iFCXML, node)
                 } else {
                     ASCheckBox.removeProp("checked");
                 }
                 ASCheckBox.click(function(){
-                    if (ASCheckBox.prop("checked")) {
-                        activeAppServers.push(names[i]);
+                    if (ASCheckBox.is(":checked")) {
+                        activeAppServers[name] = true;
                     } else {
-                        var index = activeAppServers.indexOf(names[i]);
-                        activeAppServers.splice(index, 1);
+                        activeAppServers[name] = false;
                     }
                 });
                 tbody.append(clone);
-            })(i);
+            })(names[i]);
         }
 
         // If we don't have any configured, show an informative message rather than a blank tab
@@ -675,7 +679,7 @@ var clearwater = (function(mod, $){
         }
     };
 
-    dashboardPage.populateASTemplate();
+    populateASTemplate(iFCJSONMapping);
 
 
     // As we reuse the same modal dialog we need to do some cleanup, eg unbind click handlers

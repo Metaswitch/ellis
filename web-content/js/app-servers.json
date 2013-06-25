@@ -1,3 +1,2 @@
-var allAppServers = {
-//"Default Clearwater TAS" : "<InitialFilterCriteria><Priority>0</Priority><TriggerPoint><ConditionTypeCNF></ConditionTypeCNF><SPT><ConditionNegated>0</ConditionNegated><Group>0</Group><Method>INVITE</Method><Extension></Extension></SPT></TriggerPoint><ApplicationServer><ServerName>sip:mmtel.example.com</ServerName><DefaultHandling>0</DefaultHandling></ApplicationServer></InitialFilterCriteria>",
+{
 }
