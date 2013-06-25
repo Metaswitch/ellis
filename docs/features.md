@@ -36,6 +36,13 @@ Users can self-provision their own numbers, either internal or PSTN,
 and can control which of their numbers (if any) are exposed in the
 global address book.
 
+A number corresponds to a public and private identity pair stored in
+Homestead. When creating a number, the Ellis UI allows associating it with an
+existing private identity. If no private identity is provided, Ellis
+will automatically generate a private identity based on the public identity.
+E.g. a public identity of *sip:alice@sip.com* will produce a private id of
+*alice@sip.com*
+
 Global Address Book
 -------------------
 
