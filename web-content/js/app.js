@@ -260,7 +260,8 @@ var clearwater = (function(mod, $){
       for (var i = 0; i < names.length; i++) {
           var name = names[i];
           if (activeAppServers[name]) {
-              $(iFCXML).find("ServiceProfile").append(allAppServers[name]);
+              var iFCNodes = $($.parseXML(allAppServers[name])).find("InitialFilterCriteria");
+              $(iFCXML).find("ServiceProfile").append(iFCNodes);
           }
       }
     
