@@ -184,6 +184,7 @@
                 <li class="active"><a href="#privacy-pane" data-toggle="tab">Privacy</a></li>
                 <li><a href="#redirect-pane" data-toggle="tab">Redirect</a></li>
                 <li><a href="#barring-pane" data-toggle="tab">Barring</a></li>
+                <li><a href="#as-pane" data-toggle="tab">Application Servers</a></li>
             </ul>
             <div class="tab-content">
                 <div id="privacy-pane" class="tab-pane fade in active">
@@ -312,6 +313,22 @@
                         </div>
                     </form>
                 </div>
+
+                <div id="as-pane" class="tab-pane fade">
+
+                    <p class="alert alert-info" style="display: none" id="no-as">
+                    <strong>Information:</strong> there are no configured Application Servers to select.
+                    </p>
+                    <form class="form-horizontal">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="as-row template">
+                                    <input type="checkbox" class="as-checkbox">  <span class="name">TEMPLATE</span>
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
         <div class="modal-footer">
@@ -320,15 +337,15 @@
         </div>
     </div>
     <p class="alert alert-info" style="display: none" id="no-numbers">
-        <strong>Information:</strong> you don't currently have any phone numbers.
-        Click "Create" above to create one.
+    <strong>Information:</strong> you don't currently have any phone numbers.
+    Click "Create" above to create one.
     </p>
     <p class="alert alert-error" style="display: none" id="no-numbers">
-        <strong>Error:</strong> Failed to retrieve numbers.  Please refresh this
-        page.
+    <strong>Error:</strong> Failed to retrieve numbers.  Please refresh this
+    page.
     </p>
 
-  </div>
+</div>
 
 
 
