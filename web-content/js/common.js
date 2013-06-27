@@ -465,10 +465,12 @@ var clearwater = (function(mod, $){
       log("Page " + newLocation + " not found, using default.");
       page = mod.pages[""];
       if (!page) {
-        throw "Default page not found";
+        log("Default page not found");
       }
     }
-    changePage(page, state);
+    if (page) {
+      changePage(page, state);
+    }
   });
   
   function rewriteUrls(selector) {
