@@ -37,10 +37,14 @@ defined in `.gitmodules`:
   support for building Debian packages which is shared between all
   components of Clearwater.
 
-If you are using git, you can check out these submodules automatically
-with
+If you are using git, you can check out the Ellis codebase with
 
-    git submodule update --init --recursive
+    git clone --recursive git@github.com:Metaswitch/ellis.git
+
+This accesses the repository over SSH on Github, and will not work unless you have a Github account and registered SSH key. If you do not have both of these, you will need to configure Git to read over HTTPS instead:
+
+    git config --global url."https://github.com/".insteadOf git@github.com:
+    git clone --recursive git@github.com:Metaswitch/ellis.git 
 
 Building
 ========
