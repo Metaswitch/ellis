@@ -468,6 +468,7 @@ class TestAccountHandler(BaseTest):
                                   delete_user):
         # Setup
         get_numbers.return_value = [copy.copy(NUMBER_OBJ), copy.copy(NUMBER_OBJ2)]
+        self.handler.forward_error = MagicMock()
 
         # Test
         self.handler.delete(EMAIL)
@@ -480,12 +481,12 @@ class TestAccountHandler(BaseTest):
                                             self.handler._on_delete_post_failure)
 
         # Simulate failure of the request.
-        self.handler._on_delete_post_failure([Mock()])
+        mock_request = Mock()
+        self.handler._on_delete_post_failure(mock_request)
 
         # Assert that we bin out and don't delete the number or user locally
         self.assertFalse(delete_user.called)
-        self.handler.set_status.assert_called_once_with(httplib.BAD_GATEWAY)
-        self.handler.finish.assert_called_once_with({"status": 502, "detail": {}, "message": "Bad Gateway", "reason": "Upstream request failed.", "error": True})
+        self.handler.forward_error.assert_called_once_with(mock_request)
 
 
 if __name__ == "__main__":
