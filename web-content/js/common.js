@@ -273,11 +273,16 @@ var clearwater = (function(mod, $){
     return req;
   }
   
+  function reportError(request) {
+    console.log(request.responseText);
+  }
+
   Page.prototype.getHttp = function(url, data) {
     log("Getting " + url);
     var req = getHttp(url, data);
-    req.fail(function() {
+    req.fail(function(data) {
       alert("Failed to retrieve some data from the server.  Please refresh the page.");
+      reportError(data);
     });
     this.addInProgressReq(req);
     return req;
@@ -286,8 +291,9 @@ var clearwater = (function(mod, $){
   Page.prototype.postHttp = function(url, data) {
     log("Posting to " + url);
     var req = postHttp(url, data);
-    req.fail(function() {
+    req.fail(function(data) {
       alert("Failed to update the server.  Please refresh the page.");
+      reportError(data);
     });
     this.addInProgressReq(req);
     return req;
@@ -296,8 +302,9 @@ var clearwater = (function(mod, $){
   Page.prototype.putHttp = function(url, data) {
     log("Putting to " + url);
     var req = putHttp(url, data);
-    req.fail(function() {
+    req.fail(function(data) {
       alert("Failed to update the server.  Please refresh the page.");
+      reportError(data);
     });
     this.addInProgressReq(req);
     return req;
@@ -306,8 +313,9 @@ var clearwater = (function(mod, $){
   Page.prototype.deleteHttp = function(url, data) {
     log("Deleting " + url);
     var req = deleteHttp(url, data);
-    req.fail(function() {
+    req.fail(function(data) {
       alert("Failed to delete from the server.  Please try again.");
+      reportError(data);
     });
     this.addInProgressReq(req);
     return req;
