@@ -481,12 +481,12 @@ class TestAccountHandler(BaseTest):
                                             self.handler._on_delete_post_failure)
 
         # Simulate failure of the request.
-        mock_request = Mock()
-        self.handler._on_delete_post_failure(mock_request)
+        mock_response = Mock()
+        self.handler._on_delete_post_failure(mock_response)
 
         # Assert that we bin out and don't delete the number or user locally
         self.assertFalse(delete_user.called)
-        self.handler.forward_error.assert_called_once_with(mock_request)
+        self.handler.forward_error.assert_called_once_with(mock_response)
 
 
 if __name__ == "__main__":

@@ -275,13 +275,13 @@ var clearwater = (function(mod, $){
   
   function reportError(request) {
     console.log(request.responseText);
+    alert("Failed to update the server (see detailed diagnostics in developer console). Please refresh the page.");
   }
 
   Page.prototype.getHttp = function(url, data) {
     log("Getting " + url);
     var req = getHttp(url, data);
     req.fail(function(data) {
-      alert("Failed to retrieve some data from the server.  Please refresh the page.");
       reportError(data);
     });
     this.addInProgressReq(req);
@@ -292,7 +292,6 @@ var clearwater = (function(mod, $){
     log("Posting to " + url);
     var req = postHttp(url, data);
     req.fail(function(data) {
-      alert("Failed to update the server.  Please refresh the page.");
       reportError(data);
     });
     this.addInProgressReq(req);
@@ -303,7 +302,6 @@ var clearwater = (function(mod, $){
     log("Putting to " + url);
     var req = putHttp(url, data);
     req.fail(function(data) {
-      alert("Failed to update the server.  Please refresh the page.");
       reportError(data);
     });
     this.addInProgressReq(req);
@@ -314,7 +312,6 @@ var clearwater = (function(mod, $){
     log("Deleting " + url);
     var req = deleteHttp(url, data);
     req.fail(function(data) {
-      alert("Failed to delete from the server.  Please try again.");
       reportError(data);
     });
     this.addInProgressReq(req);

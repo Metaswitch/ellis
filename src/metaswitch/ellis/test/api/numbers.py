@@ -563,9 +563,9 @@ class TestRemoteProxyHandler(BaseTest):
         self.handler.remote_get.assert_called_once_with(SIP_URI, ANY)
 
         # Simulate error of xdm request.
-        mock_request = Mock()
-        self.handler._on_get_failure(mock_request)
-        self.handler.forward_error.assert_called_once_with(mock_request)
+        mock_response = Mock()
+        self.handler._on_get_failure(mock_response)
+        self.handler.forward_error.assert_called_once_with(mock_response)
 
 
     @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
@@ -607,9 +607,9 @@ class TestRemoteProxyHandler(BaseTest):
         self.handler.remote_put.assert_called_once_with(SIP_URI, "<xml>new</xml>", ANY)
 
         # Simulate error of xdm request.
-        mock_request = Mock()
-        self.handler._on_put_failure(mock_request)
-        self.handler.forward_error.assert_called_once_with(mock_request)
+        mock_response = Mock()
+        self.handler._on_put_failure(mock_response)
+        self.handler.forward_error.assert_called_once_with(mock_response)
 
 class TestSimservsHandler(BaseTest):
     """
