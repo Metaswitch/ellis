@@ -57,6 +57,7 @@ class NumbersHandler(_base.LoggedInHandler):
         super(NumbersHandler, self).__init__(application, request, **kwargs)
         self._request_group = None
         self.__response = None
+        self.__failure_response = None
         self._numbers = None
 
     @asynchronous
@@ -105,7 +106,7 @@ class NumbersHandler(_base.LoggedInHandler):
 
     def _on_get_failure(self, response):
         _log.warn("Failed to fetch private identities from homestead")
-        self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
+        self.forward_error(response)
 
     @asynchronous
     def post(self, username):
@@ -184,17 +185,19 @@ class NumbersHandler(_base.LoggedInHandler):
 
     def _on_post_failure(self, response):
         _log.warn("Failed to update all the backends")
+        # Save off response so we can pass error through
+        self.__failure_response = response
         # Try to back out the changes so we don't leave orphaned data.
         remove_public_id(self.db_session(), self.sip_uri,
                          self._on_backout_success, self._on_backout_failure)
 
     def _on_backout_success(self, responses):
         _log.warn("Backed out changes after failure")
-        self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
+        self.forward_error(self.__failure_response)
 
     def _on_backout_failure(self, responses):
         _log.warn("Failed to back out changes after failure")
-        self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
+        self.forward_error(self.__failure_response)
 
 def remove_public_id(db_sess, sip_uri, on_success, on_failure):
     """
@@ -281,7 +284,7 @@ class NumberHandler(_base.LoggedInHandler):
 
     def _on_delete_failure(self, response):
         _log.debug("At least one request failed.")
-        self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
+        self.forward_error(response)
 
 
 class SipPasswordHandler(_base.LoggedInHandler):
@@ -310,16 +313,16 @@ class SipPasswordHandler(_base.LoggedInHandler):
                                                 self.on_put_password_failure)
         homestead.put_password(private_id, self.sip_password, self._request_group.callback())
 
-    def on_get_privates_failure(self, responses):
-        _log.error("Failed to get associated private ID from homestead %s", responses[0])
-        self.send_error(httplib.BAD_GATEWAY)
+    def on_get_privates_failure(self, response):
+        _log.error("Failed to get associated private ID from homestead %s", response)
+        self.forward_error(response)
 
     def on_put_password_success(self, responses):
         self.finish({"sip_password": self.sip_password})
 
-    def on_put_password_failure(self, responses):
-        _log.error("Failed to set password in homestead %s", responses[0])
-        self.send_error(httplib.BAD_GATEWAY)
+    def on_put_password_failure(self, response):
+        _log.error("Failed to set password in homestead %s", response)
+        self.forward_error(response)
 
 class RemoteProxyHandler(_base.LoggedInHandler):
     def __init__(self, application, request, **kwargs):
@@ -355,7 +358,7 @@ class RemoteProxyHandler(_base.LoggedInHandler):
 
     def _on_get_failure(self, response):
         _log.warn("Failed to fetch from %s" % self.remote_name)
-        self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
+        self.forward_error(response)
 
     @asynchronous
     def put(self, username, sip_uri):
@@ -373,7 +376,7 @@ class RemoteProxyHandler(_base.LoggedInHandler):
 
     def _on_put_failure(self, response):
         _log.warn("Failed to update %s" % self.remote_name)
-        self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
+        self.forward_error(response)
 
 class SimservsHandler(RemoteProxyHandler):
     def __init__(self, application, request, **kwargs):

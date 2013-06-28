@@ -274,6 +274,14 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
             self.set_status(status_code)
             self.finish(data)
 
+    def forward_error(self, response):
+        """
+        Forwards on an error from a remote backend
+        """
+        self.send_error(httplib.BAD_GATEWAY,
+                        reason="Upstream request failed",
+                        detail={"Upstream error": str(response.error)})
+
     def send_error(self, status_code=500, reason="unknown", detail={}, **kwargs):
         """
         Sends an error response to the client, finishing the request in the

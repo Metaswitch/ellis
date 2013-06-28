@@ -338,7 +338,7 @@ class TestNumberHandler(BaseTest):
         HTTPCallbackGroup.return_value = MagicMock()
         on_success_handler = MagicMock()
         on_failure_handler = MagicMock()
-        self.handler.send_error = MagicMock()
+        self.handler.forward_error = MagicMock()
         if original_id:
             sip_uri = SIP_URI
         else:
@@ -392,7 +392,7 @@ class TestNumberHandler(BaseTest):
         HTTPCallbackGroup.return_value = MagicMock()
         on_success_handler = MagicMock()
         on_failure_handler = MagicMock()
-        self.handler.send_error = MagicMock()
+        self.handler.forward_error = MagicMock()
         sip_uri = SIP_URI2
 
         # Test
@@ -552,7 +552,7 @@ class TestRemoteProxyHandler(BaseTest):
         HTTPCallbackGroup.return_value = MagicMock()
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
         self.handler.check_number_ownership = Mock()
-        self.handler.send_error = MagicMock()
+        self.handler.forward_error = MagicMock()
 
         # Test
         self.handler.get("foobar", SIP_URI)
@@ -563,8 +563,9 @@ class TestRemoteProxyHandler(BaseTest):
         self.handler.remote_get.assert_called_once_with(SIP_URI, ANY)
 
         # Simulate error of xdm request.
-        self.handler._on_get_failure(Mock())
-        self.handler.send_error.assert_called_once_with(httplib.BAD_GATEWAY, reason="Upstream request failed.")
+        mock_response = Mock()
+        self.handler._on_get_failure(mock_response)
+        self.handler.forward_error.assert_called_once_with(mock_response)
 
 
     @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
@@ -595,7 +596,7 @@ class TestRemoteProxyHandler(BaseTest):
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
         self.handler.check_number_ownership = Mock()
         self.request.body = "<xml>new</xml>"
-        self.handler.send_error = MagicMock()
+        self.handler.forward_error = MagicMock()
 
         # Test
         self.handler.put("foobar", SIP_URI)
@@ -606,8 +607,9 @@ class TestRemoteProxyHandler(BaseTest):
         self.handler.remote_put.assert_called_once_with(SIP_URI, "<xml>new</xml>", ANY)
 
         # Simulate error of xdm request.
-        self.handler._on_put_failure(Mock())
-        self.handler.send_error.assert_called_once_with(httplib.BAD_GATEWAY, reason="Upstream request failed.")
+        mock_response = Mock()
+        self.handler._on_put_failure(mock_response)
+        self.handler.forward_error.assert_called_once_with(mock_response)
 
 class TestSimservsHandler(BaseTest):
     """

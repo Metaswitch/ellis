@@ -193,4 +193,4 @@ class AccountHandler(_base.LoggedInHandler):
         _log.warn("Failed to update all the backends for %s", self._sip_uri)
         # Bin out.  We will end up leaving some backends with data, but the number
         # will still be owned by this user, so they can try deleting again.
-        self.send_error(httplib.BAD_GATEWAY, reason="Upstream request failed.")
+        self.forward_error(response)

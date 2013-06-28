@@ -273,11 +273,16 @@ var clearwater = (function(mod, $){
     return req;
   }
   
+  function reportError(request) {
+    console.log(request.responseText);
+    alert("Failed to update the server (see detailed diagnostics in developer console). Please refresh the page.");
+  }
+
   Page.prototype.getHttp = function(url, data) {
     log("Getting " + url);
     var req = getHttp(url, data);
-    req.fail(function() {
-      alert("Failed to retrieve some data from the server.  Please refresh the page.");
+    req.fail(function(data) {
+      reportError(data);
     });
     this.addInProgressReq(req);
     return req;
@@ -286,8 +291,8 @@ var clearwater = (function(mod, $){
   Page.prototype.postHttp = function(url, data) {
     log("Posting to " + url);
     var req = postHttp(url, data);
-    req.fail(function() {
-      alert("Failed to update the server.  Please refresh the page.");
+    req.fail(function(data) {
+      reportError(data);
     });
     this.addInProgressReq(req);
     return req;
@@ -296,8 +301,8 @@ var clearwater = (function(mod, $){
   Page.prototype.putHttp = function(url, data) {
     log("Putting to " + url);
     var req = putHttp(url, data);
-    req.fail(function() {
-      alert("Failed to update the server.  Please refresh the page.");
+    req.fail(function(data) {
+      reportError(data);
     });
     this.addInProgressReq(req);
     return req;
@@ -306,8 +311,8 @@ var clearwater = (function(mod, $){
   Page.prototype.deleteHttp = function(url, data) {
     log("Deleting " + url);
     var req = deleteHttp(url, data);
-    req.fail(function() {
-      alert("Failed to delete from the server.  Please try again.");
+    req.fail(function(data) {
+      reportError(data);
     });
     this.addInProgressReq(req);
     return req;
@@ -465,10 +470,12 @@ var clearwater = (function(mod, $){
       log("Page " + newLocation + " not found, using default.");
       page = mod.pages[""];
       if (!page) {
-        throw "Default page not found";
+        log("Default page not found");
       }
     }
-    changePage(page, state);
+    if (page) {
+      changePage(page, state);
+    }
   });
   
   function rewriteUrls(selector) {
