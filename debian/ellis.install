@@ -1,4 +1,5 @@
 eggs usr/share/clearwater/ellis/
+_env/lib/python2.7/site-packages/zc.buildout-2.2.0-py2.7.egg usr/share/clearwater/ellis/eggs/
 setup.py usr/share/clearwater/ellis/
 src usr/share/clearwater/ellis/
 web-content usr/share/clearwater/ellis/
