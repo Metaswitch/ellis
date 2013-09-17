@@ -36,14 +36,15 @@
 import logging
 import urllib
 import json
+import re
 
-from tornado.web import HTTPError
 from tornado import httpclient
 
 from metaswitch.ellis import settings
 from metaswitch.common import utils
 
 _log = logging.getLogger("ellis.remote")
+
 
 def ping():
     """Make sure we can reach homestead"""
@@ -52,83 +53,62 @@ def ping():
         scheme = "http"
     else:
         scheme = "https"
+
     url = "%s://%s/ping" % (scheme, settings.HOMESTEAD_URL)
-    def callback(response):
+
+    def ping_callback(response):
         if response.body == "OK":
             _log.info("Pinged Homestead OK")
         else:
-            # Shouldn't happen, as if we can reach the server, it should respond with OK
-            # If it doesn't assume we've reached the wrong machine
-            _log.error("Failed to ping Homestead at %s. Have you configured your HOMESTEAD_URL?" % url)
-    homestead_client.fetch(url, callback)
+            # Shouldn't happen, as if we can reach the server, it should
+            # respond with OK If it doesn't assume we've reached the wrong
+            # machine
+            _log.error("Failed to ping Homestead at %s."
+                       " Have you configured your HOMESTEAD_URL?" % url)
 
-def fetch(url, callback, **kwargs):
-    http_client = httpclient.AsyncHTTPClient()
-    http_client.fetch(url, callback, **kwargs)
+    homestead_client.fetch(url, ping_callback)
 
-def url_prefix():
-    if settings.ALLOW_HTTP:
-        scheme = "http"
-        _log.warn("Passing SIP password in the clear over http")
-    else:
-        scheme = "https"
-    url = "%s://%s/" % \
-            (scheme, settings.HOMESTEAD_URL)
-    return url
-
-def digest_url(private_id):
-    encoded_private_id = urllib.quote_plus(private_id)
-    url = url_prefix() + ("privatecredentials/%s/digest" % encoded_private_id)
-    return url
-
-def filter_url(public_id):
-    encoded_public_id = urllib.quote_plus(public_id)
-    url = url_prefix() + "filtercriteria/%s" % (encoded_public_id)
-    return url
-
-def associated_public_url(private_id, public_id=None):
-    encoded_private_id = urllib.quote_plus(private_id)
-    url = url_prefix() + "associatedpublic/%s" % (encoded_private_id)
-    if public_id:
-        encoded_public_id = urllib.quote_plus(public_id)
-        url += "/%s" % (encoded_public_id)
-    return url
-
-def associated_private_url(public_id, private_id=None):
-    encoded_public_id = urllib.quote_plus(public_id)
-    url = url_prefix() + "associatedprivate/%s" % (encoded_public_id)
-    if private_id:
-        encoded_private_id = urllib.quote_plus(private_id)
-        url += "/%s" % (encoded_private_id)
-    return url
 
 def get_digest(private_id, callback):
     """
     Retreives a digest from Homestead for a given private id
     callback receives the HTTPResponse object. Note the homestead api returns
-    {"digest": "<digest>"}, rather than just the digest
+    {"digest_ha1": "<digest>"}, rather than just the digest
     """
-    url = digest_url(private_id)
-    fetch(url, callback, method='GET')
+    url = _private_id_url(private_id)
+    _fetch(url, callback, method='GET')
+
+
+def create_private_id(private_id, password, callback):
+    put_password(private_id, password, callback)
+    irs_url = _new_irs_url()
+    uuid = _sync_fetch(irs_url, method="POST")
+    url = _associate_new_irs_url(private_id, uuid)
+    _sync_fetch(url, method="POST")
+
 
 def put_password(private_id, password, callback):
     """
     Posts a new password to Homestead for a given private id
     callback receives the HTTPResponse object.
     """
-    url = digest_url(private_id)
-    digest = utils.md5("%s:%s:%s" % (private_id, settings.SIP_DIGEST_REALM, password))
-    body = json.dumps({"digest" : digest})
+    url = _private_id_url(private_id)
+    digest = utils.md5("%s:%s:%s" % (private_id,
+                                     settings.SIP_DIGEST_REALM,
+                                     password))
+    body = json.dumps({"digest_ha1": digest})
     headers = {"Content-Type": "application/json"}
-    fetch(url, callback, method='PUT', headers=headers, body=body)
+    _fetch(url, callback, method='PUT', headers=headers, body=body)
 
-def delete_password(private_id, callback):
+
+def delete_private_id(private_id, callback):
     """
     Deletes a password from Homestead for a given private id
     callback receives the HTTPResponse object.
     """
-    url = digest_url(private_id)
-    fetch(url, callback, method='DELETE')
+    url = _private_id_url(private_id)
+    _fetch(url, callback, method='DELETE')
+
 
 def get_associated_publics(private_id, callback):
     """
@@ -136,92 +116,166 @@ def get_associated_publics(private_id, callback):
     from Homestead.
     callback receives the HTTPResponse object.
     """
-    url = associated_public_url(private_id)
-    fetch(url, callback, method='GET')
+    url = _associated_public_url(private_id)
+    _fetch(url, callback, method='GET')
 
-def post_associated_public(private_id, public_id, callback):
+
+def create_public_id(private_id, public_id, callback):
     """
     Posts a new public identity to associate with a given private identity
     to Homestead.
     callback receives the HTTPResponse object.
     """
-    url = associated_public_url(private_id)
-    body = urllib.urlencode({"public_id" : public_id})
-    fetch(url, callback, method='POST', body=body)
+    url = _associated_irs_url(private_id)
+    irs = _get_irs_uuid(_location(_sync_fetch(url, method='GET')))
+    sp_url = _new_service_profile_url(irs)
+    sp = _get_sp_uuid(_location(_sync_fetch(sp_url, method='GET')))
+    public_url = _new_public_id_url(irs, sp, public_id)
+    body = "<PublicIdentity><Identity>" + \
+           public_id + \
+           "</Identity></PublicIdentity>"
+    _fetch(public_url, callback, method='PUT', body=body)
 
-def delete_associated_public(private_id, public_id, callback):
+
+def delete_public_id(public_id, callback):
     """
     Deletes an association between a public and private identity in Homestead
     callback receives the HTTPResponse object.
     """
-    url = associated_public_url(private_id, public_id)
-    fetch(url, callback, method='DELETE')
+    public_to_sp_url = _sp_from_public_id(public_id)
+    response = _sync_fetch(public_to_sp_url, method='GET')
+    location = _location(response)
+    url = _make_url_without_prefix(location+"/public_ids/{}", public_id)
+    _fetch(url, callback, method='DELETE')
 
-def delete_associated_publics(private_id, callback):
-    """
-    Deletes all associations between public and private
-    identities for the given private identity in Homestead
-    callback receives the HTTPResponse object.
-    """
-    url = associated_public_url(private_id)
-    fetch(url, callback, method='DELETE')
 
 def get_associated_privates(public_id, callback):
     """
-    Retreives the associated private identities for a given public identity
+    Retrieves the associated private identities for a given public identity
     from Homestead.
     callback receives the HTTPResponse object.
     """
-    url = associated_private_url(public_id)
-    fetch(url, callback, method='GET')
+    url = _associated_private_url(public_id)
+    _fetch(url, callback, method='GET')
 
-def post_associated_private(public_id, private_id, callback):
-    """
-    Posts a new private identity to associate with a given public identity
-    to Homestead.
-    callback receives the HTTPResponse object.
-    """
-    url = associated_private_url(public_id)
-    body = urllib.urlencode({"private_id" : private_id})
-    fetch(url, callback, method='POST', body=body)
-
-def delete_associated_private(public_id, private_id, callback):
-    """
-    Deletes an association between a private and public identity in Homestead
-    callback receives the HTTPResponse object.
-    """
-    url = associated_private_url(public_id, private_id)
-    fetch(url, callback, method='DELETE')
-
-def delete_associated_privates(public_id, callback):
-    """
-    Deletes all associations between private and public
-    identities for the given public identity in Homestead
-    callback receives the HTTPResponse object.
-    """
-    url = associated_private_url(public_id)
-    fetch(url, callback, method='DELETE')
 
 def get_filter_criteria(public_id, callback):
     """
     Retrieves the filter criteria associated with the given public ID.
     """
-    url = filter_url(public_id)
-    fetch(url, callback, method='GET')
+    sp_url = _sp_from_public_id(public_id)
+    sp_location = _location(_sync_fetch(sp_url, method='GET'))
+    url = _make_url_without_prefix(sp_location + "/filter_criteria")
+    _fetch(url, callback, method='GET')
+
 
 def put_filter_criteria(public_id, ifcs, callback):
     """
     Updates the initial filter criteria in Homestead for the given line.
     callback receives the HTTPResponse object.
     """
-    url = filter_url(public_id)
-    headers = {"Content-Type": "application/json"}
-    fetch(url, callback, method='PUT', headers=headers, body=ifcs)
+    sp_url = _sp_from_public_id(public_id)
+    sp_location = _location(_sync_fetch(sp_url, method='GET'))
+    url = _make_url_without_prefix(sp_location + "/filter_criteria")
+    _fetch(url, callback, method='PUT', body=ifcs)
 
-def delete_filter_criteria(public_id, callback):
-    """
-    Deletes the filter criteria associated with the given public ID.
-    """
-    url = filter_url(public_id)
-    fetch(url, callback, method='DELETE')
 
+# Utility functions
+
+def _location(httpresponse):
+    if httpresponse.headers.get_list('Location'):
+        return httpresponse.headers.get_list('Location')[0]
+    else:
+        raise HTTPError(500)
+
+def _fetch(url, callback, **kwargs):
+    http_client = httpclient.AsyncHTTPClient()
+    http_client.fetch(url, callback, **kwargs)
+
+
+def _sync_fetch(url, **kwargs):
+    http_client = httpclient.HTTPClient()
+    return http_client.fetch(url, **kwargs)
+
+
+def _url_prefix():
+    if settings.ALLOW_HTTP:
+        scheme = "http"
+        _log.warn("Passing SIP password in the clear over http")
+    else:
+        scheme = "https"
+    url = "%s://%s/" % \
+          (scheme, settings.HOMESTEAD_URL)
+    return url
+
+
+def _private_id_url(private_id):
+    return _make_url("private/{}", private_id)
+
+
+def _filter_url(irs, service_profile):
+    return _make_url("irs/{}/service_profiles/{}/filter_criteria",
+                    irs,
+                    service_profile)
+
+
+def _associated_public_url(private_id):
+    return _make_url("private/{}/associated_public_ids", private_id)
+
+
+def _associated_private_url(public_id):
+    return _make_url("public/{}/associated_private_ids", public_id)
+
+
+def _new_public_id_url(irs, service_profile, public_id):
+    return _make_url("irs/{}/service_profiles/{}/public_ids/{}",
+                    irs,
+                    service_profile,
+                    public_id)
+
+
+def _new_irs_url():
+    return _make_url("irs/")
+
+
+def _new_service_profile_url(irs):
+    return _make_url("irs/{}/service_profiles", irs)
+
+
+def _associated_irs_url(private_id):
+    return _make_url("private/{}/associated_implicit_registration_sets",
+                    private_id)
+
+
+def _associate_new_irs_url(private_id, irs):
+    return _make_url("private/{}/associated_implicit_registration_sets/{}",
+                    private_id,
+                    irs)
+
+
+def _sp_from_public_id(public_id):
+    return _make_url('public/{}/service_profile', public_id)
+
+def _make_url_without_prefix(format_str, *args):
+    formatted_args = [urllib.quote_plus(arg) for arg in args]
+    return format_str.format(*formatted_args)
+
+
+def _make_url(format_str, *args):
+    return _url_prefix() + _make_url_without_prefix(format_str, *args)
+
+
+def _get_irs_uuid(url):
+    mo = re.search("irs/([^/]+)", url)
+    if not mo:
+        print url
+        return None
+    return mo.group(1)
+
+
+def _get_sp_uuid(url):
+    mo = re.search("irs/[^/]+/service_profiles/([^/]+)", url)
+    if not mo:
+        print url
+        return None
+    return mo.group(1)
