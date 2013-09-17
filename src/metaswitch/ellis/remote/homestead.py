@@ -183,6 +183,7 @@ def put_filter_criteria(public_id, ifcs, callback):
 # Utility functions
 
 def _location(httpresponse):
+    """Retrieves the Location header from this HTTP response, throwing a 500 error if it is missing"""
     if httpresponse.headers.get_list('Location'):
         return httpresponse.headers.get_list('Location')[0]
     else:
@@ -210,18 +211,22 @@ def _url_prefix():
 
 
 def _private_id_url(private_id):
+    """Returns the URL for accessing/setting/creating this private ID's password"""
     return _make_url("private/{}", private_id)
 
 
 def _associated_public_url(private_id):
+    """Returns the URL for learning this private ID's associated public IDs'"""
     return _make_url("private/{}/associated_public_ids", private_id)
 
 
 def _associated_private_url(public_id):
+    """Returns the URL for learning this public ID's associated private IDs'"""
     return _make_url("public/{}/associated_private_ids", public_id)
 
 
 def _new_public_id_url(irs, service_profile, public_id):
+    """Returns the URL for creating a new public ID in this service profile"""
     return _make_url("irs/{}/service_profiles/{}/public_ids/{}",
                     irs,
                     service_profile,
@@ -229,37 +234,45 @@ def _new_public_id_url(irs, service_profile, public_id):
 
 
 def _new_irs_url():
+    """Returns the URL for creating a new implicit registration set"""
     return _make_url("irs/")
 
 
 def _new_service_profile_url(irs):
+    """Returns the URL for creating a new service profile in this IRS"""
     return _make_url("irs/{}/service_profiles", irs)
 
 
 def _associated_irs_url(private_id):
+    """Returns the URL for learning this private ID's associated implicit registration sets"""
     return _make_url("private/{}/associated_implicit_registration_sets",
                     private_id)
 
 
 def _associate_new_irs_url(private_id, irs):
+    """Returns the URL for associating this private ID and IRS"""
     return _make_url("private/{}/associated_implicit_registration_sets/{}",
                     private_id,
                     irs)
 
 
 def _sp_from_public_id(public_id):
+    """Returns the URL for learning this public ID's service profile"""
     return _make_url('public/{}/service_profile', public_id)
 
 def _make_url_without_prefix(format_str, *args):
+    """Makes a URL by URL-escaping the args, and interpolating them into format_str"""
     formatted_args = [urllib.quote_plus(arg) for arg in args]
     return format_str.format(*formatted_args)
 
 
 def _make_url(format_str, *args):
+    """Makes a URL by URL-escaping the args, interpolating them into format_str, and adding a prefix"""
     return _url_prefix() + _make_url_without_prefix(format_str, *args)
 
 
 def _get_irs_uuid(url):
+    """Retrieves the UUID of an Implicit Registration Set from a URL"""
     mo = re.search("irs/([^/]+)", url)
     if not mo:
         print url
@@ -268,6 +281,7 @@ def _get_irs_uuid(url):
 
 
 def _get_sp_uuid(url):
+    """Retrieves the UUID of a Service Profile from a URL"""
     mo = re.search("irs/[^/]+/service_profiles/([^/]+)", url)
     if not mo:
         print url
