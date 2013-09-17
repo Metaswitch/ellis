@@ -82,7 +82,7 @@ def get_digest(private_id, callback):
 def create_private_id(private_id, password, callback):
     put_password(private_id, password, callback)
     irs_url = _new_irs_url()
-    uuid = _sync_fetch(irs_url, method="POST")
+    uuid = _get_irs_uuid(_location(_sync_fetch(irs_url, method="POST")))
     url = _associate_new_irs_url(private_id, uuid)
     _sync_fetch(url, method="POST")
 
@@ -211,12 +211,6 @@ def _url_prefix():
 
 def _private_id_url(private_id):
     return _make_url("private/{}", private_id)
-
-
-def _filter_url(irs, service_profile):
-    return _make_url("irs/{}/service_profiles/{}/filter_criteria",
-                    irs,
-                    service_profile)
 
 
 def _associated_public_url(private_id):

@@ -133,8 +133,26 @@ class TestHomesteadPasswords(TestHomestead):
 class TestHomesteadPrivateIDs(TestHomestead):
     """Tests for creating and deleting private IDs"""
 
-    def test_create_private_id_mainline(self):
-        pass
+    @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.common.utils.md5")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_create_private_id_mainline(self, settings, md5, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        md5.return_value = "md5_hash"
+        body = json.dumps({"digest_ha1": "md5_hash"})
+        homestead.create_private_id(PRIVATE_URI, "pw", callback)
+
+        md5.assert_called_once_with("pri@foo.bar:%s:pw" % settings.SIP_DIGEST_REALM)
+
+        self.mock_httpclient.fetch.assert_called_once_with(
+            'http://homestead/private/pri%40foo.bar',
+            callback,
+            body=body,
+            method='PUT',
+            headers={'Content-Type': 'application/json'})
+
 
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
