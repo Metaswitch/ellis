@@ -58,7 +58,7 @@ case "$1" in
     configure)
         # Create the specific user.
         if ! grep -q "^$NAME:" /etc/passwd ; then
-            useradd -M -d /nonexistent -s /bin/false $NAME
+            useradd --system -M -d /nonexistent -s /bin/false $NAME
         fi
         # Ensure the log directory exists and is owned by the user.
         mkdir -p -m 755 /var/log/$NAME
