@@ -39,6 +39,7 @@ import json
 import re
 
 from tornado import httpclient
+from tornado.web import HTTPError
 
 from metaswitch.ellis import settings
 from metaswitch.common import utils
@@ -76,15 +77,15 @@ def get_digest(private_id, callback):
     {"digest_ha1": "<digest>"}, rather than just the digest
     """
     url = _private_id_url(private_id)
-    _fetch(url, callback, method='GET')
+    _http_request(url, callback, method='GET')
 
 
 def create_private_id(private_id, password, callback):
     put_password(private_id, password, callback)
     irs_url = _new_irs_url()
-    uuid = _get_irs_uuid(_location(_sync_fetch(irs_url, method="POST")))
+    uuid = _get_irs_uuid(_location(_sync_http_request(irs_url, method="POST")))
     url = _associate_new_irs_url(private_id, uuid)
-    _sync_fetch(url, method="POST")
+    _sync_http_request(url, method="POST")
 
 
 def put_password(private_id, password, callback):
@@ -98,7 +99,7 @@ def put_password(private_id, password, callback):
                                      password))
     body = json.dumps({"digest_ha1": digest})
     headers = {"Content-Type": "application/json"}
-    _fetch(url, callback, method='PUT', headers=headers, body=body)
+    _http_request(url, callback, method='PUT', headers=headers, body=body)
 
 
 def delete_private_id(private_id, callback):
@@ -107,17 +108,16 @@ def delete_private_id(private_id, callback):
     callback receives the HTTPResponse object.
     """
     url = _private_id_url(private_id)
-    _fetch(url, callback, method='DELETE')
+    _http_request(url, callback, method='DELETE')
 
 
 def get_associated_publics(private_id, callback):
     """
-    Retreives the associated public identities for a given private identity
-    from Homestead.
-    callback receives the HTTPResponse object.
+    Retrieves the associated public identities for a given private identity
+    from Homestead. callback receives the HTTPResponse object.
     """
     url = _associated_public_url(private_id)
-    _fetch(url, callback, method='GET')
+    _http_request(url, callback, method='GET')
 
 
 def create_public_id(private_id, public_id, callback):
@@ -127,14 +127,14 @@ def create_public_id(private_id, public_id, callback):
     callback receives the HTTPResponse object.
     """
     url = _associated_irs_url(private_id)
-    irs = _get_irs_uuid(_location(_sync_fetch(url, method='GET')))
+    irs = _get_irs_uuid(_location(_sync_http_request(url, method='GET')))
     sp_url = _new_service_profile_url(irs)
-    sp = _get_sp_uuid(_location(_sync_fetch(sp_url, method='GET')))
+    sp = _get_sp_uuid(_location(_sync_http_request(sp_url, method='GET')))
     public_url = _new_public_id_url(irs, sp, public_id)
     body = "<PublicIdentity><Identity>" + \
            public_id + \
            "</Identity></PublicIdentity>"
-    _fetch(public_url, callback, method='PUT', body=body)
+    _http_request(public_url, callback, method='PUT', body=body)
 
 
 def delete_public_id(public_id, callback):
@@ -142,11 +142,11 @@ def delete_public_id(public_id, callback):
     Deletes an association between a public and private identity in Homestead
     callback receives the HTTPResponse object.
     """
-    public_to_sp_url = _sp_from_public_id(public_id)
-    response = _sync_fetch(public_to_sp_url, method='GET')
+    public_to_sp_url = _sp_from_public_id_url(public_id)
+    response = _sync_http_request(public_to_sp_url, method='GET')
     location = _location(response)
     url = _make_url_without_prefix(location+"/public_ids/{}", public_id)
-    _fetch(url, callback, method='DELETE')
+    _http_request(url, callback, method='DELETE')
 
 
 def get_associated_privates(public_id, callback):
@@ -156,17 +156,17 @@ def get_associated_privates(public_id, callback):
     callback receives the HTTPResponse object.
     """
     url = _associated_private_url(public_id)
-    _fetch(url, callback, method='GET')
+    _http_request(url, callback, method='GET')
 
 
 def get_filter_criteria(public_id, callback):
     """
     Retrieves the filter criteria associated with the given public ID.
     """
-    sp_url = _sp_from_public_id(public_id)
-    sp_location = _location(_sync_fetch(sp_url, method='GET'))
+    sp_url = _sp_from_public_id_url(public_id)
+    sp_location = _location(_sync_http_request(sp_url, method='GET'))
     url = _make_url_without_prefix(sp_location + "/filter_criteria")
-    _fetch(url, callback, method='GET')
+    _http_request(url, callback, method='GET')
 
 
 def put_filter_criteria(public_id, ifcs, callback):
@@ -174,27 +174,29 @@ def put_filter_criteria(public_id, ifcs, callback):
     Updates the initial filter criteria in Homestead for the given line.
     callback receives the HTTPResponse object.
     """
-    sp_url = _sp_from_public_id(public_id)
-    sp_location = _location(_sync_fetch(sp_url, method='GET'))
+    sp_url = _sp_from_public_id_url(public_id)
+    sp_location = _location(_sync_http_request(sp_url, method='GET'))
     url = _make_url_without_prefix(sp_location + "/filter_criteria")
-    _fetch(url, callback, method='PUT', body=ifcs)
+    _http_request(url, callback, method='PUT', body=ifcs)
 
 
 # Utility functions
 
 def _location(httpresponse):
-    """Retrieves the Location header from this HTTP response, throwing a 500 error if it is missing"""
+    """Retrieves the Location header from this HTTP response,
+    throwing a 500 error if it is missing"""
     if httpresponse.headers.get_list('Location'):
         return httpresponse.headers.get_list('Location')[0]
     else:
         raise HTTPError(500)
 
-def _fetch(url, callback, **kwargs):
+
+def _http_request(url, callback, **kwargs):
     http_client = httpclient.AsyncHTTPClient()
     http_client.fetch(url, callback, **kwargs)
 
 
-def _sync_fetch(url, **kwargs):
+def _sync_http_request(url, **kwargs):
     http_client = httpclient.HTTPClient()
     return http_client.fetch(url, **kwargs)
 
@@ -211,7 +213,8 @@ def _url_prefix():
 
 
 def _private_id_url(private_id):
-    """Returns the URL for accessing/setting/creating this private ID's password"""
+    """Returns the URL for accessing/setting/creating this private ID's
+    password"""
     return _make_url("private/{}", private_id)
 
 
@@ -228,9 +231,9 @@ def _associated_private_url(public_id):
 def _new_public_id_url(irs, service_profile, public_id):
     """Returns the URL for creating a new public ID in this service profile"""
     return _make_url("irs/{}/service_profiles/{}/public_ids/{}",
-                    irs,
-                    service_profile,
-                    public_id)
+                     irs,
+                     service_profile,
+                     public_id)
 
 
 def _new_irs_url():
@@ -244,40 +247,43 @@ def _new_service_profile_url(irs):
 
 
 def _associated_irs_url(private_id):
-    """Returns the URL for learning this private ID's associated implicit registration sets"""
+    """Returns the URL for learning this private ID's associated implicit
+    registration sets"""
     return _make_url("private/{}/associated_implicit_registration_sets",
-                    private_id)
+                     private_id)
 
 
 def _associate_new_irs_url(private_id, irs):
     """Returns the URL for associating this private ID and IRS"""
     return _make_url("private/{}/associated_implicit_registration_sets/{}",
-                    private_id,
-                    irs)
+                     private_id,
+                     irs)
 
 
-def _sp_from_public_id(public_id):
+def _sp_from_public_id_url(public_id):
     """Returns the URL for learning this public ID's service profile"""
     return _make_url('public/{}/service_profile', public_id)
 
+
 def _make_url_without_prefix(format_str, *args):
-    """Makes a URL by URL-escaping the args, and interpolating them into format_str"""
+    """Makes a URL by URL-escaping the args, and interpolating them into
+    format_str"""
     formatted_args = [urllib.quote_plus(arg) for arg in args]
     return format_str.format(*formatted_args)
 
 
 def _make_url(format_str, *args):
-    """Makes a URL by URL-escaping the args, interpolating them into format_str, and adding a prefix"""
+    """Makes a URL by URL-escaping the args, interpolating them into
+    format_str, and adding a prefix"""
     return _url_prefix() + _make_url_without_prefix(format_str, *args)
 
 
 def _get_irs_uuid(url):
     """Retrieves the UUID of an Implicit Registration Set from a URL"""
-    mo = re.search("irs/([^/]+)", url)
-    if not mo:
-        print url
+    match = re.search("irs/([^/]+)", url)
+    if not match:
         return None
-    return mo.group(1)
+    return match.group(1)
 
 
 def _get_sp_uuid(url):
