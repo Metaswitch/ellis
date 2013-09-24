@@ -87,9 +87,9 @@ def create_private_id(private_id, password, callback1, callback2):
     implicit registration set."""
     put_password(private_id, password, callback1)
     irs_url = _new_irs_url()
-    uuid = _get_irs_uuid(_location(_sync_http_request(irs_url, method="POST")))
+    uuid = _get_irs_uuid(_location(_sync_http_request(irs_url, method="POST", body="")))
     url = _associate_new_irs_url(private_id, uuid)
-    _http_request(url, callback2, method="POST")
+    _http_request(url, callback2, method="POST", body="")
 
 
 def put_password(private_id, password, callback):
@@ -133,7 +133,7 @@ def create_public_id(private_id, public_id, callback):
     url = _associated_irs_url(private_id)
     irs = _get_irs_uuid(_location(_sync_http_request(url, method='GET')))
     sp_url = _new_service_profile_url(irs)
-    sp = _get_sp_uuid(_location(_sync_http_request(sp_url, method='GET')))
+    sp = _get_sp_uuid(_location(_sync_http_request(sp_url, method='POST', body="")))
     public_url = _new_public_id_url(irs, sp, public_id)
     body = "<PublicIdentity><Identity>" + \
            public_id + \
