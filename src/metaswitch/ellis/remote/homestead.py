@@ -80,12 +80,16 @@ def get_digest(private_id, callback):
     _http_request(url, callback, method='GET')
 
 
-def create_private_id(private_id, password, callback):
-    put_password(private_id, password, callback)
+def create_private_id(private_id, password, callback1, callback2):
+    """Creates a private ID and associates it with an implicit
+    registration set. callback1 is called when the private ID is created,
+    callback2 is called when it is successfully associated with the
+    implicit registration set."""
+    put_password(private_id, password, callback1)
     irs_url = _new_irs_url()
     uuid = _get_irs_uuid(_location(_sync_http_request(irs_url, method="POST")))
     url = _associate_new_irs_url(private_id, uuid)
-    _sync_http_request(url, method="POST")
+    _http_request(url, callback2, method="POST")
 
 
 def put_password(private_id, password, callback):
