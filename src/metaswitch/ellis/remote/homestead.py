@@ -89,7 +89,8 @@ def create_private_id(private_id, password, callback1, callback2):
     irs_url = _new_irs_url()
     uuid = _get_irs_uuid(_location(_sync_http_request(irs_url, method="POST", body="")))
     url = _associate_new_irs_url(private_id, uuid)
-    _http_request(url, callback2, method="PUT")
+    response = _sync_http_request(url, method="PUT", body="")
+    callback2(response)
 
 
 def put_password(private_id, password, callback):
