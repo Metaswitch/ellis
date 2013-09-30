@@ -160,7 +160,6 @@ class NumbersHandler(_base.LoggedInHandler):
             sip_password = utils.generate_sip_password()
             homestead.create_private_id(private_id,
                                         sip_password,
-                                        self._request_group.callback(),
                                         self._request_group.callback())
             self.__response["sip_password"] = sip_password
 

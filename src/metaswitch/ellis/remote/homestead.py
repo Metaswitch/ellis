@@ -80,17 +80,17 @@ def get_digest(private_id, callback):
     _http_request(url, callback, method='GET')
 
 
-def create_private_id(private_id, password, callback1, callback2):
+def create_private_id(private_id, password, callback):
     """Creates a private ID and associates it with an implicit
     registration set. callback1 is called when the private ID is created,
     callback2 is called when it is successfully associated with the
     implicit registration set."""
-    put_password(private_id, password, callback1)
+    put_password(private_id, password, None)  # No callback makes this synchronous
     irs_url = _new_irs_url()
     uuid = _get_irs_uuid(_location(_sync_http_request(irs_url, method="POST", body="")))
     url = _associate_new_irs_url(private_id, uuid)
     response = _sync_http_request(url, method="PUT", body="")
-    callback2(response)
+    callback(response)
 
 
 def put_password(private_id, password, callback):
@@ -104,7 +104,10 @@ def put_password(private_id, password, callback):
                                      password))
     body = json.dumps({"digest_ha1": digest})
     headers = {"Content-Type": "application/json"}
-    _http_request(url, callback, method='PUT', headers=headers, body=body)
+    if callback:
+        _http_request(url, callback, method='PUT', headers=headers, body=body)
+    else:
+        return _sync_http_request(url, method="PUT", headers=headers, body=body)
 
 
 def delete_private_id(private_id, callback):
