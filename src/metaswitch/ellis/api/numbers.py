@@ -164,16 +164,13 @@ class NumbersHandler(_base.LoggedInHandler):
             self.__response["sip_password"] = sip_password
 
         # Associate the new public identity with the private identity in Homestead
+        # and store the iFCs in homestead.
         homestead.create_public_id(private_id,
                                    sip_uri,
+                                   ifcs.generate_ifcs(settings.SIP_DIGEST_REALM),
                                    self._request_group.callback())
 
         self.__response["private_id"] = private_id
-
-        # Store the iFCs in homestead.
-        homestead.put_filter_criteria(sip_uri,
-                                      ifcs.generate_ifcs(settings.SIP_DIGEST_REALM),
-                                      self._request_group.callback())
 
         # Concurrently, store the default simservs in XDM.
         with open(settings.XDM_DEFAULT_SIMSERVS_FILE) as xml_file:

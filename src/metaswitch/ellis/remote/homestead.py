@@ -39,7 +39,7 @@ import json
 import re
 
 from tornado import httpclient
-from tornado.web import HTTPError
+from tornado.httpclient import HTTPError
 
 from metaswitch.ellis import settings
 from metaswitch.common import utils
@@ -128,10 +128,10 @@ def get_associated_publics(private_id, callback):
     _http_request(url, callback, method='GET')
 
 
-def create_public_id(private_id, public_id, callback):
+def create_public_id(private_id, public_id, ifcs, callback):
     """
     Posts a new public identity to associate with a given private identity
-    to Homestead.
+    to Homestead. Also sets the given iFCs for that public ID.
     callback receives the HTTPResponse object.
     """
     url = _associated_irs_url(private_id)
@@ -144,8 +144,8 @@ def create_public_id(private_id, public_id, callback):
     body = "<PublicIdentity><Identity>" + \
            public_id + \
            "</Identity></PublicIdentity>"
-    response = _sync_http_request(public_url, method='PUT', body=body)
-    callback(response)
+    _sync_http_request(public_url, method='PUT', body=body)
+    put_filter_criteria(public_id, ifcs, callback)
 
 
 def delete_public_id(public_id, callback):
@@ -186,7 +186,8 @@ def put_filter_criteria(public_id, ifcs, callback):
     callback receives the HTTPResponse object.
     """
     sp_url = _sp_from_public_id_url(public_id)
-    sp_location = _location(_sync_http_request(sp_url, method='GET'))
+    resp = _sync_http_request(sp_url, method='GET')
+    sp_location = _location(resp)
     url = _make_url_without_prefix(sp_location + "/filter_criteria")
     _http_request(url, callback, method='PUT', body=ifcs)
 
@@ -205,13 +206,22 @@ def _location(httpresponse):
 
 def _http_request(url, callback, **kwargs):
     http_client = httpclient.AsyncHTTPClient()
+    if 'follow_redirects' not in kwargs:
+	kwargs['follow_redirects'] = False
     http_client.fetch(url, callback, **kwargs)
 
 
 def _sync_http_request(url, **kwargs):
     http_client = httpclient.HTTPClient()
-    return http_client.fetch(url, **kwargs)
-
+    if 'follow_redirects' not in kwargs:
+	kwargs['follow_redirects'] = False
+    try:
+       return http_client.fetch(url, **kwargs)
+    except HTTPError as e:
+       if e.code == 303:
+          return e.response
+       else:
+          raise e
 
 def _url_prefix():
     if settings.ALLOW_HTTP:
