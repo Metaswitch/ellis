@@ -156,7 +156,7 @@ def delete_public_id(public_id, callback):
     public_to_sp_url = _sp_from_public_id_url(public_id)
     response = _sync_http_request(public_to_sp_url, method='GET')
     location = _location(response)
-    url = _make_url_without_prefix(location+"/public_ids/{}", public_id)
+    url = _url_host() + _make_url_without_prefix(location+"/public_ids/{}", public_id)
     _http_request(url, callback, method='DELETE')
 
 
@@ -176,7 +176,7 @@ def get_filter_criteria(public_id, callback):
     """
     sp_url = _sp_from_public_id_url(public_id)
     sp_location = _location(_sync_http_request(sp_url, method='GET'))
-    url = _make_url_without_prefix(sp_location + "/filter_criteria")
+    url = _url_host() + _make_url_without_prefix(sp_location + "/filter_criteria")
     _http_request(url, callback, method='GET')
 
 
@@ -188,7 +188,7 @@ def put_filter_criteria(public_id, ifcs, callback):
     sp_url = _sp_from_public_id_url(public_id)
     resp = _sync_http_request(sp_url, method='GET')
     sp_location = _location(resp)
-    url = _make_url_without_prefix(sp_location + "/filter_criteria")
+    url = _url_host() + _make_url_without_prefix(sp_location + "/filter_criteria")
     _http_request(url, callback, method='PUT', body=ifcs)
 
 
@@ -223,15 +223,18 @@ def _sync_http_request(url, **kwargs):
        else:
           raise e
 
-def _url_prefix():
+def _url_host():
     if settings.ALLOW_HTTP:
         scheme = "http"
         _log.warn("Passing SIP password in the clear over http")
     else:
         scheme = "https"
-    url = "%s://%s/" % \
+    url = "%s://%s" % \
           (scheme, settings.HOMESTEAD_URL)
     return url
+
+def _url_prefix():
+    return _url_host() + "/"
 
 
 def _private_id_url(private_id):
