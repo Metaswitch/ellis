@@ -135,7 +135,8 @@ def create_public_id(private_id, public_id, callback):
     callback receives the HTTPResponse object.
     """
     url = _associated_irs_url(private_id)
-    irs = _get_irs_uuid(_location(_sync_http_request(url, method='GET')))
+    req = _sync_http_request(url, method='GET')
+    irs = json.loads(req.body)['associated_implicit_registration_sets'][0]
     sp_url = _new_service_profile_url(irs)
     sp = _get_sp_uuid(_location(_sync_http_request(sp_url, method='POST', body="")))
     public_url = _new_public_id_url(irs, sp, public_id)
@@ -196,6 +197,7 @@ def _location(httpresponse):
     if httpresponse.headers.get_list('Location'):
         return httpresponse.headers.get_list('Location')[0]
     else:
+        _log.error("Could not retrieve Location header from HTTPResponse %s" % httpresponse)
         raise HTTPError(500)
 
 
