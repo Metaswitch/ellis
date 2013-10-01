@@ -65,7 +65,6 @@ class NumbersHandler(_base.LoggedInHandler):
     def get(self, username):
         """Retrieve list of phone numbers."""
         user_id = self.get_and_check_user_id(username)
-        self._request_group = HTTPCallbackGroup(self._on_get_success, self._on_get_failure)
         self._numbers = numbers.get_numbers(self.db_session(), user_id)
         if len(self._numbers) == 0:
             self.finish({"numbers": []})
@@ -79,19 +78,19 @@ class NumbersHandler(_base.LoggedInHandler):
             number["number"] = utils.sip_uri_to_phone_number(number["number"])
             number["formatted_number"] = utils.format_phone_number(number["number"])
 
+            _request_group = HTTPCallbackGroup(partial(self._on_get_success, number["sip_uri"]), self._on_get_failure)
             # We only store the public identities in Ellis, and must query
             # Homestead for the associated private identities
             homestead.get_associated_privates(number["sip_uri"],
-                                              self._request_group.callback())
+                                              _request_group.callback())
 
-    def _on_get_success(self, responses):
+    def _on_get_success(self, public_id, responses):
         _log.debug("Successfully fetched associated private identities")
         for response in responses:
             try:
                 # Body is of format {"public_id": "<public_id>",
                 #                    "private_ids": ["<private_id_1>", "<private_id_2>"...]}
                 parsed_body = json.loads(response.body)
-                public_id = parsed_body["public_id"]
                 # We only support one private id per public id, so only pull out first in list
                 private_id = parsed_body["private_ids"][0]
                 for number in [n for n in self._numbers if n["sip_uri"] == public_id]:
@@ -101,6 +100,11 @@ class NumbersHandler(_base.LoggedInHandler):
                 _log.error("Could not parse response: %s", response.body)
                 self.send_error(httplib.BAD_GATEWAY,
                                 reason="Upstream request failed: could not parse private identity list")
+                return
+
+        for number in self._numbers:
+            if "private_id" not in number:
+                _log.debug("Not all numbers have private IDs associated, not sending response to the browser yet...")
                 return
 
         self.finish({"numbers": self._numbers})
@@ -153,6 +157,9 @@ class NumbersHandler(_base.LoggedInHandler):
         _log.debug("Populating other servers...")
         self._request_group = HTTPCallbackGroup(self._on_post_success,
                                                 self._on_post_failure)
+
+        public_callback = self._request_group.callback()
+
         if private_id == None:
             # No private id was provided, so we need to create a new
             # digest in Homestead
@@ -168,7 +175,7 @@ class NumbersHandler(_base.LoggedInHandler):
         homestead.create_public_id(private_id,
                                    sip_uri,
                                    ifcs.generate_ifcs(settings.SIP_DIGEST_REALM),
-                                   self._request_group.callback())
+                                   public_callback)
 
         self.__response["private_id"] = private_id
 
@@ -219,7 +226,7 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
     def _on_get_publics_success(private_id, responses):
         _log.debug("Got related public ids")
         parsed_body = json.loads(responses[0].body)
-        public_ids = parsed_body["public_ids"]
+        public_ids = parsed_body["associated_public_ids"]
         if (utils.sip_public_id_to_private(sip_uri) == private_id and
             len(public_ids) > 1):
             # Do not permit deletion of an original public identity if others exist
