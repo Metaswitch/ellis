@@ -144,7 +144,8 @@ def create_public_id(private_id, public_id, callback):
     body = "<PublicIdentity><Identity>" + \
            public_id + \
            "</Identity></PublicIdentity>"
-    _http_request(public_url, callback, method='PUT', body=body)
+    response = _sync_http_request(public_url, method='PUT', body=body)
+    callback(response)
 
 
 def delete_public_id(public_id, callback):
