@@ -279,7 +279,8 @@ def _sp_from_public_id_url(public_id):
 def _make_url_without_prefix(format_str, *args):
     """Makes a URL by URL-escaping the args, and interpolating them into
     format_str"""
-    formatted_args = [urllib.quote_plus(arg) for arg in args]
+    formatted_args = [urllib.quote_plus(arg) for arg in args
+                      if arg is not None]
     return format_str.format(*formatted_args)
 
 
