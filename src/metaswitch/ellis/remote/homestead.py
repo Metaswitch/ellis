@@ -138,7 +138,8 @@ def create_public_id(private_id, public_id, callback):
     req = _sync_http_request(url, method='GET')
     irs = json.loads(req.body)['associated_implicit_registration_sets'][0]
     sp_url = _new_service_profile_url(irs)
-    sp = _get_sp_uuid(_location(_sync_http_request(sp_url, method='POST', body="")))
+    req2 = _sync_http_request(sp_url, method='POST', body="")
+    sp = _get_sp_uuid(_location(req2))
     public_url = _new_public_id_url(irs, sp, public_id)
     body = "<PublicIdentity><Identity>" + \
            public_id + \
@@ -290,16 +291,17 @@ def _make_url(format_str, *args):
 
 def _get_irs_uuid(url):
     """Retrieves the UUID of an Implicit Registration Set from a URL"""
-    match = re.search("irs/([^/]+)", url)
+    re_str = "irs/([^/]+)"
+    match = re.search(re_str, url)
     if not match:
-        return None
+        raise ValueError("URL %s is badly formatted: expected it to match %s" % (url, re_str))
     return match.group(1)
 
 
 def _get_sp_uuid(url):
     """Retrieves the UUID of a Service Profile from a URL"""
-    mo = re.search("irs/[^/]+/service_profiles/([^/]+)", url)
-    if not mo:
-        print url
-        return None
-    return mo.group(1)
+    re_str = "irs/[^/]+/service_profiles/([^/]+)"
+    match = re.search(re_str, url)
+    if not match:
+        raise ValueError("URL %s is badly formatted: expected it to match %s" % (url, re_str))
+    return match.group(1)
