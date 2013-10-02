@@ -39,7 +39,7 @@ import json
 import re
 
 from tornado import httpclient
-from tornado.web import HTTPError
+from tornado.httpclient import HTTPError
 
 from metaswitch.ellis import settings
 from metaswitch.common import utils
@@ -128,22 +128,24 @@ def get_associated_publics(private_id, callback):
     _http_request(url, callback, method='GET')
 
 
-def create_public_id(private_id, public_id, callback):
+def create_public_id(private_id, public_id, ifcs, callback):
     """
     Posts a new public identity to associate with a given private identity
-    to Homestead.
+    to Homestead. Also sets the given iFCs for that public ID.
     callback receives the HTTPResponse object.
     """
     url = _associated_irs_url(private_id)
     req = _sync_http_request(url, method='GET')
     irs = json.loads(req.body)['associated_implicit_registration_sets'][0]
     sp_url = _new_service_profile_url(irs)
-    sp = _get_sp_uuid(_location(_sync_http_request(sp_url, method='POST', body="")))
+    req2 = _sync_http_request(sp_url, method='POST', body="")
+    sp = _get_sp_uuid(_location(req2))
     public_url = _new_public_id_url(irs, sp, public_id)
     body = "<PublicIdentity><Identity>" + \
            public_id + \
            "</Identity></PublicIdentity>"
-    _http_request(public_url, callback, method='PUT', body=body)
+    _sync_http_request(public_url, method='PUT', body=body)
+    put_filter_criteria(public_id, ifcs, callback)
 
 
 def delete_public_id(public_id, callback):
@@ -154,7 +156,7 @@ def delete_public_id(public_id, callback):
     public_to_sp_url = _sp_from_public_id_url(public_id)
     response = _sync_http_request(public_to_sp_url, method='GET')
     location = _location(response)
-    url = _make_url_without_prefix(location+"/public_ids/{}", public_id)
+    url = _url_host() + _make_url_without_prefix(location+"/public_ids/{}", public_id)
     _http_request(url, callback, method='DELETE')
 
 
@@ -174,7 +176,7 @@ def get_filter_criteria(public_id, callback):
     """
     sp_url = _sp_from_public_id_url(public_id)
     sp_location = _location(_sync_http_request(sp_url, method='GET'))
-    url = _make_url_without_prefix(sp_location + "/filter_criteria")
+    url = _url_host() + _make_url_without_prefix(sp_location + "/filter_criteria")
     _http_request(url, callback, method='GET')
 
 
@@ -184,8 +186,9 @@ def put_filter_criteria(public_id, ifcs, callback):
     callback receives the HTTPResponse object.
     """
     sp_url = _sp_from_public_id_url(public_id)
-    sp_location = _location(_sync_http_request(sp_url, method='GET'))
-    url = _make_url_without_prefix(sp_location + "/filter_criteria")
+    resp = _sync_http_request(sp_url, method='GET')
+    sp_location = _location(resp)
+    url = _url_host() + _make_url_without_prefix(sp_location + "/filter_criteria")
     _http_request(url, callback, method='PUT', body=ifcs)
 
 
@@ -203,23 +206,35 @@ def _location(httpresponse):
 
 def _http_request(url, callback, **kwargs):
     http_client = httpclient.AsyncHTTPClient()
+    if 'follow_redirects' not in kwargs:
+	kwargs['follow_redirects'] = False
     http_client.fetch(url, callback, **kwargs)
 
 
 def _sync_http_request(url, **kwargs):
     http_client = httpclient.HTTPClient()
-    return http_client.fetch(url, **kwargs)
+    if 'follow_redirects' not in kwargs:
+	kwargs['follow_redirects'] = False
+    try:
+       return http_client.fetch(url, **kwargs)
+    except HTTPError as e:
+       if e.code == 303:
+          return e.response
+       else:
+          raise e
 
-
-def _url_prefix():
+def _url_host():
     if settings.ALLOW_HTTP:
         scheme = "http"
         _log.warn("Passing SIP password in the clear over http")
     else:
         scheme = "https"
-    url = "%s://%s/" % \
+    url = "%s://%s" % \
           (scheme, settings.HOMESTEAD_URL)
     return url
+
+def _url_prefix():
+    return _url_host() + "/"
 
 
 def _private_id_url(private_id):
@@ -278,8 +293,7 @@ def _sp_from_public_id_url(public_id):
 def _make_url_without_prefix(format_str, *args):
     """Makes a URL by URL-escaping the args, and interpolating them into
     format_str"""
-    formatted_args = [urllib.quote_plus(arg) for arg in args
-                      if arg is not None]
+    formatted_args = [urllib.quote_plus(arg) for arg in args]
     return format_str.format(*formatted_args)
 
 
@@ -291,16 +305,17 @@ def _make_url(format_str, *args):
 
 def _get_irs_uuid(url):
     """Retrieves the UUID of an Implicit Registration Set from a URL"""
-    match = re.search("irs/([^/]+)", url)
+    re_str = "irs/([^/]+)"
+    match = re.search(re_str, url)
     if not match:
-        return None
+        raise ValueError("URL %s is badly formatted: expected it to match %s" % (url, re_str))
     return match.group(1)
 
 
 def _get_sp_uuid(url):
     """Retrieves the UUID of a Service Profile from a URL"""
-    mo = re.search("irs/[^/]+/service_profiles/([^/]+)", url)
-    if not mo:
-        print url
-        return None
-    return mo.group(1)
+    re_str = "irs/[^/]+/service_profiles/([^/]+)"
+    match = re.search(re_str, url)
+    if not match:
+        raise ValueError("URL %s is badly formatted: expected it to match %s" % (url, re_str))
+    return match.group(1)
