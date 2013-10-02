@@ -55,7 +55,8 @@ class MockHTTPClient(object):
     def fetch(self, url, *args, **kwargs):
         response = Mock()
         # Imitate a tornado.httpclient.httpresponse
-        response.headers.get_list.return_value = ['http://homestead/irs/irs-uuid/service_profiles/sp-uuid']
+        response.body = '{"associated_implicit_registration_sets": ["abc"]}'
+        response.headers.get_list.return_value = ['/irs/irs-uuid/service_profiles/sp-uuid']
         return response
 
 class TestHomestead(unittest.TestCase):
@@ -107,9 +108,10 @@ class TestHomesteadPasswords(TestHomestead):
         callback = Mock()
         homestead.get_digest(PRIVATE_URI, callback)
         self.mock_httpclient.fetch.assert_called_once_with(
-          'http://homestead/private/pri%40foo.bar',
-          callback,
-          method='GET')
+            'http://homestead/private/pri%40foo.bar',
+            callback,
+            method='GET',
+            follow_redirects=False)
 
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
@@ -124,35 +126,26 @@ class TestHomesteadPasswords(TestHomestead):
         homestead.put_password(PRIVATE_URI, "pw", callback)
         md5.assert_called_once_with("pri@foo.bar:%s:pw" % settings.SIP_DIGEST_REALM)
         self.mock_httpclient.fetch.assert_called_once_with(
-          'http://homestead/private/pri%40foo.bar',
-          callback,
-          method='PUT',
-          body=body,
-          headers={'Content-Type': 'application/json'})
+            'http://homestead/private/pri%40foo.bar',
+            callback,
+            method='PUT',
+            body=body,
+            headers={'Content-Type': 'application/json'},
+            follow_redirects=False)
 
 class TestHomesteadPrivateIDs(TestHomestead):
     """Tests for creating and deleting private IDs"""
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
-    @patch("tornado.httpclient.AsyncHTTPClient")
     @patch("metaswitch.common.utils.md5")
     @patch("metaswitch.ellis.remote.homestead.settings")
-    def test_create_private_id_mainline(self, settings, md5, AsyncHTTPClient):
-        self.standard_setup(settings, AsyncHTTPClient)
+    def test_create_private_id_mainline(self, settings, md5):
         callback = Mock()
         md5.return_value = "md5_hash"
         body = json.dumps({"digest_ha1": "md5_hash"})
         homestead.create_private_id(PRIVATE_URI, "pw", callback)
 
         md5.assert_called_once_with("pri@foo.bar:%s:pw" % settings.SIP_DIGEST_REALM)
-
-        self.mock_httpclient.fetch.assert_called_once_with(
-            'http://homestead/private/pri%40foo.bar',
-            callback,
-            body=body,
-            method='PUT',
-            headers={'Content-Type': 'application/json'})
-
 
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
@@ -163,9 +156,10 @@ class TestHomesteadPrivateIDs(TestHomestead):
         callback = Mock()
         homestead.delete_private_id(PRIVATE_URI, callback)
         self.mock_httpclient.fetch.assert_called_once_with(
-          'http://homestead/private/pri%40foo.bar',
-          callback,
-          method='DELETE')
+            'http://homestead/private/pri%40foo.bar',
+            callback,
+            method='DELETE',
+            follow_redirects=False)
 
 
 class TestHomesteadPublicIDs(TestHomestead):
@@ -177,12 +171,13 @@ class TestHomesteadPublicIDs(TestHomestead):
     def test_create_public_id_mainline(self, settings, AsyncHTTPClient):
         self.standard_setup(settings, AsyncHTTPClient)
         callback = Mock()
-        homestead.create_public_id(PRIVATE_URI, PUBLIC_URI, callback)
-        self.mock_httpclient.fetch.assert_called_once_with(
-          'http://homestead/irs/irs-uuid/service_profiles/sp-uuid/public_ids/sip%3Apub%40foo.bar',
+        homestead.create_public_id(PRIVATE_URI, PUBLIC_URI, "ifcs", callback)
+        self.mock_httpclient.fetch.assert_called_with(
+          'http://homestead/irs/irs-uuid/service_profiles/sp-uuid/filter_criteria',
             callback,
-            body="<PublicIdentity><Identity>sip:pub@foo.bar</Identity></PublicIdentity>",
-            method='PUT')
+            body="ifcs",
+            method='PUT',
+            follow_redirects=False)
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
     @patch("tornado.httpclient.AsyncHTTPClient")
@@ -194,7 +189,8 @@ class TestHomesteadPublicIDs(TestHomestead):
         self.mock_httpclient.fetch.assert_called_once_with(
           'http://homestead/irs/irs-uuid/service_profiles/sp-uuid/public_ids/sip%3Apub%40foo.bar',
             callback,
-            method='DELETE')
+            method='DELETE',
+            follow_redirects=False)
 
 
 class TestHomesteadAssociations(TestHomestead):
@@ -208,9 +204,10 @@ class TestHomesteadAssociations(TestHomestead):
         callback = Mock()
         homestead.get_associated_publics(PRIVATE_URI, callback)
         self.mock_httpclient.fetch.assert_called_once_with(
-          'http://homestead/private/pri%40foo.bar/associated_public_ids',
-          callback,
-          method='GET')
+            'http://homestead/private/pri%40foo.bar/associated_public_ids',
+            callback,
+            method='GET',
+            follow_redirects=False)
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
     @patch("tornado.httpclient.AsyncHTTPClient")
@@ -220,9 +217,10 @@ class TestHomesteadAssociations(TestHomestead):
         callback = Mock()
         homestead.get_associated_privates(PUBLIC_URI, callback)
         self.mock_httpclient.fetch.assert_called_once_with(
-          'http://homestead/public/sip%3Apub%40foo.bar/associated_private_ids',
-          callback,
-          method='GET')
+            'http://homestead/public/sip%3Apub%40foo.bar/associated_private_ids',
+            callback,
+            method='GET',
+            follow_redirects=False)
 
 class TestHomesteadiFCs(TestHomestead):
 
@@ -235,7 +233,8 @@ class TestHomesteadiFCs(TestHomestead):
         homestead.get_filter_criteria(PUBLIC_URI, callback)
         self.mock_httpclient.fetch.assert_called_once_with(IFC_URL,
                                                            callback,
-                                                           method="GET")
+                                                           method="GET",
+                                                           follow_redirects=False)
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
     @patch("tornado.httpclient.AsyncHTTPClient")
@@ -247,7 +246,8 @@ class TestHomesteadiFCs(TestHomestead):
         self.mock_httpclient.fetch.assert_called_once_with(IFC_URL,
                                                            callback,
                                                            method="PUT",
-                                                           body='<xml />')
+                                                           body='<xml />',
+                                                           follow_redirects=False)
 
 if __name__ == "__main__":
     unittest.main()

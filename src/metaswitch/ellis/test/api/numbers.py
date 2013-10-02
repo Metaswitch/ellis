@@ -92,15 +92,17 @@ class TestNumbersHandler(BaseTest):
         self.handler.get("foobar")
         # Assert that we kick off asynchronous GET at homestead
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
-        HTTPCallbackGroup.assert_called_once_with(self.handler._on_get_success,
+        HTTPCallbackGroup.assert_called_once_with(ANY, # functools.partial object
                                                   self.handler._on_get_failure)
 
         get_associated_privates.assert_called_once_with(SIP_URI,
-                                                        self.handler._request_group.callback())
+                                                        ANY # function
+                                                        # argument
+                                                        )
         # Simulate success of all requests.
         response = MagicMock()
-        response.body = '{"public_id": "%s", "private_ids": ["hidden@sip.com"]}' % SIP_URI
-        self.handler._on_get_success([response])
+        response.body = '{"private_ids": ["hidden@sip.com"]}'
+        self.handler._on_get_success(SIP_URI, [response])
 
         self.handler.finish.assert_called_once_with(
             {
@@ -143,7 +145,8 @@ class TestNumbersHandler(BaseTest):
             response2.body = '{"public_id": "sip:4155555678@sip.com", "private_ids": ["hidden1@sip.com"]}'
         else:
             response2.body = '{"public_id": "sip:4155555678@sip.com", "private_ids": ["hidden2@sip.com"]}'
-        self.handler._on_get_success([response1, response2])
+        self.handler._on_get_success("sip:4155551234@sip.com", [response1])
+        self.handler._on_get_success("sip:4155555678@sip.com", [response2])
 
         self.handler.finish.assert_called_once_with(
                 {
@@ -228,13 +231,12 @@ class TestNumbersHandler(BaseTest):
             gen_sip_pass.assert_called_once_with()
             sip_pub_to_priv.assert_called_once_with(SIP_URI)
             create_private_id.assert_called_once_with("generated_private_id", "sip_pass", ANY)
-            create_public_id.assert_called_once_with("generated_private_id", SIP_URI, ANY)
+            create_public_id.assert_called_once_with("generated_private_id", SIP_URI, "ifcs", ANY)
         else:
             # We don't generate a pw if we are just associating a pub/priv id
-            create_public_id.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+            create_public_id.assert_called_once_with(PRIVATE_ID, SIP_URI, "ifcs", ANY)
 
         generate_ifcs.assert_called_once_with(settings.SIP_DIGEST_REALM)
-        put_filter_criteria.assert_called_once_with(SIP_URI, "ifcs", ANY)
         post_simservs.assert_called_once_with(SIP_URI, ANY, ANY)
 
         # Simulate success of all requests.
@@ -283,7 +285,7 @@ class TestNumbersHandler(BaseTest):
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
         allocate_number.assert_called_once_with(self.db_sess, USER_ID, False)
         get_number.assert_called_once_with(self.db_sess, NUMBER_ID, USER_ID)
-        create_public_id.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+        create_public_id.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY, ANY)
 
         self.handler._on_post_failure({})
         remove_public_id.assert_called_once_with(self.db_sess, SIP_URI, ANY, ANY)
@@ -368,9 +370,9 @@ class TestNumberHandler(BaseTest):
         on_get_publics_success = HTTPCallbackGroup.call_args[0][0]
         response = MagicMock()
         if last_public_id:
-            response.body = '{"private_id": "%s", "public_ids": ["%s"]}' % (PRIVATE_ID, sip_uri)
+            response.body = '{"associated_public_ids": ["%s"]}' % (sip_uri)
         else:
-            response.body = '{"private_id": "%s", "public_ids": ["another@sip.com", "%s"]}' % (PRIVATE_ID, sip_uri)
+            response.body = '{"associated_public_ids": ["another@sip.com", "%s"]}' % (sip_uri)
 
         on_get_publics_success([response])
         if original_id and not last_public_id:
