@@ -63,6 +63,11 @@ case "$1" in
         # Ensure the log directory exists and is owned by the user.
         mkdir -p -m 755 /var/log/$NAME
         chown -R $NAME:root /var/log/$NAME
+        # Create authbind files to ensure ellis access to ports 80 and 443.
+        mkdir -p /etc/authbind/byport/
+        touch /etc/authbind/byport/80 /etc/authbind/byport/443
+        chown $NAME:root /etc/authbind/byport/80 /etc/authbind/byport/443
+        chmod 755 /etc/authbind/byport/80 /etc/authbind/byport/443
 
         virtualenv --python=$(which python) $ELLIS_DIR/env
         $ELLIS_DIR/env/bin/easy_install --allow-hosts=None -f $ELLIS_DIR/eggs/ $ELLIS_DIR/eggs/*.egg
