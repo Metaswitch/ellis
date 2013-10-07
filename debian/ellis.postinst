@@ -74,10 +74,6 @@ case "$1" in
         cd -
         chown -R $NAME:root $ELLIS_DIR/env
 
-        [ ! -f /etc/iptables/rules.v4 ] || cp /etc/iptables/rules.v4 /etc/iptables/rules.v4.pre-ellis
-        cp $ELLIS_DIR/iptables.rules /etc/iptables/rules.v4
-        service iptables-persistent restart
-
         mysql -u root --password= < $ELLIS_DIR/src/metaswitch/ellis/data/schema.sql
         mysql -u root --password= < $ELLIS_DIR/src/metaswitch/ellis/data/apply_db_updates.sql
 

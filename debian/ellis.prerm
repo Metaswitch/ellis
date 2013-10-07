@@ -63,9 +63,6 @@ case "$1" in
         service ellis stop
         # Now do necessary cleanup
         rm -rf $ELLIS_DIR/env
-        rm -f /etc/iptables/rules.v4
-        [ ! -f /etc/iptables/rules.v4.pre-ellis ] || mv /etc/iptables/rules.v4.pre-ellis /etc/iptables/rules.v4
-        service iptables-persistent restart
         rm -rf /var/run/$NAME
         if grep -q "^$NAME:" /etc/passwd ; then
             userdel $NAME

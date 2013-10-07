@@ -7,6 +7,5 @@ common/metaswitch usr/share/clearwater/ellis/common/
 common/metaswitchcommon.egg-info usr/share/clearwater/ellis/common/
 local_settings.py usr/share/clearwater/ellis/src/metaswitch/ellis/
 *.monit usr/share/clearwater/ellis/
-iptables.rules usr/share/clearwater/ellis/
 root/* .
 backup usr/share/clearwater/ellis/
