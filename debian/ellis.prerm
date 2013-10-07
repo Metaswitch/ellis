@@ -62,10 +62,8 @@ case "$1" in
         # or init.d script won't work
         service ellis stop
         # Now do necessary cleanup
+        rm -f /etc/authbind/byport/80 /etc/authbind/byport/443
         rm -rf $ELLIS_DIR/env
-        rm -f /etc/iptables/rules.v4
-        [ ! -f /etc/iptables/rules.v4.pre-ellis ] || mv /etc/iptables/rules.v4.pre-ellis /etc/iptables/rules.v4
-        service iptables-persistent restart
         rm -rf /var/run/$NAME
         if grep -q "^$NAME:" /etc/passwd ; then
             userdel $NAME
