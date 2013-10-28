@@ -26,7 +26,7 @@ header.
 User accounts
 =============
 
-    /1/accounts/
+    /accounts/
 
 POST to this URL to create a new account.  Does not require the API key but, to limit initial adoption it does require a header with a signup code in it: `NGV-Signup-Code`.
 
@@ -55,7 +55,7 @@ As concessions to browser form posts:
 User account
 ============
 
-    /1/accounts/<username>/
+    /accounts/<username>/
 
 The <username> is just the email address of the account, URL-encoded.
 
@@ -67,7 +67,7 @@ Response:
  * 5xx if an error occurs on the server
 
 ```
-    /1/accounts/<username>/password
+    /accounts/<username>/password
 ```
 
 POST to this URL to set or recover the password. No valid session is required for this.
@@ -91,7 +91,7 @@ the password may be supplied in the password parameter.
 Browser login
 =============
 
-    /1/session/
+    /session/
 
 POST to this URL to create a new session.
 
@@ -112,11 +112,11 @@ Response:
 Number management
 =================
 
-    /1/accounts/<username>/numbers/
-    /1/accounts/<username>/numbers/<SIP URI>/
-    /1/accounts/<username>/numbers/<SIP URI>/password
+    /accounts/<username>/numbers/
+    /accounts/<username>/numbers/<SIP URI>/
+    /accounts/<username>/numbers/<SIP URI>/password
 
-Make an POST request to `/1/accounts/<username>/numbers/` to allocate a new number to an account. Specify the following parameters in the body:
+Make an POST request to `/accounts/<username>/numbers/` to allocate a new number to an account. Specify the following parameters in the body:
 
     {
       "pstn":             <boolean specifying if number should be a PSTN>,
@@ -136,7 +136,7 @@ Response
       "sip_username":     <the user portion of the SIP URI, i.e. exactly what the user should enter into the client>
     }
 
-Make a GET request to `/1/accounts/<username>/numbers/` to retrieve
+Make a GET request to `/accounts/<username>/numbers/` to retrieve
 details for all numbers.  The format of an individual number is the
 same as that returned at creation.  The list is wrapped in an object:
 
@@ -148,31 +148,31 @@ same as that returned at creation.  The list is wrapped in an object:
 
 The password is not available after creation so it is not included.
 
-Make a GET request to `/1/accounts/<username>/numbers/<SIP URI>/` to
+Make a GET request to `/accounts/<username>/numbers/<SIP URI>/` to
 get the details of the number (Not yet implemented).  Response is the
 same as creation, omitting the password.
 
-Make a POST request to `/1/accounts/<username>/numbers/<SIP URI>/` to
+Make a POST request to `/accounts/<username>/numbers/<SIP URI>/` to
 update (Not yet implemented).
 
-Make a DELETE request to `/1/accounts/<username>/numbers/<SIP URI>/`
+Make a DELETE request to `/accounts/<username>/numbers/<SIP URI>/`
 to unallocate the number.  It is returned to the pool.
 
-Make an empty post to `/1/accounts/<username>/numbers/<SIP
+Make an empty post to `/accounts/<username>/numbers/<SIP
 URI>/password` to generate a new password.  It is returned in the
 response as the `sip_password` parameter.
 
 Global Address Book
 ===================
 
-    /1/accounts/<username>/numbers/<SIP URI>/listed
-    /1/gab/
+    /accounts/<username>/numbers/<SIP URI>/listed
+    /gab/
 
-Make a PUT to `/1/accounts/<username>/numbers/<SIP URI>/listed/(1|0)`
+Make a PUT to `/accounts/<username>/numbers/<SIP URI>/listed/(1|0)`
 to set the Global Address Book (GAB) listed flag (1 for "number is
 listed", 0 for unlisted).
 
-Make a GET request to `/1/gab/` to retrieve the whole Global Address
+Make a GET request to `/gab/` to retrieve the whole Global Address
 Book. The response has the following form:
 
     {
@@ -199,9 +199,9 @@ Book. The response has the following form:
 Simservs
 ========
 
-    /1/accounts/<username>/numbers/<SIP URI>/simservs
+    /accounts/<username>/numbers/<SIP URI>/simservs
 
-Make a GET/PUT to `/1/accounts/<username>/numbers/<SIP URI>/simservs`
+Make a GET/PUT to `/accounts/<username>/numbers/<SIP URI>/simservs`
 to set the simservs document. Ellis merely proxies the request onto Homer.
 
 See the Homer [docs](https://github.com/Metaswitch/crest/blob/dev/docs/homer_api.md) for more information.
@@ -209,9 +209,9 @@ See the Homer [docs](https://github.com/Metaswitch/crest/blob/dev/docs/homer_api
 iFCs
 ====
 
-    /1/accounts/<username>/numbers/<SIP URI>/ifcs
+    /accounts/<username>/numbers/<SIP URI>/ifcs
 
-Make a GET/PUT to `/1/accounts/<username>/numbers/<SIP URI>/ifcs`
+Make a GET/PUT to `/accounts/<username>/numbers/<SIP URI>/ifcs`
 to set the iFC document. Ellis merely proxies the request onto Homestead.
 
 See the Homestead [docs](https://github.com/Metaswitch/crest/blob/dev/docs/homestead_api.md) for more information.
