@@ -34,6 +34,8 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+. /etc/clearwater/config
+
 # First find the expired users.  We pipe a SQL command into mysql and log if
 # the query fails.
 USERS=$(echo "use ellis; SELECT email FROM users WHERE expires < NOW();" |
@@ -48,7 +50,7 @@ for USER in $USERS
 do
   # Issue a curl request to delete the user, logging if this fails.
   logger -p daemon.notice -t ellis.cron.daily "Deleting expired user $USER"
-  OUT=$(curl -s -X DELETE -H "NGV-API-Key: eAq7qEC8ReNEWY1XNn7XktjmTptZgWPZpSzrVElKiD4" http://127.0.0.1:9888/accounts/$USER) ||
+  OUT=$(curl -s -X DELETE -H "NGV-API-Key: ${ellis_api_key}" http://127.0.0.1/accounts/$USER) ||
   logger -p daemon.err -t ellis.cron.daily "curl reported error $? when deleting expired user $USER"
 
   # A successful delete returns no response.  If we got a response, log it.
