@@ -44,3 +44,7 @@ check_connectivity_to_domain $(split_domain_and_port $hs_addr)
 # Check we can contact homer.
 xdms_addr=$(add_default_port $xdms_hostname 7888)
 check_connectivity_to_domain $(split_domain_and_port $xdms_addr)
+
+# Dump the database schema and contents.
+mysqldump --no-data ellis > $CURRENT_DUMP_DIR/ellis_schema.txt
+mysqldump ellis > $CURRENT_DUMP_DIR/ellis_data.txt
