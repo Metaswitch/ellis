@@ -38,8 +38,8 @@
 . /etc/clearwater/config
 
 # Check we can contact homestead.
-check_connectivity_to_domain $hs_hostname 8888
-check_connectivity_to_domain $xdms_hostname 7888
+check_connectivity_to_domain "$hs_hostname" 8888
+check_connectivity_to_domain "$xdms_hostname" 7888
 
 # Dump the database schema and contents.
 mysqldump --no-data ellis > $CURRENT_DUMP_DIR/ellis_schema.txt
