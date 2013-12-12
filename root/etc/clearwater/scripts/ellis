@@ -1,8 +1,13 @@
 #!/bin/sh
 . /etc/clearwater/config
+
+if [[ -z "$hs_provisioning_hostname" ]] ; then
+    hs_provisioning_hostname=$hs_hostname
+fi
+
 smtp_password_escaped=`echo $smtp_password | sed -e 's/\//\\\\\//g'`
 sed -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$home_domain'"/g' \
-    -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$hs_hostname'"/g' \
+    -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$hs_provisioning_hostname'"/g' \
     -e 's/^\(XDM_URL\) = .*$/\1 = "'$xdms_hostname'"/g' \
     -e 's/^\(SMTP_SMARTHOST\) = .*$/\1 = "'$smtp_smarthost'"/g' \
     -e 's/^\(SMTP_USERNAME\) = .*$/\1 = "'$smtp_username'"/g' \
