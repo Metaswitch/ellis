@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 . /etc/clearwater/config
 
 if [[ -z "$hs_provisioning_hostname" ]] ; then
