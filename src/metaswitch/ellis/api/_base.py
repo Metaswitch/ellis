@@ -169,6 +169,7 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
         else:
             logging.error("Uncaught exception %s\n%r", self._request_summary(),
                           self.request, exc_info=True)
+            utils.write_core_file(settings.LOG_FILE_PREFIX, traceback.format_exc())
             self.send_error(500, exc_info=sys.exc_info(), exception=e)
 
     @property

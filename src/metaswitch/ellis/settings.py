@@ -74,8 +74,8 @@ TLS_PRIVATE_KEY = os.path.join(CERTS_DIR, "private-key.pem")
 TLS_CERTIFICATE = os.path.join(CERTS_DIR, "certificate-with-chain.pem")
 
 # Ports.
-HTTP_PORT = 9888
-HTTPS_PORT = 9443
+HTTP_PORT = 80
+HTTPS_PORT = 443
 
 # Tornado cookie encryption key.  Tornado instances that share this key will
 # all trust each other's cookies.

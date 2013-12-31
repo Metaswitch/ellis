@@ -5,8 +5,8 @@ set daemon 10
 check process ellis pidfile /var/run/ellis/ellis.pid
   start program = "/etc/monit/run_logged /etc/init.d/ellis start"
   stop program = "/etc/monit/run_logged /etc/init.d/ellis stop"
-  if failed host localhost port 9888 type TCP protocol http
-    and use the request "/ping" then restart
+  if failed host localhost port 80 type TCP protocol http
+    and use the request "/ping" then exec "/etc/monit/run_logged /etc/init.d/ellis abort-restart"
 # TODO monitor HTTPS as well as HTTP.
 #  if failed host localhost port 9443 type TCPSSL protocol http
 #    and use the request "/ping" then restart

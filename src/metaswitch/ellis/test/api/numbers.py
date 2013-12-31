@@ -92,15 +92,17 @@ class TestNumbersHandler(BaseTest):
         self.handler.get("foobar")
         # Assert that we kick off asynchronous GET at homestead
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
-        HTTPCallbackGroup.assert_called_once_with(self.handler._on_get_success,
+        HTTPCallbackGroup.assert_called_once_with(ANY, # functools.partial object
                                                   self.handler._on_get_failure)
 
         get_associated_privates.assert_called_once_with(SIP_URI,
-                                                        self.handler._request_group.callback())
+                                                        ANY # function
+                                                        # argument
+                                                        )
         # Simulate success of all requests.
         response = MagicMock()
-        response.body = '{"public_id": "%s", "private_ids": ["hidden@sip.com"]}' % SIP_URI
-        self.handler._on_get_success([response])
+        response.body = '{"private_ids": ["hidden@sip.com"]}'
+        self.handler._on_get_success(SIP_URI, [response])
 
         self.handler.finish.assert_called_once_with(
             {
@@ -143,7 +145,8 @@ class TestNumbersHandler(BaseTest):
             response2.body = '{"public_id": "sip:4155555678@sip.com", "private_ids": ["hidden1@sip.com"]}'
         else:
             response2.body = '{"public_id": "sip:4155555678@sip.com", "private_ids": ["hidden2@sip.com"]}'
-        self.handler._on_get_success([response1, response2])
+        self.handler._on_get_success("sip:4155551234@sip.com", [response1])
+        self.handler._on_get_success("sip:4155555678@sip.com", [response2])
 
         self.handler.finish.assert_called_once_with(
                 {
@@ -184,8 +187,8 @@ class TestNumbersHandler(BaseTest):
         self.post_mainline(True, PRIVATE_ID)
 
     @patch("metaswitch.common.ifcs.generate_ifcs")
-    @patch("metaswitch.ellis.remote.homestead.post_associated_public")
-    @patch("metaswitch.ellis.remote.homestead.put_password")
+    @patch("metaswitch.ellis.remote.homestead.create_public_id")
+    @patch("metaswitch.ellis.remote.homestead.create_private_id")
     @patch("metaswitch.ellis.remote.homestead.put_filter_criteria")
     @patch("metaswitch.ellis.remote.xdm.put_simservs")
     @patch("metaswitch.common.utils.generate_sip_password")
@@ -198,8 +201,8 @@ class TestNumbersHandler(BaseTest):
                                               gen_sip_pass,
                                               post_simservs,
                                               put_filter_criteria,
-                                              put_password,
-                                              post_associated_public,
+                                              create_private_id,
+                                              create_public_id,
                                               generate_ifcs):
         # Setup
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
@@ -227,14 +230,13 @@ class TestNumbersHandler(BaseTest):
             # We don't generate a pw if we are just associating a pub/priv id
             gen_sip_pass.assert_called_once_with()
             sip_pub_to_priv.assert_called_once_with(SIP_URI)
-            put_password.assert_called_once_with("generated_private_id", "sip_pass", ANY)
-            post_associated_public.assert_called_once_with("generated_private_id", SIP_URI, ANY)
+            create_private_id.assert_called_once_with("generated_private_id", "sip_pass", ANY)
+            create_public_id.assert_called_once_with("generated_private_id", SIP_URI, "ifcs", ANY)
         else:
             # We don't generate a pw if we are just associating a pub/priv id
-            post_associated_public.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+            create_public_id.assert_called_once_with(PRIVATE_ID, SIP_URI, "ifcs", ANY)
 
         generate_ifcs.assert_called_once_with(settings.SIP_DIGEST_REALM)
-        put_filter_criteria.assert_called_once_with(SIP_URI, "ifcs", ANY)
         post_simservs.assert_called_once_with(SIP_URI, ANY, ANY)
 
         # Simulate success of all requests.
@@ -252,18 +254,21 @@ class TestNumbersHandler(BaseTest):
             post_response["private_id"] = "generated_private_id"
         self.handler.finish.assert_called_once_with(post_response)
 
-    @patch("metaswitch.ellis.remote.homestead.post_associated_public")
+    @patch("metaswitch.ellis.remote.homestead.put_filter_criteria")
+    @patch("metaswitch.ellis.remote.homestead.create_public_id")
     @patch("metaswitch.common.utils.generate_sip_password")
     @patch("metaswitch.common.utils.sip_public_id_to_private")
     @patch("metaswitch.ellis.data.numbers.allocate_number")
     @patch("metaswitch.ellis.data.numbers.get_number")
     @patch("metaswitch.ellis.api.numbers.remove_public_id")
-    def test_post_homestead_failure(self, remove_public_id,
-                                          get_number,
-                                          allocate_number,
-                                          sip_pub_to_priv,
-                                          gen_sip_pass,
-                                          post_associated_public):
+    def test_post_homestead_failure(self,
+                                    remove_public_id,
+                                    get_number,
+                                    allocate_number,
+                                    sip_pub_to_priv,
+                                    gen_sip_pass,
+                                    create_public_id,
+                                    put_filter_criteria):
         # Setup
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
         self.request.arguments = {}
@@ -280,7 +285,7 @@ class TestNumbersHandler(BaseTest):
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
         allocate_number.assert_called_once_with(self.db_sess, USER_ID, False)
         get_number.assert_called_once_with(self.db_sess, NUMBER_ID, USER_ID)
-        post_associated_public.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
+        create_public_id.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY, ANY)
 
         self.handler._on_post_failure({})
         remove_public_id.assert_called_once_with(self.db_sess, SIP_URI, ANY, ANY)
@@ -365,9 +370,9 @@ class TestNumberHandler(BaseTest):
         on_get_publics_success = HTTPCallbackGroup.call_args[0][0]
         response = MagicMock()
         if last_public_id:
-            response.body = '{"private_id": "%s", "public_ids": ["%s"]}' % (PRIVATE_ID, sip_uri)
+            response.body = '{"associated_public_ids": ["%s"]}' % (sip_uri)
         else:
-            response.body = '{"private_id": "%s", "public_ids": ["another@sip.com", "%s"]}' % (PRIVATE_ID, sip_uri)
+            response.body = '{"associated_public_ids": ["another@sip.com", "%s"]}' % (sip_uri)
 
         on_get_publics_success([response])
         if original_id and not last_public_id:
@@ -419,18 +424,16 @@ class TestNumberHandler(BaseTest):
     def test_disassociate_number(self):
         self.delete_number(False)
 
-    @patch("metaswitch.ellis.remote.homestead.delete_associated_public")
-    @patch("metaswitch.ellis.remote.homestead.delete_password")
-    @patch("metaswitch.ellis.remote.homestead.delete_filter_criteria")
+    @patch("metaswitch.ellis.remote.homestead.delete_private_id")
+    @patch("metaswitch.ellis.remote.homestead.delete_public_id")
     @patch("metaswitch.ellis.remote.xdm.delete_simservs")
     @patch("metaswitch.ellis.data.numbers.remove_owner")
     @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
     def delete_number(self, delete_digest, HTTPCallbackGroup,
                                            remove_owner,
                                            delete_simservs,
-                                           delete_filter_criteria,
-                                           delete_password,
-                                           delete_associated_public):
+                                           delete_public_id,
+                                           delete_private_id):
         # Setup
         HTTPCallbackGroup.return_value = MagicMock()
         on_success_handler = MagicMock()
@@ -449,10 +452,8 @@ class TestNumberHandler(BaseTest):
         HTTPCallbackGroup.assert_called_once_with(on_success_handler,
                                                   on_failure_handler)
         if delete_digest:
-            delete_password.assert_called_once_with(PRIVATE_ID, ANY)
-        else:
-            delete_associated_public.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY)
-        delete_filter_criteria.assert_called_once_with(SIP_URI, ANY)
+            delete_private_id.assert_called_once_with(PRIVATE_ID, ANY)
+        delete_public_id.assert_called_once_with(SIP_URI, ANY)
         delete_simservs.assert_called_once_with(SIP_URI, ANY)
 
 class TestSipPasswordHandler(BaseTest):

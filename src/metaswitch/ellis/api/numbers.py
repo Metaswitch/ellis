@@ -38,6 +38,7 @@ import httplib
 import json
 
 from tornado.web import HTTPError, asynchronous
+from functools import partial
 
 from metaswitch.ellis.api import _base
 from metaswitch.ellis.api.utils import HTTPCallbackGroup
@@ -64,7 +65,6 @@ class NumbersHandler(_base.LoggedInHandler):
     def get(self, username):
         """Retrieve list of phone numbers."""
         user_id = self.get_and_check_user_id(username)
-        self._request_group = HTTPCallbackGroup(self._on_get_success, self._on_get_failure)
         self._numbers = numbers.get_numbers(self.db_session(), user_id)
         if len(self._numbers) == 0:
             self.finish({"numbers": []})
@@ -78,19 +78,19 @@ class NumbersHandler(_base.LoggedInHandler):
             number["number"] = utils.sip_uri_to_phone_number(number["number"])
             number["formatted_number"] = utils.format_phone_number(number["number"])
 
+            _request_group = HTTPCallbackGroup(partial(self._on_get_success, number["sip_uri"]), self._on_get_failure)
             # We only store the public identities in Ellis, and must query
             # Homestead for the associated private identities
             homestead.get_associated_privates(number["sip_uri"],
-                                              self._request_group.callback())
+                                              _request_group.callback())
 
-    def _on_get_success(self, responses):
+    def _on_get_success(self, public_id, responses):
         _log.debug("Successfully fetched associated private identities")
         for response in responses:
             try:
                 # Body is of format {"public_id": "<public_id>",
                 #                    "private_ids": ["<private_id_1>", "<private_id_2>"...]}
                 parsed_body = json.loads(response.body)
-                public_id = parsed_body["public_id"]
                 # We only support one private id per public id, so only pull out first in list
                 private_id = parsed_body["private_ids"][0]
                 for number in [n for n in self._numbers if n["sip_uri"] == public_id]:
@@ -100,6 +100,11 @@ class NumbersHandler(_base.LoggedInHandler):
                 _log.error("Could not parse response: %s", response.body)
                 self.send_error(httplib.BAD_GATEWAY,
                                 reason="Upstream request failed: could not parse private identity list")
+                return
+
+        for number in self._numbers:
+            if "private_id" not in number:
+                _log.debug("Not all numbers have private IDs associated, not sending response to the browser yet...")
                 return
 
         self.finish({"numbers": self._numbers})
@@ -152,27 +157,27 @@ class NumbersHandler(_base.LoggedInHandler):
         _log.debug("Populating other servers...")
         self._request_group = HTTPCallbackGroup(self._on_post_success,
                                                 self._on_post_failure)
+
+        public_callback = self._request_group.callback()
+
         if private_id == None:
             # No private id was provided, so we need to create a new
             # digest in Homestead
             private_id = utils.sip_public_id_to_private(sip_uri)
             sip_password = utils.generate_sip_password()
-            homestead.put_password(private_id,
-                                   sip_password,
-                                   self._request_group.callback())
+            homestead.create_private_id(private_id,
+                                        sip_password,
+                                        self._request_group.callback())
             self.__response["sip_password"] = sip_password
 
         # Associate the new public identity with the private identity in Homestead
-        homestead.post_associated_public(private_id,
-                                         sip_uri,
-                                         self._request_group.callback())
+        # and store the iFCs in homestead.
+        homestead.create_public_id(private_id,
+                                   sip_uri,
+                                   ifcs.generate_ifcs(settings.SIP_DIGEST_REALM),
+                                   public_callback)
 
         self.__response["private_id"] = private_id
-
-        # Store the iFCs in homestead.
-        homestead.put_filter_criteria(sip_uri,
-                                      ifcs.generate_ifcs(settings.SIP_DIGEST_REALM),
-                                      self._request_group.callback())
 
         # Concurrently, store the default simservs in XDM.
         with open(settings.XDM_DEFAULT_SIMSERVS_FILE) as xml_file:
@@ -210,19 +215,18 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
     """
     def _on_get_privates_success(responses):
         _log.debug("Got related private ids")
-        # Body is of format {"public_id": "<public_id>",
-        #                    "private_ids": ["<private_id_1>", "<private_id_2>"...]}
+        # Body is of format {"private_ids": ["<private_id_1>", "<private_id_2>"...]}
         parsed_body = json.loads(responses[0].body)
         # We only support one private id per public id, so only pull out first in list
         private_id = parsed_body["private_ids"][0]
-        request_group2 = HTTPCallbackGroup(_on_get_publics_success, on_failure)
+        request_group2 = HTTPCallbackGroup(partial(_on_get_publics_success, private_id),
+                                           on_failure)
         homestead.get_associated_publics(private_id, request_group2.callback())
 
-    def _on_get_publics_success(responses):
+    def _on_get_publics_success(private_id, responses):
         _log.debug("Got related public ids")
         parsed_body = json.loads(responses[0].body)
-        private_id = parsed_body["private_id"]
-        public_ids = parsed_body["public_ids"]
+        public_ids = parsed_body["associated_public_ids"]
         if (utils.sip_public_id_to_private(sip_uri) == private_id and
             len(public_ids) > 1):
             # Do not permit deletion of an original public identity if others exist
@@ -258,9 +262,8 @@ def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_f
     # Concurrently, delete data from Homestead and Homer
     request_group = HTTPCallbackGroup(on_success, on_failure)
     if delete_digest:
-        homestead.delete_password(private_id, request_group.callback())
-    homestead.delete_associated_public(private_id, sip_uri, request_group.callback())
-    homestead.delete_filter_criteria(sip_uri, request_group.callback())
+        homestead.delete_private_id(private_id, request_group.callback())
+    homestead.delete_public_id(sip_uri, request_group.callback())
     xdm.delete_simservs(sip_uri, request_group.callback())
 
 class NumberHandler(_base.LoggedInHandler):

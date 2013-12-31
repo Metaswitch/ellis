@@ -80,7 +80,7 @@ do_start()
         [ -d /var/run/$NAME ] || install -m 755 -o $USER -g root -d /var/run/$NAME
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
 		|| return 1
-	start-stop-daemon --start --quiet --chdir $DAEMON_DIR --chuid $USER --pidfile $PIDFILE --exec $DAEMON -- \
+	/usr/bin/authbind --depth 2 start-stop-daemon --start --quiet --chdir $DAEMON_DIR --chuid $USER --pidfile $PIDFILE --exec $DAEMON -- \
 		$DAEMON_ARGS \
 		|| return 2
 	# Add code here, if necessary, that waits for the process to be ready
@@ -107,6 +107,26 @@ do_stop()
 	# Many daemons don't delete their pidfiles when they exit.
 	rm -f $PIDFILE
 	return "$RETVAL"
+}
+
+#
+# Function that aborts the daemon/service
+#
+# This is very similar to do_stop except it sends SIGUSR1 to dump a stack.
+#
+do_abort()
+{
+        # Return
+        #   0 if daemon has been stopped
+        #   1 if daemon was already stopped
+        #   2 if daemon could not be stopped
+        #   other if a failure occurred
+        start-stop-daemon --stop --quiet --retry=USR1/5/TERM/30/KILL/5 --exec $DAEMON
+        RETVAL="$?"
+        [ "$RETVAL" = 2 ] && return 2
+        # Many daemons don't delete their pidfiles when they exit.
+        rm -f $PIDFILE
+        return "$RETVAL"
 }
 
 case "$1" in
@@ -160,6 +180,24 @@ case "$1" in
 		;;
 	esac
 	;;
+  abort-restart)
+        log_daemon_msg "Abort-Restarting $DESC" "$NAME"
+        do_abort
+        case "$?" in
+          0|1)
+                do_start
+                case "$?" in
+                        0) log_end_msg 0 ;;
+                        1) log_end_msg 1 ;; # Old process is still running
+                        *) log_end_msg 1 ;; # Failed to start
+                esac
+                ;;
+          *)
+                # Failed to stop
+                log_end_msg 1
+                ;;
+        esac
+        ;;
   *)
 	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
 	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2

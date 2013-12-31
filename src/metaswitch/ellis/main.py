@@ -108,6 +108,8 @@ def standalone():
         # Fork into background.
         utils.daemonize(err_log_name)
 
+    utils.install_sigusr1_handler(settings.LOG_FILE_PREFIX)
+
     # Drop a pidfile.
     pid = os.getpid()
     with open(settings.PID_FILE, "w") as pidfile:
