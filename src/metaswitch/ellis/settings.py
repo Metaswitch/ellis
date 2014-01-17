@@ -98,7 +98,7 @@ SQL_DB = "ellis"
 SQL_PW = ""
 
 # Homestead setup
-HOMESTEAD_URL = "hs.cw-ngv.com:8888"
+HOMESTEAD_URL = "hs.cw-ngv.com:8889"
 
 # XDM Server.
 XDM_URL = "homer.cw-ngv.com:7888"
