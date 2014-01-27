@@ -64,7 +64,8 @@ class TestXDM(unittest.TestCase):
         client.fetch.assert_called_once_with(SIMSERVS_URL,
                                              callback,
                                              method="GET",
-                                             headers={"X-XCAP-Asserted-Identity": SIP_URI})
+                                             headers={"X-XCAP-Asserted-Identity": SIP_URI},
+                                             allow_ipv6=True)
 
     @patch("tornado.httpclient.AsyncHTTPClient")
     @patch("metaswitch.ellis.remote.xdm.settings")
@@ -80,7 +81,8 @@ class TestXDM(unittest.TestCase):
                                              callback,
                                              method="PUT",
                                              body=XML,
-                                             headers={"X-XCAP-Asserted-Identity": SIP_URI})
+                                             headers={"X-XCAP-Asserted-Identity": SIP_URI},
+                                             allow_ipv6=True)
 
     @patch("tornado.httpclient.AsyncHTTPClient")
     @patch("metaswitch.ellis.remote.xdm.settings")
@@ -95,4 +97,5 @@ class TestXDM(unittest.TestCase):
         client.fetch.assert_called_once_with(SIMSERVS_URL,
                                              callback,
                                              method="DELETE",
-                                             headers={"X-XCAP-Asserted-Identity": SIP_URI})
+                                             headers={"X-XCAP-Asserted-Identity": SIP_URI},
+                                             allow_ipv6=True)

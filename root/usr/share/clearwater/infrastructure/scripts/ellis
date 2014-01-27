@@ -6,7 +6,8 @@ if [[ -z "$hs_provisioning_hostname" ]] ; then
 fi
 
 smtp_password_escaped=`echo $smtp_password | sed -e 's/\//\\\\\//g'`
-sed -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$home_domain'"/g' \
+sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$local_ip'"/g' \
+    -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$home_domain'"/g' \
     -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$hs_provisioning_hostname'"/g' \
     -e 's/^\(XDM_URL\) = .*$/\1 = "'$xdms_hostname'"/g' \
     -e 's/^\(SMTP_SMARTHOST\) = .*$/\1 = "'$smtp_smarthost'"/g' \

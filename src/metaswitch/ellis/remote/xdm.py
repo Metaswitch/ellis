@@ -52,6 +52,7 @@ def fetch_with_headers(user, uri, callback, **kwargs):
     client = httpclient.AsyncHTTPClient()
     headers = kwargs.setdefault("headers", {})
     headers.update({"X-XCAP-Asserted-Identity": user})
+    kwargs['allow_ipv6'] = True
     client.fetch(uri,
                  callback,
                  **kwargs)
