@@ -32,6 +32,7 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+LOCAL_IP = ""
 STATIC_DIR = "/usr/share/clearwater/ellis/web-content"
 XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/ellis/common/metaswitch/common/default_simservs.xml"
 LOGS_DIR = "/var/log/ellis"

@@ -111,7 +111,8 @@ class TestHomesteadPasswords(TestHomestead):
             'http://homestead/private/pri%40foo.bar',
             callback,
             method='GET',
-            follow_redirects=False)
+            follow_redirects=False,
+            allow_ipv6=True)
 
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
@@ -131,7 +132,8 @@ class TestHomesteadPasswords(TestHomestead):
             method='PUT',
             body=body,
             headers={'Content-Type': 'application/json'},
-            follow_redirects=False)
+            follow_redirects=False,
+            allow_ipv6=True)
 
 class TestHomesteadPrivateIDs(TestHomestead):
     """Tests for creating and deleting private IDs"""
@@ -159,7 +161,8 @@ class TestHomesteadPrivateIDs(TestHomestead):
             'http://homestead/private/pri%40foo.bar',
             callback,
             method='DELETE',
-            follow_redirects=False)
+            follow_redirects=False,
+            allow_ipv6=True)
 
 
 class TestHomesteadPublicIDs(TestHomestead):
@@ -177,7 +180,8 @@ class TestHomesteadPublicIDs(TestHomestead):
             callback,
             body="ifcs",
             method='PUT',
-            follow_redirects=False)
+            follow_redirects=False,
+            allow_ipv6=True)
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
     @patch("tornado.httpclient.AsyncHTTPClient")
@@ -190,7 +194,8 @@ class TestHomesteadPublicIDs(TestHomestead):
           'http://homestead/irs/irs-uuid/service_profiles/sp-uuid/public_ids/sip%3Apub%40foo.bar',
             callback,
             method='DELETE',
-            follow_redirects=False)
+            follow_redirects=False,
+            allow_ipv6=True)
 
 
 class TestHomesteadAssociations(TestHomestead):
@@ -207,7 +212,8 @@ class TestHomesteadAssociations(TestHomestead):
             'http://homestead/private/pri%40foo.bar/associated_public_ids',
             callback,
             method='GET',
-            follow_redirects=False)
+            follow_redirects=False,
+            allow_ipv6=True)
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
     @patch("tornado.httpclient.AsyncHTTPClient")
@@ -220,7 +226,8 @@ class TestHomesteadAssociations(TestHomestead):
             'http://homestead/public/sip%3Apub%40foo.bar/associated_private_ids',
             callback,
             method='GET',
-            follow_redirects=False)
+            follow_redirects=False,
+            allow_ipv6=True)
 
 class TestHomesteadiFCs(TestHomestead):
 
@@ -234,7 +241,8 @@ class TestHomesteadiFCs(TestHomestead):
         self.mock_httpclient.fetch.assert_called_once_with(IFC_URL,
                                                            callback,
                                                            method="GET",
-                                                           follow_redirects=False)
+                                                           follow_redirects=False,
+                                                           allow_ipv6=True)
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
     @patch("tornado.httpclient.AsyncHTTPClient")
@@ -247,7 +255,8 @@ class TestHomesteadiFCs(TestHomestead):
                                                            callback,
                                                            method="PUT",
                                                            body='<xml />',
-                                                           follow_redirects=False)
+                                                           follow_redirects=False,
+                                                           allow_ipv6=True)
 
 if __name__ == "__main__":
     unittest.main()

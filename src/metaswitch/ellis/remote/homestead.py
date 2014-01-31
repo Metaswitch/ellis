@@ -208,6 +208,7 @@ def _http_request(url, callback, **kwargs):
     http_client = httpclient.AsyncHTTPClient()
     if 'follow_redirects' not in kwargs:
 	kwargs['follow_redirects'] = False
+    kwargs['allow_ipv6'] = True
     http_client.fetch(url, callback, **kwargs)
 
 
@@ -215,6 +216,7 @@ def _sync_http_request(url, **kwargs):
     http_client = httpclient.HTTPClient()
     if 'follow_redirects' not in kwargs:
 	kwargs['follow_redirects'] = False
+    kwargs['allow_ipv6'] = True
     try:
        return http_client.fetch(url, **kwargs)
     except HTTPError as e:

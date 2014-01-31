@@ -83,12 +83,12 @@ def standalone():
     https_sockets = None
 
     if settings.ALLOW_HTTP:
-        http_sockets = bind_sockets(settings.HTTP_PORT)
+        http_sockets = bind_sockets(settings.HTTP_PORT, address=settings.LOCAL_IP)
         listening_on_some_port = True
 
     if (os.path.exists(settings.TLS_CERTIFICATE) and
         os.path.exists(settings.TLS_PRIVATE_KEY)):
-        https_sockets = bind_sockets(settings.HTTPS_PORT)
+        https_sockets = bind_sockets(settings.HTTPS_PORT, address=settings.LOCAL_IP)
         listening_on_some_port = True
 
     if not listening_on_some_port:

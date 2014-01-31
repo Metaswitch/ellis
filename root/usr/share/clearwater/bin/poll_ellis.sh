@@ -1,7 +1,9 @@
-# @file xdm.py
+#!/bin/bash
+
+# @file poll_ellis.sh
 #
 # Project Clearwater - IMS in the Cloud
-# Copyright (C) 2013  Metaswitch Networks Ltd
+# Copyright (C) 2014  Metaswitch Networks Ltd
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -32,50 +34,12 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+# This script uses HTTP to poll an ellis process and check whether it is healthy.
 
-import logging
-import urllib
+. /etc/clearwater/config
 
-from tornado import httpclient
+PORT=80
 
-from metaswitch.ellis import settings
+# Not currently implemented, just return success.
 
-_log = logging.getLogger("ellis.remote")
-
-def simservs_uri(user):
-    encoded_user = urllib.quote(user, safe="")
-    path = "org.etsi.ngn.simservs/users/%s/simservs.xml" % encoded_user
-    uri = "http://%s/%s" % (settings.XDM_URL, path)
-    return uri
-
-def fetch_with_headers(user, uri, callback, **kwargs):
-    client = httpclient.AsyncHTTPClient()
-    headers = kwargs.setdefault("headers", {})
-    headers.update({"X-XCAP-Asserted-Identity": user})
-    kwargs['allow_ipv6'] = True
-    client.fetch(uri,
-                 callback,
-                 **kwargs)
-
-def get_simservs(user, callback):
-    uri = simservs_uri(user)
-    fetch_with_headers(user,
-                       uri,
-                       callback,
-                       method="GET")
-
-def put_simservs(user, xml_data, callback):
-    uri = simservs_uri(user)
-    fetch_with_headers(user,
-                       uri,
-                       callback,
-                       method="PUT",
-                       body=xml_data)
-
-def delete_simservs(user, callback):
-    uri = simservs_uri(user)
-    fetch_with_headers(user,
-                       uri,
-                       callback,
-                       method="DELETE")
-
+exit 0
