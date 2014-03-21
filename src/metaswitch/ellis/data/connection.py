@@ -53,6 +53,9 @@ def init_connection():
                                settings.SQL_PORT,
                                settings.SQL_DB,
                            ),
+                           # Increase the allowed number of simultaneous
+                           # database connections
+                           pool_size=20,
                            # Avoid MySQL's 8hr idle timeout.
                            pool_recycle=3600)
     Session = sessionmaker(bind=engine)
