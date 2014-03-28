@@ -262,8 +262,11 @@ def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_f
     # Concurrently, delete data from Homestead and Homer
     request_group = HTTPCallbackGroup(on_success, on_failure)
     if delete_digest:
+        # Deleting the private ID will delete its associated IRS (and
+        # therefore any subsidiary public IDs and their service profiles)
         homestead.delete_private_id(private_id, request_group.callback())
-    homestead.delete_public_id(sip_uri, request_group.callback())
+    else:
+        homestead.delete_public_id(sip_uri, request_group.callback())
     xdm.delete_simservs(sip_uri, request_group.callback())
 
 class NumberHandler(_base.LoggedInHandler):

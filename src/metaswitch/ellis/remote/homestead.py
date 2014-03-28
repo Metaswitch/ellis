@@ -115,6 +115,11 @@ def delete_private_id(private_id, callback):
     Deletes a password from Homestead for a given private id
     callback receives the HTTPResponse object.
     """
+    irs_url = _associated_irs_url(private_id)
+    req = _sync_http_request(irs_url, method='GET')
+    irs = json.loads(req.body)['associated_implicit_registration_sets'][0]
+
+    _sync_http_request(_url_host() + "/irs/" + irs, method='DELETE')
     url = _private_id_url(private_id)
     _http_request(url, callback, method='DELETE')
 
@@ -155,9 +160,10 @@ def delete_public_id(public_id, callback):
     """
     public_to_sp_url = _sp_from_public_id_url(public_id)
     response = _sync_http_request(public_to_sp_url, method='GET')
-    location = _location(response)
-    url = _url_host() + _make_url_without_prefix(location+"/public_ids/{}", public_id)
-    _http_request(url, callback, method='DELETE')
+    service_profile = _location(response)
+    url = _url_host() + _make_url_without_prefix(service_profile+"/public_ids/{}", public_id)
+    _sync_http_request(url, method='DELETE')
+    _http_request(_url_host() + service_profile, callback, method='DELETE')
 
 
 def get_associated_privates(public_id, callback):

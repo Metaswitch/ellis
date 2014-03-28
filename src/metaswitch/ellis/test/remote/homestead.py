@@ -190,13 +190,14 @@ class TestHomesteadPublicIDs(TestHomestead):
         self.standard_setup(settings, AsyncHTTPClient)
         callback = Mock()
         homestead.delete_public_id(PUBLIC_URI, callback)
+        # The public ID itself is deleted synchronously - we don't
+        # have infrastructure to test that yet
         self.mock_httpclient.fetch.assert_called_once_with(
-          'http://homestead/irs/irs-uuid/service_profiles/sp-uuid/public_ids/sip%3Apub%40foo.bar',
+          'http://homestead/irs/irs-uuid/service_profiles/sp-uuid',
             callback,
             method='DELETE',
             follow_redirects=False,
             allow_ipv6=True)
-
 
 class TestHomesteadAssociations(TestHomestead):
     """Tests for retrieving associated public/private URLs"""
