@@ -84,7 +84,7 @@ def standalone():
             print "%s Get ifc response %s" % (sip_uri, response.code)
             if response.code == 404:
                 print "%s ifc needs to be repopulated" % (sip_uri,)
-                homestead.put_filter_criteria(sip_uri, ifcs.generate_ifcs(settings.SIP_DIGEST_REALM), put_ifc_callback)
+                homestead.put_filter_criteria(sip_uri, ifcs.generate_ifcs(utils.sip_uri_to_domain(sip_uri)), put_ifc_callback)
             else:
                 inc_resp_count()
 

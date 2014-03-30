@@ -166,6 +166,7 @@ class NumbersHandler(_base.LoggedInHandler):
             private_id = utils.sip_public_id_to_private(sip_uri)
             sip_password = utils.generate_sip_password()
             homestead.create_private_id(private_id,
+                                        utils.sip_uri_to_domain(sip_uri),
                                         sip_password,
                                         self._request_group.callback())
             self.__response["sip_password"] = sip_password
@@ -174,7 +175,7 @@ class NumbersHandler(_base.LoggedInHandler):
         # and store the iFCs in homestead.
         homestead.create_public_id(private_id,
                                    sip_uri,
-                                   ifcs.generate_ifcs(settings.SIP_DIGEST_REALM),
+                                   ifcs.generate_ifcs(utils.sip_uri_to_domain(sip_uri)),
                                    public_callback)
 
         self.__response["private_id"] = private_id
@@ -296,6 +297,7 @@ class SipPasswordHandler(_base.LoggedInHandler):
         """Resets the password for the given SIP URI."""
         user_id = self.get_and_check_user_id(username)
         self.check_number_ownership(sip_uri, user_id)
+        self.sip_digest_realm = utils.sip_uri_to_domain(sip_uri)
         self.sip_password = utils.generate_sip_password()
 
         # Fetch private ID from Homestead for this public ID
@@ -314,7 +316,10 @@ class SipPasswordHandler(_base.LoggedInHandler):
         # Do not expect a response body, as long as there is no error, we are fine
         self._request_group = HTTPCallbackGroup(self.on_put_password_success,
                                                 self.on_put_password_failure)
-        homestead.put_password(private_id, self.sip_password, self._request_group.callback())
+        homestead.put_password(private_id,
+                               self.sip_digest_realm,
+                               self.sip_password,
+                               self._request_group.callback())
 
     def on_get_privates_failure(self, response):
         _log.error("Failed to get associated private ID from homestead %s", response)

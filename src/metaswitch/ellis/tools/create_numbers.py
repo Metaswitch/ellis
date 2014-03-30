@@ -48,7 +48,7 @@ from metaswitch.ellis import settings
 
 _log = logging.getLogger("ellis.create_numbers")
 
-def standalone(start, num, pstn):
+def standalone(start, num, pstn, realm):
     connection.init_connection()
     s = connection.Session()
     create_count = 0
@@ -56,9 +56,9 @@ def standalone(start, num, pstn):
         start = 5108580271 if pstn else 6505550000
     for x in xrange(num):
         if pstn:
-            public_id = "sip:+1%010d@%s" % (start + x, settings.SIP_DIGEST_REALM)
+            public_id = "sip:+1%010d@%s" % (start + x, realm)
         else:
-            public_id = "sip:%010d@%s" % (start + x, settings.SIP_DIGEST_REALM)
+            public_id = "sip:%010d@%s" % (start + x, realm)
         try:
 	    numbers.add_number_to_pool(s, public_id, pstn)
         except IntegrityError:
@@ -89,8 +89,14 @@ if __name__ == '__main__':
                       dest="pstn",
                       default=False,
                       help="If --pstn is specified, a PSTN-enabled number will be created")
+    parser.add_option("-r",
+                      "--realm", 
+                      dest="realm",
+                      type="string",
+                      default=settings.SIP_DIGEST_REALM,
+                      help="Create numbers in this digest realm - if not specified, the home domain will be used")
     (options, args) = parser.parse_args()
     if args:
       parser.print_help()
     else:
-      standalone(options.start, options.num, options.pstn)
+      standalone(options.start, options.num, options.pstn, options.realm)
