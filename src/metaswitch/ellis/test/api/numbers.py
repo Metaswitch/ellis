@@ -453,7 +453,8 @@ class TestNumberHandler(BaseTest):
                                                   on_failure_handler)
         if delete_digest:
             delete_private_id.assert_called_once_with(PRIVATE_ID, ANY)
-        delete_public_id.assert_called_once_with(SIP_URI, ANY)
+        else:
+            delete_public_id.assert_called_once_with(SIP_URI, ANY)
         delete_simservs.assert_called_once_with(SIP_URI, ANY)
 
 class TestSipPasswordHandler(BaseTest):

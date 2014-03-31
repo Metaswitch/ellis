@@ -116,10 +116,10 @@ def delete_private_id(private_id, callback):
     callback receives the HTTPResponse object.
     """
     irs_url = _associated_irs_url(private_id)
-    req = _sync_http_request(irs_url, method='GET')
-    irs = json.loads(req.body)['associated_implicit_registration_sets'][0]
+    associated_irs_response = _sync_http_request(irs_url, method='GET')
+    irs = json.loads(associated_irs_response.body)['associated_implicit_registration_sets'][0]
 
-    _sync_http_request(_url_host() + "/irs/" + irs, method='DELETE')
+    _sync_http_request(_irs_url(irs), method='DELETE')
     url = _private_id_url(private_id)
     _http_request(url, callback, method='DELETE')
 
@@ -284,6 +284,10 @@ def _associated_irs_url(private_id):
     registration sets"""
     return _make_url("private/{}/associated_implicit_registration_sets",
                      private_id)
+
+def _irs_url(irs_uuid):
+    """Returns the URL for deleting this implicit registration set"""
+    return _make_url("irs/{}", irs_uuid)
 
 
 def _associate_new_irs_url(private_id, irs):
