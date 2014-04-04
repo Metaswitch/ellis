@@ -74,18 +74,18 @@ def get_digest(private_id, callback):
     """
     Retreives a digest from Homestead for a given private id
     callback receives the HTTPResponse object. Note the homestead api returns
-    {"digest_ha1": "<digest>"}, rather than just the digest
+    {"digest_ha1": "<digest>", "realm": "<realm>"}, rather than just the digest
     """
     url = _private_id_url(private_id)
     _http_request(url, callback, method='GET')
 
 
-def create_private_id(private_id, password, callback):
+def create_private_id(private_id, realm, password, callback):
     """Creates a private ID and associates it with an implicit
     registration set. callback1 is called when the private ID is created,
     callback2 is called when it is successfully associated with the
     implicit registration set."""
-    put_password(private_id, password, None)  # No callback makes this synchronous
+    put_password(private_id, realm, password, None)  # No callback makes this synchronous
     irs_url = _new_irs_url()
     uuid = _get_irs_uuid(_location(_sync_http_request(irs_url, method="POST", body="")))
     url = _associate_new_irs_url(private_id, uuid)
@@ -93,16 +93,16 @@ def create_private_id(private_id, password, callback):
     callback(response)
 
 
-def put_password(private_id, password, callback):
+def put_password(private_id, realm, password, callback):
     """
     Posts a new password to Homestead for a given private id
     callback receives the HTTPResponse object.
     """
     url = _private_id_url(private_id)
     digest = utils.md5("%s:%s:%s" % (private_id,
-                                     settings.SIP_DIGEST_REALM,
+                                     realm,
                                      password))
-    body = json.dumps({"digest_ha1": digest})
+    body = json.dumps({"digest_ha1": digest, "realm": realm})
     headers = {"Content-Type": "application/json"}
     if callback:
         _http_request(url, callback, method='PUT', headers=headers, body=body)

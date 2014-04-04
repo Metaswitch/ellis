@@ -122,10 +122,10 @@ class TestHomesteadPasswords(TestHomestead):
     def test_put_password_mainline(self, settings, md5, AsyncHTTPClient):
         self.standard_setup(settings, AsyncHTTPClient)
         md5.return_value = "md5_hash"
-        body = json.dumps({"digest_ha1": "md5_hash"})
+        body = json.dumps({"digest_ha1": "md5_hash", "realm": "realm"})
         callback = Mock()
-        homestead.put_password(PRIVATE_URI, "pw", callback)
-        md5.assert_called_once_with("pri@foo.bar:%s:pw" % settings.SIP_DIGEST_REALM)
+        homestead.put_password(PRIVATE_URI, "realm", "pw", callback)
+        md5.assert_called_once_with("pri@foo.bar:realm:pw")
         self.mock_httpclient.fetch.assert_called_once_with(
             'http://homestead/private/pri%40foo.bar',
             callback,
@@ -145,9 +145,9 @@ class TestHomesteadPrivateIDs(TestHomestead):
         callback = Mock()
         md5.return_value = "md5_hash"
         body = json.dumps({"digest_ha1": "md5_hash"})
-        homestead.create_private_id(PRIVATE_URI, "pw", callback)
+        homestead.create_private_id(PRIVATE_URI, "realm", "pw", callback)
 
-        md5.assert_called_once_with("pri@foo.bar:%s:pw" % settings.SIP_DIGEST_REALM)
+        md5.assert_called_once_with("pri@foo.bar:realm:pw")
 
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)

@@ -184,7 +184,7 @@ def ensure_valid_ifc(sip_uri, **kwargs):
         global pending_requests
         pending_requests+=1
         homestead.put_filter_criteria(sip_uri,
-                                      ifcs.generate_ifcs(settings.SIP_DIGEST_REALM),
+                                      ifcs.generate_ifcs(utils.sip_uri_to_domain(sip_uri)),
                                       logging_handler)
     homestead.get_filter_criteria(sip_uri,
                                   create_get_handler(sip_uri, on_not_found=put_default_ifc))

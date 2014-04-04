@@ -54,6 +54,7 @@ NUMBER_ID2_HEX = 'c9b15e685e8b4bcf95233eda4e123456'
 SIP_URI = "sip:5555550123@ngv.metaswitch.com"
 SIP_URI2 = "sip:5555550456@ngv.metaswitch.com"
 PRIVATE_ID = "5555550123@ngv.metaswitch.com"
+REALM = "ngv.metaswitch.com"
 GAB_LISTED = 1
 
 class TestNumbersHandler(BaseTest):
@@ -110,7 +111,7 @@ class TestNumbersHandler(BaseTest):
                      {"number_id": NUMBER_ID_HEX,
                       "number": "5555550123",
                       "sip_username": "5555550123",
-                      "domain": "ngv.metaswitch.com",
+                      "domain": REALM,
                       "gab_listed": GAB_LISTED,
                       "formatted_number": "(555) 555-0123",
                       "sip_uri": SIP_URI,
@@ -230,13 +231,13 @@ class TestNumbersHandler(BaseTest):
             # We don't generate a pw if we are just associating a pub/priv id
             gen_sip_pass.assert_called_once_with()
             sip_pub_to_priv.assert_called_once_with(SIP_URI)
-            create_private_id.assert_called_once_with("generated_private_id", "sip_pass", ANY)
+            create_private_id.assert_called_once_with("generated_private_id", REALM, "sip_pass", ANY)
             create_public_id.assert_called_once_with("generated_private_id", SIP_URI, "ifcs", ANY)
         else:
             # We don't generate a pw if we are just associating a pub/priv id
             create_public_id.assert_called_once_with(PRIVATE_ID, SIP_URI, "ifcs", ANY)
 
-        generate_ifcs.assert_called_once_with(settings.SIP_DIGEST_REALM)
+        generate_ifcs.assert_called_once_with(REALM)
         post_simservs.assert_called_once_with(SIP_URI, ANY, ANY)
 
         # Simulate success of all requests.
@@ -506,6 +507,7 @@ class TestSipPasswordHandler(BaseTest):
         HTTPCallbackGroup.assert_called_once_with(self.handler.on_put_password_success,
                                                   self.handler.on_put_password_failure)
         put_password.assert_called_once_with("hidden@sip.com",
+                                             REALM,
                                              "sip_pass",
                                              self.handler._request_group.callback())
         # Invoke call for password PUT
