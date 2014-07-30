@@ -24,7 +24,7 @@ can also be run directly.
 Further info
 ------------
 
-* [Install guide](http://@@@remote/installation)
+* [Install guide](https://github.com/Metaswitch/clearwater-docs/wiki/Installation-Instructions)
 * [Design guide](docs/design.md)
 * [API guide](docs/api.md)
 * [Development guide](docs/development.md)
