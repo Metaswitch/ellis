@@ -373,6 +373,9 @@ class LoggedInHandler(BaseHandler, UsernameCookieMixin):
     def is_request_authenticated(self):
         return self.logged_in_username is not None
 
+    def is_admin_request(self):
+        if self.request.headers.get("NGV-API-Key", None) != settings.API_KEY:
+            raise HTTPError(403, "This is an admin-only operation.")
 
 class HTTPErrorEx(HTTPError):
     """An exception that will turn into an HTTP error response with headers."""
