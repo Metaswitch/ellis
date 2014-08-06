@@ -36,6 +36,7 @@
 import logging
 import httplib
 import json
+import uuid
 
 from tornado.web import HTTPError, asynchronous
 from functools import partial
@@ -306,7 +307,7 @@ class NumberHandler(_base.LoggedInHandler):
         private_id = self.get_argument('private_id', None)
         new_private_id = self.get_argument('new_private_id', None)
         try:
-            number_id = numbers.get_sip_uri_number_id(db_sess, sip_uri)
+            number_id = uuid.UUID(numbers.get_sip_uri_number_id(db_sess, sip_uri))
         except NotFound:
             # This SIP URI is not currently in the pool, so add it
             number_id = numbers.add_number_to_pool(db_sess, sip_uri, False)
