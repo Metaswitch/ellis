@@ -88,7 +88,7 @@ def remove_owner(db_sess, sip_uri):
     _log.debug("Removing owner of %s", sip_uri)
     number_id = get_sip_uri_number_id(db_sess, sip_uri)
     db_sess.execute("""
-                    UPDATE numbers 
+                    UPDATE numbers
                     SET owner_id = NULL
                     WHERE number_id = :number_id
                     """, {"number_id": number_id})
@@ -106,6 +106,7 @@ def add_number_to_pool(db_sess, number, pstn=False):
                     "pstn": pstn})
 
     _log.debug("Added %s to the pool", number)
+    return number_id
 
 def allocate_number(db_sess, user_id, pstn = False):
     if (pstn):
@@ -113,7 +114,7 @@ def allocate_number(db_sess, user_id, pstn = False):
         sql_query = """
                     SELECT number_id FROM numbers
                     WHERE owner_id IS NULL
-                    AND pstn 
+                    AND pstn
                     LIMIT 1;
                     """
     else:
@@ -124,23 +125,26 @@ def allocate_number(db_sess, user_id, pstn = False):
                     AND NOT pstn
                     LIMIT 1;
                     """
-    
+
     cursor = db_sess.execute(sql_query)
     available_number = cursor.fetchone()
 
     if available_number:
         (number_id,) = available_number
         _log.debug("Fetched %s", number_id)
+        allocate_specific_number(db_sess, user_id, number_id)
+        return uuid.UUID(number_id)
 
+    raise NotFound()
+
+def allocate_specific_number(db_sess, user_id, number_id):
         db_sess.execute("""
                         UPDATE numbers SET owner_id = :owner, gab_listed = 1
                         WHERE number_id = :number_id;
                         """, {"owner": user_id,
                               "number_id": number_id})
         _log.debug("Updated the owner")
-        return uuid.UUID(number_id)
 
-    raise NotFound()
 
 
 def get_number(db_sess, number_id, expected_user_id):

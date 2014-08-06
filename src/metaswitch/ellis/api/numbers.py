@@ -36,6 +36,7 @@
 import logging
 import httplib
 import json
+import uuid
 
 from tornado.web import HTTPError, asynchronous
 from functools import partial
@@ -165,10 +166,12 @@ class NumbersHandler(_base.LoggedInHandler):
             # digest in Homestead
             private_id = utils.sip_public_id_to_private(sip_uri)
             sip_password = utils.generate_sip_password()
+            _log.debug("About to create private ID at Homestead")
             homestead.create_private_id(private_id,
                                         utils.sip_uri_to_domain(sip_uri),
                                         sip_password,
                                         self._request_group.callback())
+            _log.debug("Created private ID at Homestead")
             self.__response["sip_password"] = sip_password
 
         # Associate the new public identity with the private identity in Homestead
@@ -292,6 +295,87 @@ class NumberHandler(_base.LoggedInHandler):
     def _on_delete_failure(self, response):
         _log.debug("At least one request failed.")
         self.forward_error(response)
+
+    @asynchronous
+    def post(self, username, sip_uri):
+        """Allocate a phone number."""
+        _log.debug("Specific number allocation API call (%s)", sip_uri)
+        self.is_admin_request()
+        user_id = self.get_and_check_user_id(username)
+        db_sess = self.db_session()
+        pstn = self.get_argument('pstn', 'false') == 'true'
+        private_id = self.get_argument('private_id', None)
+        new_private_id = self.get_argument('new_private_id', None)
+        try:
+            number_id = uuid.UUID(numbers.get_sip_uri_number_id(db_sess, sip_uri))
+        except NotFound:
+            # This SIP URI is not currently in the pool, so add it
+            number_id = numbers.add_number_to_pool(db_sess, sip_uri, False)
+        numbers.allocate_specific_number(db_sess, user_id, number_id)
+        self.sip_uri = sip_uri
+        db_sess.commit()
+
+        # Work out the response we'll send if the upstream requests
+        # are successful.
+        number = utils.sip_uri_to_phone_number(sip_uri)
+        pretty_number = utils.format_phone_number(number)
+        self.__response = {"sip_uri": sip_uri,
+                           "sip_username": number,
+                           "number": number,
+                           "pstn": pstn,
+                           "formatted_number": pretty_number,
+                           "number_id": number_id.hex}
+
+        # Generate a random password and store it in Homestead.
+        _log.debug("Populating other servers...")
+        self._request_group = HTTPCallbackGroup(self._on_post_success,
+                                                self._on_post_failure)
+
+        public_callback = self._request_group.callback()
+
+        if private_id == None:
+            # No private id was provided, so we need to create a new
+            # digest in Homestead
+            private_id = utils.sip_public_id_to_private(sip_uri)
+            new_private_id = True
+
+        if new_private_id:
+            sip_password = utils.generate_sip_password()
+            _log.debug("About to create private ID at Homestead")
+            homestead.create_private_id(private_id,
+                                        utils.sip_uri_to_domain(sip_uri),
+                                        sip_password,
+                                        self._request_group.callback())
+            _log.debug("Created private ID at Homestead")
+
+            self.__response["sip_password"] = sip_password
+        self.__response["sip_username"] = private_id
+
+        # Associate the new public identity with the private identity in Homestead
+        # and store the iFCs in homestead.
+        homestead.create_public_id(private_id,
+                                   sip_uri,
+                                   ifcs.generate_ifcs(utils.sip_uri_to_domain(sip_uri)),
+                                   public_callback)
+
+        self.__response["private_id"] = private_id
+
+        # Concurrently, store the default simservs in XDM.
+        with open(settings.XDM_DEFAULT_SIMSERVS_FILE) as xml_file:
+            default_xml = xml_file.read()
+        xdm.put_simservs(sip_uri, default_xml, self._request_group.callback())
+
+    def _on_post_success(self, responses):
+        _log.debug("Successfully updated all the backends")
+        self.finish(self.__response)
+
+    def _on_post_failure(self, response):
+        _log.warn("Failed to update all the backends")
+        # Save off response so we can pass error through
+        self.__failure_response = response
+        # Try to back out the changes so we don't leave orphaned data.
+        remove_public_id(self.db_session(), self.sip_uri,
+                         self._on_backout_success, self._on_backout_failure)
 
 
 class SipPasswordHandler(_base.LoggedInHandler):
