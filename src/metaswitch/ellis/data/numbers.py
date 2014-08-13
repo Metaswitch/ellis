@@ -109,12 +109,16 @@ def add_number_to_pool(db_sess, number, pstn=False):
     return number_id
 
 def allocate_number(db_sess, user_id, pstn = False):
+    # Randomize the number allocated.  ORDER BY RAND() is not the fastest way of
+    # doing this, but it's fast enough and Ellis is only intended as a demo
+    # tool anyway.
     if (pstn):
         _log.debug("Allocating a PSTN number")
         sql_query = """
                     SELECT number_id FROM numbers
                     WHERE owner_id IS NULL
                     AND pstn
+                    ORDER BY RAND()
                     LIMIT 1;
                     """
     else:
@@ -123,6 +127,7 @@ def allocate_number(db_sess, user_id, pstn = False):
                     SELECT number_id FROM numbers
                     WHERE owner_id IS NULL
                     AND NOT pstn
+                    ORDER BY RAND()
                     LIMIT 1;
                     """
 
