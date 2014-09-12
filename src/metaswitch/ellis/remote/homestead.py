@@ -83,7 +83,8 @@ def get_digest(private_id, callback):
 def create_private_id(private_id, realm, password, callback):
     """Creates a private ID and associates it with an implicit
     registration set."""
-    password_resp = put_password(private_id, realm, password, None)  # No callback makes this synchronous
+    password_resp = put_password(private_id, realm, password, None)
+    # Having no callback makes this synchronous - but check for errors
     if isinstance(password_resp, HTTPError):
         callback(password_resp)
         return None
@@ -184,7 +185,7 @@ def delete_public_id(public_id, callback):
         callback(response)
         return None
     service_profile = _location(response)
-    url = _url_host() + _make_url_without_prefix(service_profile+"/public_ids/{}", public_id)
+    url = _url_host() + _make_url_without_prefix(service_profile + "/public_ids/{}", public_id)
     resp2 = _sync_http_request(url, method='DELETE')
     if isinstance(resp2, HTTPError):
         callback(resp2)
@@ -246,7 +247,7 @@ def _location(httpresponse):
 def _http_request(url, callback, **kwargs):
     http_client = httpclient.AsyncHTTPClient()
     if 'follow_redirects' not in kwargs:
-	kwargs['follow_redirects'] = False
+        kwargs['follow_redirects'] = False
     kwargs['allow_ipv6'] = True
     http_client.fetch(url, callback, **kwargs)
 
@@ -257,12 +258,13 @@ def _sync_http_request(url, **kwargs):
         kwargs['follow_redirects'] = False
     kwargs['allow_ipv6'] = True
     try:
-       return http_client.fetch(url, **kwargs)
+        return http_client.fetch(url, **kwargs)
     except HTTPError as e:
-       if e.code == 303:
-          return e.response
-       else:
-          raise e
+        if e.code == 303:
+            return e.response
+        else:
+            raise e
+
 
 def _url_host():
     if settings.ALLOW_HTTP:
@@ -273,6 +275,7 @@ def _url_host():
     url = "%s://%s" % \
           (scheme, settings.HOMESTEAD_URL)
     return url
+
 
 def _url_prefix():
     return _url_host() + "/"
@@ -317,6 +320,7 @@ def _associated_irs_url(private_id):
     registration sets"""
     return _make_url("private/{}/associated_implicit_registration_sets",
                      private_id)
+
 
 def _irs_url(irs_uuid):
     """Returns the URL for deleting this implicit registration set"""
