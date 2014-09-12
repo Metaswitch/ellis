@@ -263,7 +263,10 @@ def _sync_http_request(url, **kwargs):
         if e.code == 303:
             return e.response
         else:
-            raise e
+            return e
+    except Exception as e:
+        _log.error("Received exception {}, treating as 500 HTTP error".format(e))
+        return HTTPError(500)
 
 
 def _url_host():

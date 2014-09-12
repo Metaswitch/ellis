@@ -34,6 +34,7 @@
 
 
 import logging
+from tornado.httpclient import HTTPError
 
 _log = logging.getLogger("ellis.api")
 
@@ -62,10 +63,14 @@ class HTTPCallbackGroup(object):
         return callback
 
     def _response_was_successful(self, resp):
-        return ((resp.code // 100 == 2) or
-                (self._treat_delete_404_as_success and
-                 resp.request.method == "DELETE" and
-                 resp.code == 404))
+        if isinstance(resp, HTTPError):
+            return False
+        else:
+            # We have a tornado.httpclient.HTTPResponse
+            return ((resp.code // 100 == 2) or
+                    (self._treat_delete_404_as_success and
+                     resp.request.method == "DELETE" and
+                     resp.code == 404))
 
     def _check_finished(self, response):
         if not self._response_was_successful(response):

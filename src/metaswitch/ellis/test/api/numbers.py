@@ -289,7 +289,7 @@ class TestNumbersHandler(BaseTest):
         create_public_id.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY, ANY)
 
         self.handler._on_post_failure({})
-        remove_public_id.assert_called_once_with(self.db_sess, SIP_URI, ANY, ANY)
+        remove_public_id.assert_called_once_with(self.db_sess, SIP_URI, ANY, ANY, True)
 
 
 class TestNumberHandler(BaseTest):
@@ -316,7 +316,8 @@ class TestNumberHandler(BaseTest):
         remove_public_id.assert_called_once_with(self.db_sess,
                                                  SIP_URI,
                                                  self.handler._on_delete_success,
-                                                 self.handler._on_delete_failure)
+                                                 self.handler._on_delete_failure,
+                                                 False)
 
         # Simulate success of all requests.
         self.handler._on_delete_success([Mock(), Mock(), Mock()])
@@ -354,7 +355,8 @@ class TestNumberHandler(BaseTest):
         numbers.remove_public_id(self.db_sess,
                                  sip_uri,
                                  on_success_handler,
-                                 on_failure_handler)
+                                 on_failure_handler,
+                                 False)
 
         # Asserts
         get_associated_privates.assert_called_once_with(sip_uri, ANY)
@@ -386,7 +388,8 @@ class TestNumberHandler(BaseTest):
                                                    PRIVATE_ID,
                                                    last_public_id,
                                                    on_success_handler,
-                                                   on_failure_handler)
+                                                   on_failure_handler,
+                                                   False)
 
     @patch("metaswitch.ellis.remote.homestead.get_associated_privates")
     @patch("metaswitch.ellis.api.numbers.HTTPCallbackGroup")
@@ -405,13 +408,17 @@ class TestNumberHandler(BaseTest):
         numbers.remove_public_id(self.db_sess,
                                  sip_uri,
                                  on_success_handler,
-                                 on_failure_handler)
+                                 on_failure_handler,
+                                 False)
 
         # Fail the Priv->Pub lookup
         get_associated_privates.assert_called_once_with(sip_uri, ANY)
         HTTPCallbackGroup.assert_called_once_with(ANY, ANY)
         failure_callback = HTTPCallbackGroup.call_args[0][1]
-        failure_callback({})
+
+        error = MagicMock()
+        error.code = 404
+        failure_callback(error)
 
         # Asserts
         remove_owner.assert_called_once_with(self.db_sess, sip_uri)
@@ -446,17 +453,22 @@ class TestNumberHandler(BaseTest):
                                PRIVATE_ID,
                                delete_digest,
                                on_success_handler,
-                               on_failure_handler)
+                               on_failure_handler,
+                               False)
 
         # Asserts
-        remove_owner.assert_called_once_with(self.db_sess, SIP_URI)
-        HTTPCallbackGroup.assert_called_once_with(on_success_handler,
+        success_callback = HTTPCallbackGroup.call_args[0][0]
+
+        HTTPCallbackGroup.assert_called_once_with(ANY,
                                                   on_failure_handler)
         if delete_digest:
             delete_private_id.assert_called_once_with(PRIVATE_ID, ANY)
         else:
             delete_public_id.assert_called_once_with(SIP_URI, ANY)
         delete_simservs.assert_called_once_with(SIP_URI, ANY)
+
+        success_callback()
+        remove_owner.assert_called_once_with(self.db_sess, SIP_URI)
 
 class TestSipPasswordHandler(BaseTest):
     """

@@ -42,6 +42,7 @@ import threading
 
 import msgpack
 import tornado.web
+import tornado.httpclient
 from tornado.web import HTTPError, RequestHandler
 
 from metaswitch.common import utils
@@ -279,9 +280,14 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
         """
         Forwards on an error from a remote backend
         """
+        code = 0
+        if isinstance(response, tornado.httpclient.HTTPError):
+            code = response.code
+        else:
+            code = response.error
         self.send_error(httplib.BAD_GATEWAY,
                         reason="Upstream request failed",
-                        detail={"Upstream error": str(response.error)})
+                        detail={"Upstream error": str(code)})
 
     def send_error(self, status_code=500, reason="unknown", detail={}, **kwargs):
         """
