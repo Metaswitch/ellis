@@ -116,12 +116,14 @@ Number management
     /accounts/<username>/numbers/<SIP URI>/
     /accounts/<username>/numbers/<SIP URI>/password
 
-Make an POST request to `/accounts/<username>/numbers/` to allocate a new number to an account. Specify the following parameters in the body:
+Make an POST request to `/accounts/<username>/numbers/` to allocate a new number (chosen randomly from the pool) to an account. Specify the following parameters in the body:
 
     {
       "pstn":             <boolean specifying if number should be a PSTN>,
       "private_id":       <private identity to associate this number with, null if none yet exists>
     }
+
+Note that `private_id` must be a private identity that already exists - if you specify an arbitrary one, Ellis will not create it for you. If you want to provision numbers and private identities of your own choosing, you should read "Provisioning specific numbers" below or use the [Homer](https://github.com/Metaswitch/crest/blob/dev/docs/homer_api.md) and [Homestead APIs](https://github.com/Metaswitch/crest/blob/dev/docs/homestead_api.md) directly.
 
 Response
 
