@@ -439,7 +439,8 @@ class TestAccountHandler(BaseTest):
         remove_public_id.assert_called_with(self.db_sess,
                                             SIP_URI2,
                                             self.handler._on_delete_post_success,
-                                            self.handler._on_delete_post_failure)
+                                            self.handler._on_delete_post_failure,
+                                            True)
 
 
         # Simulate success of request.
@@ -450,7 +451,8 @@ class TestAccountHandler(BaseTest):
         remove_public_id.assert_called_with(self.db_sess,
                                             SIP_URI,
                                             self.handler._on_delete_post_success,
-                                            self.handler._on_delete_post_failure)
+                                            self.handler._on_delete_post_failure,
+                                            True)
 
         self.handler._on_delete_post_success([Mock()])
         delete_user.assert_called_once_with(self.db_sess, USER_ID)
@@ -478,7 +480,8 @@ class TestAccountHandler(BaseTest):
         remove_public_id.assert_called_with(self.db_sess,
                                             SIP_URI2,
                                             self.handler._on_delete_post_success,
-                                            self.handler._on_delete_post_failure)
+                                            self.handler._on_delete_post_failure,
+                                            True)
 
         # Simulate failure of the request.
         mock_response = Mock()
