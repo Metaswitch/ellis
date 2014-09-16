@@ -176,7 +176,7 @@ class AccountHandler(_base.LoggedInHandler):
         # If there are still numbers to delete, do so.  If not, delete the user and return.
         if len(self._numbers) > 0:
             api_numbers.remove_public_id(self.db_session(), self._numbers.pop()["number"],
-                                         self._on_delete_post_success, self._on_delete_post_failure)
+                                         self._on_delete_post_success, self._on_delete_post_failure. True)
         else:
             _log.debug("Deleting user %s", self._user_id)
             db_sess = self.db_session()
