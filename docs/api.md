@@ -148,19 +148,25 @@ same as that returned at creation.  The list is wrapped in an object:
 
 The password is not available after creation so it is not included.
 
-Make a GET request to `/accounts/<username>/numbers/<SIP URI>/` to
-get the details of the number (Not yet implemented).  Response is the
-same as creation, omitting the password.
-
-Make a POST request to `/accounts/<username>/numbers/<SIP URI>/` to
-update (Not yet implemented).
-
 Make a DELETE request to `/accounts/<username>/numbers/<SIP URI>/`
 to unallocate the number.  It is returned to the pool.
 
 Make an empty post to `/accounts/<username>/numbers/<SIP
 URI>/password` to generate a new password.  It is returned in the
 response as the `sip_password` parameter.
+
+Provisioning specific numbers
+=================
+
+Make an empty POST request to `/accounts/<username>/numbers/<SIP URI>/` to create that specific SIP URI. Note that:
+  * Requests to this URI *must* have the NGV-API-Key header specified - this is not an operation that ordinary users can perform
+  * The 'private_id' URL parameter is mandatory. This is assumed to be an existing private ID to associate the SIP URI with, unless the 'new_private_id' parameter is set to true, in which case this private ID will be created and the password returned.
+
+Response is the same as for a POST to `/accounts/<username>/numbers/`.
+
+Example URL:
+
+`http://ellis.example.com/accounts/Example.User%40example.com/numbers/sip:12345@example.com?private_id=private@example.com&new_private_id=true`
 
 Global Address Book
 ===================
