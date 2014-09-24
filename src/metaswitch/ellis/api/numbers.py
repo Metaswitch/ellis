@@ -197,8 +197,12 @@ class NumbersHandler(_base.LoggedInHandler):
         # Save off response so we can pass error through
         self.__failure_response = response
         # Try to back out the changes so we don't leave orphaned data.
+        # Try to back out the changes so we don't leave orphaned data.
+        # Set force_delete=True - this means that we remove the
+        # partially-created line from Ellis even if Homestead is still
+        # down and our DELETE requests aren't successful.
         remove_public_id(self.db_session(), self.sip_uri,
-                         self._on_backout_success, self._on_backout_failure)
+                         self._on_backout_success, self._on_backout_failure, force_delete=True)
 
     def _on_backout_success(self, responses):
         _log.warn("Backed out changes after failure")
@@ -208,7 +212,7 @@ class NumbersHandler(_base.LoggedInHandler):
         _log.warn("Failed to back out changes after failure")
         self.forward_error(self.__failure_response)
 
-def remove_public_id(db_sess, sip_uri, on_success, on_failure):
+def remove_public_id(db_sess, sip_uri, on_success, on_failure, force_delete):
     """
        Looks up the private id related to the sip_uri, and then the public ids
        related the retrieved private id. If there are multiple public ids, then
@@ -242,29 +246,44 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure):
             # Only delete the digest if there is only a single private identity
             # associated with our sip_uri (i.e. this is the last public id)
             delete_digest = (len(public_ids) == 1)
-            _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure)
+            _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure, force_delete)
 
-    def _on_get_privates_failure(responses):
-        # The number has no records in Homestead
-        _log.debug("Failed to retrieve private IDs for a public ID")
-        _log.debug("Returning %s to the pool" % sip_uri)
-        numbers.remove_owner(db_sess, sip_uri)
-        db_sess.commit()
-        on_success({})
+    def _on_get_privates_failure(response):
+        if (response.code == 404) or force_delete:
+            # The number has no records in Homestead
+            _log.debug("Failed to retrieve private IDs for a public ID")
+            _log.debug("Returning %s to the pool" % sip_uri)
+            numbers.remove_owner(db_sess, sip_uri)
+            db_sess.commit()
+            on_success({})
+        else:
+            _log.warn("Non-404 response - not returning number to pool")
+            on_failure(response)
 
     request_group = HTTPCallbackGroup(_on_get_privates_success, _on_get_privates_failure)
     homestead.get_associated_privates(sip_uri, request_group.callback())
 
-def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure):
+def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_failure, force_delete):
     """
        Deletes all information associated with a private/public identity
        pair, optionally deleting the digest associated with the private identity
     """
-    numbers.remove_owner(db_sess, sip_uri)
-    db_sess.commit()
+
+    def on_upstream_deletion(*args):
+        _log.info("Deletion from Homestead and Homer was OK - returning number to pool")
+        numbers.remove_owner(db_sess, sip_uri)
+        db_sess.commit()
+        on_success(args)
 
     # Concurrently, delete data from Homestead and Homer
-    request_group = HTTPCallbackGroup(on_success, on_failure)
+    request_group = HTTPCallbackGroup(on_upstream_deletion, on_failure)
+
+    if force_delete:
+        request_group = HTTPCallbackGroup(on_success, on_failure)
+        _log.info("Returning number to pool before attempting deletion from Homestead and Homer")
+        numbers.remove_owner(db_sess, sip_uri)
+        db_sess.commit()
+
     if delete_digest:
         # Deleting the private ID will delete its associated IRS (and
         # therefore any subsidiary public IDs and their service profiles)
@@ -286,7 +305,11 @@ class NumberHandler(_base.LoggedInHandler):
         _log.info("Request to delete %s by %s", sip_uri, username)
         user_id = self.get_and_check_user_id(username)
         self.check_number_ownership(sip_uri, user_id)
-        remove_public_id(self.db_session(), sip_uri, self._on_delete_success, self._on_delete_failure)
+        # Set force_delete=False - if we can't remove the number from
+        # Homestead/Homer, we'll keep the number assigned to the user
+        # (who can delete it in future) rather than removing it and
+        # leaving orphaned data in Homestead.
+        remove_public_id(self.db_session(), sip_uri, self._on_delete_success, self._on_delete_failure, force_delete=False)
 
     def _on_delete_success(self, responses):
         _log.debug("All requests successful.")
@@ -374,8 +397,11 @@ class NumberHandler(_base.LoggedInHandler):
         # Save off response so we can pass error through
         self.__failure_response = response
         # Try to back out the changes so we don't leave orphaned data.
+        # Set force_delete=True - this means that we remove the
+        # partially-created line from Ellis even if Homestead is still
+        # down and our DELETE requests aren't successful.
         remove_public_id(self.db_session(), self.sip_uri,
-                         self._on_backout_success, self._on_backout_failure)
+                         self._on_backout_success, self._on_backout_failure, force_delete=True)
 
 
 class SipPasswordHandler(_base.LoggedInHandler):

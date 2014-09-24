@@ -39,10 +39,13 @@ import json
 import re
 
 from tornado import httpclient
+from tornado.ioloop import IOLoop
 from tornado.httpclient import HTTPError
 
 from metaswitch.ellis import settings
 from metaswitch.common import utils
+
+from functools import partial
 
 _log = logging.getLogger("ellis.remote")
 
@@ -82,15 +85,25 @@ def get_digest(private_id, callback):
 
 def create_private_id(private_id, realm, password, callback):
     """Creates a private ID and associates it with an implicit
-    registration set. callback1 is called when the private ID is created,
-    callback2 is called when it is successfully associated with the
-    implicit registration set."""
-    put_password(private_id, realm, password, None)  # No callback makes this synchronous
+    registration set."""
+    password_resp = put_password(private_id, realm, password, None)
+    # Having no callback makes this synchronous - but check for errors
+    if isinstance(password_resp, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, password_resp))
+        return None
     irs_url = _new_irs_url()
-    uuid = _get_irs_uuid(_location(_sync_http_request(irs_url, method="POST", body="")))
+    irs_resp = _sync_http_request(irs_url, method="POST", body="")
+    if isinstance(irs_resp, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, irs_resp))
+        return None
+    uuid = _get_irs_uuid(_location(irs_resp))
     url = _associate_new_irs_url(private_id, uuid)
+
+    # We have to do this synchronously and then call the callback with
+    # its response - otherwise we return before the IMPI and IRS are
+    # associated and subsequent steps fail
     response = _sync_http_request(url, method="PUT", body="")
-    callback(response)
+    IOLoop.instance().add_callback(partial(callback, response))
 
 
 def put_password(private_id, realm, password, callback):
@@ -117,9 +130,15 @@ def delete_private_id(private_id, callback):
     """
     irs_url = _associated_irs_url(private_id)
     associated_irs_response = _sync_http_request(irs_url, method='GET')
+    if isinstance(associated_irs_response, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, associated_irs_response))
+        return None
     irs = json.loads(associated_irs_response.body)['associated_implicit_registration_sets'][0]
 
-    _sync_http_request(_irs_url(irs), method='DELETE')
+    irs_deletion = _sync_http_request(_irs_url(irs), method='DELETE')
+    if isinstance(irs_deletion, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, irs_deletion))
+        return None
     url = _private_id_url(private_id)
     _http_request(url, callback, method='DELETE')
 
@@ -140,16 +159,26 @@ def create_public_id(private_id, public_id, ifcs, callback):
     callback receives the HTTPResponse object.
     """
     url = _associated_irs_url(private_id)
-    req = _sync_http_request(url, method='GET')
-    irs = json.loads(req.body)['associated_implicit_registration_sets'][0]
+    resp1 = _sync_http_request(url, method='GET')
+    if isinstance(resp1, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, resp1))
+        return None
+    _log.info(resp1.body)
+    irs = json.loads(resp1.body)['associated_implicit_registration_sets'][0]
     sp_url = _new_service_profile_url(irs)
-    req2 = _sync_http_request(sp_url, method='POST', body="")
-    sp = _get_sp_uuid(_location(req2))
+    resp2 = _sync_http_request(sp_url, method='POST', body="")
+    if isinstance(resp2, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, resp2))
+        return None
+    sp = _get_sp_uuid(_location(resp2))
     public_url = _new_public_id_url(irs, sp, public_id)
     body = "<PublicIdentity><Identity>" + \
            public_id + \
            "</Identity></PublicIdentity>"
-    _sync_http_request(public_url, method='PUT', body=body)
+    resp3 = _sync_http_request(public_url, method='PUT', body=body)
+    if isinstance(resp3, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, resp3))
+        return None
     put_filter_criteria(public_id, ifcs, callback)
 
 
@@ -160,9 +189,15 @@ def delete_public_id(public_id, callback):
     """
     public_to_sp_url = _sp_from_public_id_url(public_id)
     response = _sync_http_request(public_to_sp_url, method='GET')
+    if isinstance(response, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, response))
+        return None
     service_profile = _location(response)
-    url = _url_host() + _make_url_without_prefix(service_profile+"/public_ids/{}", public_id)
-    _sync_http_request(url, method='DELETE')
+    url = _url_host() + _make_url_without_prefix(service_profile + "/public_ids/{}", public_id)
+    resp2 = _sync_http_request(url, method='DELETE')
+    if isinstance(resp2, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, resp2))
+        return None
     _http_request(_url_host() + service_profile, callback, method='DELETE')
 
 
@@ -181,7 +216,11 @@ def get_filter_criteria(public_id, callback):
     Retrieves the filter criteria associated with the given public ID.
     """
     sp_url = _sp_from_public_id_url(public_id)
-    sp_location = _location(_sync_http_request(sp_url, method='GET'))
+    sp_resp = _sync_http_request(sp_url, method='GET')
+    if isinstance(sp_resp, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, sp_resp))
+        return None
+    sp_location = _location(sp_resp)
     url = _url_host() + _make_url_without_prefix(sp_location + "/filter_criteria")
     _http_request(url, callback, method='GET')
 
@@ -193,6 +232,9 @@ def put_filter_criteria(public_id, ifcs, callback):
     """
     sp_url = _sp_from_public_id_url(public_id)
     resp = _sync_http_request(sp_url, method='GET')
+    if isinstance(resp, HTTPError):
+        IOLoop.instance().add_callback(partial(callback, resp))
+        return None
     sp_location = _location(resp)
     url = _url_host() + _make_url_without_prefix(sp_location + "/filter_criteria")
     _http_request(url, callback, method='PUT', body=ifcs)
@@ -213,7 +255,7 @@ def _location(httpresponse):
 def _http_request(url, callback, **kwargs):
     http_client = httpclient.AsyncHTTPClient()
     if 'follow_redirects' not in kwargs:
-	kwargs['follow_redirects'] = False
+        kwargs['follow_redirects'] = False
     kwargs['allow_ipv6'] = True
     http_client.fetch(url, callback, **kwargs)
 
@@ -221,15 +263,19 @@ def _http_request(url, callback, **kwargs):
 def _sync_http_request(url, **kwargs):
     http_client = httpclient.HTTPClient()
     if 'follow_redirects' not in kwargs:
-	kwargs['follow_redirects'] = False
+        kwargs['follow_redirects'] = False
     kwargs['allow_ipv6'] = True
     try:
-       return http_client.fetch(url, **kwargs)
+        return http_client.fetch(url, **kwargs)
     except HTTPError as e:
-       if e.code == 303:
-          return e.response
-       else:
-          raise e
+        if e.code == 303:
+            return e.response
+        else:
+            return e
+    except Exception as e:
+        _log.error("Received exception {}, treating as 500 HTTP error".format(e))
+        return HTTPError(500)
+
 
 def _url_host():
     if settings.ALLOW_HTTP:
@@ -240,6 +286,7 @@ def _url_host():
     url = "%s://%s" % \
           (scheme, settings.HOMESTEAD_URL)
     return url
+
 
 def _url_prefix():
     return _url_host() + "/"
@@ -284,6 +331,7 @@ def _associated_irs_url(private_id):
     registration sets"""
     return _make_url("private/{}/associated_implicit_registration_sets",
                      private_id)
+
 
 def _irs_url(irs_uuid):
     """Returns the URL for deleting this implicit registration set"""

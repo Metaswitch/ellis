@@ -25,6 +25,15 @@ run: bin/python setup.py
 test: bin/python setup.py
 	bin/python setup.py test
 
+verify:
+	flake8 --select=E10,E11,E9,F src/
+
+style:
+	flake8 --select=E,W,C,N --max-line-length=100 src/
+
+explain-style:
+	flake8 --select=E,W,C,N --show-pep8 --first --max-line-length=100 src/
+
 .PHONY: coverage
 coverage: bin/coverage setup.py
 	rm -rf htmlcov/
