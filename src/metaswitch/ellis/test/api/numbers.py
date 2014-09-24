@@ -289,7 +289,7 @@ class TestNumbersHandler(BaseTest):
         create_public_id.assert_called_once_with(PRIVATE_ID, SIP_URI, ANY, ANY)
 
         self.handler._on_post_failure({})
-        remove_public_id.assert_called_once_with(self.db_sess, SIP_URI, ANY, ANY, True)
+        remove_public_id.assert_called_once_with(self.db_sess, SIP_URI, ANY, ANY, force_delete=True)
 
 
 class TestNumberHandler(BaseTest):
@@ -317,7 +317,7 @@ class TestNumberHandler(BaseTest):
                                                  SIP_URI,
                                                  self.handler._on_delete_success,
                                                  self.handler._on_delete_failure,
-                                                 False)
+                                                 force_delete=False)
 
         # Simulate success of all requests.
         self.handler._on_delete_success([Mock(), Mock(), Mock()])
