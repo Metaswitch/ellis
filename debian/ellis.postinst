@@ -86,13 +86,13 @@ case "$1" in
 
         # Start monit monitoring ellis
         cp $ELLIS_DIR/*.monit /etc/monit/conf.d/
-        service monit restart
+        reload clearwater-monit || true
 
         # Restart ellis.  Always do this by terminating ellis so monit will
         # restart it more-or-less immediately.  (monit restart seems to have
         # significant lag.)
         # Don't fail if it's already stopped.
-        service ellis stop || /bin/true
+        service ellis stop || true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
