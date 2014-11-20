@@ -87,23 +87,32 @@ def get_sip_uri_number_id(db_sess, sip_uri):
 def remove_owner(db_sess, sip_uri):
     _log.debug("Removing owner of %s", sip_uri)
     number_id = get_sip_uri_number_id(db_sess, sip_uri)
+
+    # Delete the number from the pool if it was allocated specifically,
+    # rather than releasing it.
+    db_sess.execute("""
+                    DELETE from numbers
+                    WHERE number_id = :number_id
+                    AND allocated = TRUE
+                    """, {"number_id": number_id})
     db_sess.execute("""
                     UPDATE numbers
                     SET owner_id = NULL
                     WHERE number_id = :number_id
                     """, {"number_id": number_id})
 
-def add_number_to_pool(db_sess, number, pstn=False):
+def add_number_to_pool(db_sess, number, pstn=False, allocated=False):
     _log.debug("Adding %s to the pool", number)
     number_id = uuid.uuid4()
 
     db_sess.execute("""
-                   INSERT INTO numbers (number_id, number, pstn)
-                   VALUES (:number_id, :number, :pstn);
+                   INSERT INTO numbers (number_id, number, pstn, allocated)
+                   VALUES (:number_id, :number, :pstn, :allocated);
                    """,
                    {"number_id": number_id,
                     "number": number,
-                    "pstn": pstn})
+                    "pstn": pstn,
+                    "allocated": allocated})
 
     _log.debug("Added %s to the pool", number)
     return number_id

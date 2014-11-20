@@ -60,12 +60,12 @@ def standalone(start, num, pstn, realm):
         else:
             public_id = "sip:%010d@%s" % (start + x, realm)
         try:
-	    numbers.add_number_to_pool(s, public_id, pstn)
+	    numbers.add_number_to_pool(s, public_id, pstn, False)
         except IntegrityError:
             # Entry already exists, not creating in db
 	    pass
         else:
-            create_count += 1	
+            create_count += 1
     s.commit()
     print "Created %d numbers, %d already present in database" % (create_count, num - create_count)
 
@@ -78,19 +78,19 @@ if __name__ == '__main__':
                       type="int",
                       help="Start creating with this number, defaulting to 5108580271 (PSTN) or 6505550000")
     parser.add_option("-c",
-                      "--count", 
+                      "--count",
                       dest="num",
                       type="int",
                       default=1,
                       help="Create this many numbers, if not specified, only one number will be created")
     parser.add_option("-p",
-                      "--pstn", 
-                      action="store_true", 
+                      "--pstn",
+                      action="store_true",
                       dest="pstn",
                       default=False,
                       help="If --pstn is specified, a PSTN-enabled number will be created")
     parser.add_option("-r",
-                      "--realm", 
+                      "--realm",
                       dest="realm",
                       type="string",
                       default=settings.SIP_DIGEST_REALM,

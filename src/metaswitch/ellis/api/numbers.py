@@ -333,7 +333,7 @@ class NumberHandler(_base.LoggedInHandler):
             number_id = uuid.UUID(numbers.get_sip_uri_number_id(db_sess, sip_uri))
         except NotFound:
             # This SIP URI is not currently in the pool, so add it
-            number_id = numbers.add_number_to_pool(db_sess, sip_uri, False)
+            number_id = numbers.add_number_to_pool(db_sess, sip_uri, False, True)
         numbers.allocate_specific_number(db_sess, user_id, number_id)
         self.sip_uri = sip_uri
         db_sess.commit()
