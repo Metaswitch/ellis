@@ -39,7 +39,7 @@ BEGIN
   END IF;
 
   -- --------------------------------------------------------------------------
-  -- Add the password-recovery fields to the users table, and remove the 
+  -- Add the password-recovery fields to the users table, and remove the
   -- username field.
   -- --------------------------------------------------------------------------
   IF NOT EXISTS (SELECT *
@@ -59,6 +59,13 @@ BEGIN
   -- --------------------------------------------------------------------------
   IF NOT EXISTS (SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='numbers' AND COLUMN_NAME='number' AND CHARACTER_OCTET_LENGTH>=128) THEN
     ALTER TABLE numbers MODIFY number varchar(128);
+  END IF;
+
+  -- --------------------------------------------------------------------------
+  -- Add the specified flag to the numbers table.
+  -- --------------------------------------------------------------------------
+  IF NOT EXISTS (SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='numbers' AND COLUMN_NAME='specified') THEN
+    ALTER TABLE numbers ADD COLUMN specified boolean NOT NULL DEFAULT False;
   END IF;
 
 END $$

@@ -104,7 +104,7 @@ class TestNumbers(BaseDataTest):
         get_sip_id.return_value = NUMBER_ID
         self.mock_cursor.rowcount = 1
         remove_owner(self.mock_session, SIP_URI)
-        self.mock_session.execute.assert_called_once_with(ANY, {"number_id": NUMBER_ID})
+        self.mock_session.execute.assert_called_with(ANY, {"number_id": NUMBER_ID})
 
     @patch("metaswitch.ellis.data.numbers.add_number_to_pool")
     @patch("metaswitch.ellis.data.numbers.get_sip_uri_number_id")
@@ -112,7 +112,7 @@ class TestNumbers(BaseDataTest):
         get_sip_id.return_value = NUMBER_ID
         self.mock_cursor.rowcount = 0
         remove_owner(self.mock_session, SIP_URI)
-        self.mock_session.execute.assert_called_once_with(ANY, {"number_id": NUMBER_ID})
+        self.mock_session.execute.assert_called_with(ANY, {"number_id": NUMBER_ID})
         self.assertFalse(add_to_pool.called)
 
     @patch("uuid.uuid4")
@@ -123,7 +123,8 @@ class TestNumbers(BaseDataTest):
                                                           {
                                                            "number_id": NUMBER_ID,
                                                            "number": SIP_URI,
-                                                           "pstn": False
+                                                           "pstn": False,
+                                                           "specified": False
                                                            })
 
     def test_allocate_number(self):
@@ -162,7 +163,7 @@ class TestNumbers(BaseDataTest):
                                                             "gab": True,
                                                             "nid": NUMBER_ID
                                                           })
-                                                          
+
     def test_update_gab_list_remove_number(self):
         update_gab_list(self.mock_session, OWNER_ID, NUMBER_ID, False)
         self.mock_session.execute.assert_called_once_with(ANY,
