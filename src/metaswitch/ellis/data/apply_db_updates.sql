@@ -62,10 +62,10 @@ BEGIN
   END IF;
 
   -- --------------------------------------------------------------------------
-  -- Add the allocated flag to the numbers table.
+  -- Add the specified flag to the numbers table.
   -- --------------------------------------------------------------------------
-  IF NOT EXISTS (SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='numbers' AND COLUMN_NAME='allocated') THEN
-    ALTER TABLE numbers ADD COLUMN allocated boolean NOT NULL DEFAULT False;
+  IF NOT EXISTS (SELECT * FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='numbers' AND COLUMN_NAME='specified') THEN
+    ALTER TABLE numbers ADD COLUMN specified boolean NOT NULL DEFAULT False;
   END IF;
 
 END $$

@@ -93,7 +93,7 @@ def remove_owner(db_sess, sip_uri):
     db_sess.execute("""
                     DELETE from numbers
                     WHERE number_id = :number_id
-                    AND allocated = TRUE
+                    AND specified = TRUE
                     """, {"number_id": number_id})
     db_sess.execute("""
                     UPDATE numbers
@@ -101,18 +101,18 @@ def remove_owner(db_sess, sip_uri):
                     WHERE number_id = :number_id
                     """, {"number_id": number_id})
 
-def add_number_to_pool(db_sess, number, pstn=False, allocated=False):
+def add_number_to_pool(db_sess, number, pstn=False, specified=False):
     _log.debug("Adding %s to the pool", number)
     number_id = uuid.uuid4()
 
     db_sess.execute("""
-                   INSERT INTO numbers (number_id, number, pstn, allocated)
-                   VALUES (:number_id, :number, :pstn, :allocated);
+                   INSERT INTO numbers (number_id, number, pstn, specified)
+                   VALUES (:number_id, :number, :pstn, :specified);
                    """,
                    {"number_id": number_id,
                     "number": number,
                     "pstn": pstn,
-                    "allocated": allocated})
+                    "specified": specified})
 
     _log.debug("Added %s to the pool", number)
     return number_id

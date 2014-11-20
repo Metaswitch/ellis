@@ -124,7 +124,7 @@ class TestNumbers(BaseDataTest):
                                                            "number_id": NUMBER_ID,
                                                            "number": SIP_URI,
                                                            "pstn": False,
-                                                           "allocated": False
+                                                           "specified": False
                                                            })
 
     def test_allocate_number(self):
