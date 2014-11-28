@@ -5,18 +5,18 @@ if [[ -z "$hs_provisioning_hostname" ]] ; then
     hs_provisioning_hostname=$hs_hostname
 fi
 
-smtp_password_escaped=`echo $smtp_password | sed -e 's/\//\\\\\//g'`
-sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$local_ip'"/g' \
-    -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$home_domain'"/g' \
-    -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$hs_provisioning_hostname'"/g' \
-    -e 's/^\(XDM_URL\) = .*$/\1 = "'$xdms_hostname'"/g' \
-    -e 's/^\(SMTP_SMARTHOST\) = .*$/\1 = "'$smtp_smarthost'"/g' \
-    -e 's/^\(SMTP_USERNAME\) = .*$/\1 = "'$smtp_username'"/g' \
-    -e 's/^\(SMTP_PASSWORD\) = .*$/\1 = "'$smtp_password_escaped'"/g' \
-    -e 's/^\(EMAIL_RECOVERY_SENDER\) = .*$/\1 = "'$email_recovery_sender'"/g' \
-    -e 's/^\(SIGNUP_CODE\) = .*$/\1 = "'$signup_key'"/g' \
-    -e 's/^\(COOKIE_SECRET\) = .*$/\1 = "'$ellis_cookie_key'"/g' \
-    -e 's/^\(API_KEY\) = .*$/\1 = "'$ellis_api_key'"/g' \
+function escape { echo $1 | sed -e 's/\//\\\//g' ; }
+sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape $local_ip)'"/g' \
+    -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$(escape $home_domain)'"/g' \
+    -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$(escape $hs_provisioning_hostname)'"/g' \
+    -e 's/^\(XDM_URL\) = .*$/\1 = "'$(escape $xdms_hostname)'"/g' \
+    -e 's/^\(SMTP_SMARTHOST\) = .*$/\1 = "'$(escape $smtp_smarthost)'"/g' \
+    -e 's/^\(SMTP_USERNAME\) = .*$/\1 = "'$(escape $smtp_username)'"/g' \
+    -e 's/^\(SMTP_PASSWORD\) = .*$/\1 = "'$(escape $smtp_password)'"/g' \
+    -e 's/^\(EMAIL_RECOVERY_SENDER\) = .*$/\1 = "'$(escape $email_recovery_sender)'"/g' \
+    -e 's/^\(SIGNUP_CODE\) = .*$/\1 = "'$(escape $signup_key)'"/g' \
+    -e 's/^\(COOKIE_SECRET\) = .*$/\1 = "'$(escape $ellis_cookie_key)'"/g' \
+    -e 's/^\(API_KEY\) = .*$/\1 = "'$(escape $ellis_api_key)'"/g' \
     </usr/share/clearwater/ellis/src/metaswitch/ellis/local_settings.py >/tmp/local_settings.py.$$
 for dst in /usr/share/clearwater/ellis/src/metaswitch/ellis/local_settings.py \
            /usr/share/clearwater/ellis/env/lib/python2.7/site-packages/ellis-0.1-py2.7.egg/metaswitch/ellis/local_settings.py
