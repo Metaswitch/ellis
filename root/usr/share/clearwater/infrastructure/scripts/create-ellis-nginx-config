@@ -39,7 +39,7 @@
 . /etc/clearwater/config
 
 site_file=/etc/nginx/sites-available/ellis
-let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)-1
+let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)*2-1
 
 cat > $site_file << EOF1
 upstream http_ellis {
