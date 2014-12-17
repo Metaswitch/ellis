@@ -106,7 +106,8 @@ def standalone():
         connection.init_connection()
 
         http_server = httpserver.HTTPServer(application)
-        unix_socket = bind_unix_socket(settings.HTTP_UNIX + "-" + str(task_id));
+        unix_socket = bind_unix_socket(settings.HTTP_UNIX + "-" + str(task_id),
+                                       0666);
         http_server.add_socket(unix_socket)
 
         homestead.ping()
