@@ -69,14 +69,6 @@ LOG_FILE_MAX_BYTES = 10000000
 LOG_BACKUP_COUNT = 10
 PID_FILE = os.path.join(PROJECT_DIR, "server.pid")
 
-# HTTPS keys.
-TLS_PRIVATE_KEY = os.path.join(CERTS_DIR, "private-key.pem")
-TLS_CERTIFICATE = os.path.join(CERTS_DIR, "certificate-with-chain.pem")
-
-# Ports.
-HTTP_PORT = 80
-HTTPS_PORT = 443
-
 # Tornado cookie encryption key.  Tornado instances that share this key will
 # all trust each other's cookies.
 COOKIE_SECRET = 'secret'
@@ -104,9 +96,11 @@ HOMESTEAD_URL = "hs.cw-ngv.com:8889"
 XDM_URL = "homer.cw-ngv.com:7888"
 XDM_DEFAULT_SIMSERVS_FILE = os.path.join(_MY_DIR, "../../../common/metaswitch/common/default_simservs.xml")
 
-# To avoid deploying with debug turned on, these settings should only ever be
+# UNIX domain socket prefix
+HTTP_UNIX="/tmp/.ellis-sock"
+
+# To avoid deploying with debug turned on, this settings should only ever be
 # changed by creating a local_settings.py file in this directory.
-ALLOW_HTTP = False     # Listen for HTTP as well as HTTPS.
 TORNADO_DEBUG = False  # Make tornado emit debug messages to the browser etc.
 
 # Throttling for password reset emails:

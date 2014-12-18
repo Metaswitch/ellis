@@ -42,7 +42,7 @@ import atexit
 import tornado.web
 import tornado.ioloop
 import tornado.process
-from tornado.netutil import bind_sockets
+from tornado.netutil import bind_unix_socket
 from metaswitch.ellis.api import URLS
 from metaswitch.ellis.data import connection
 from metaswitch.ellis import settings, logging_config
@@ -77,26 +77,6 @@ def standalone():
     # have its own logging and it's awkward to reconfigure logging that is
     # defined by the parent.
     application = create_application()
-    listening_on_some_port = False
-
-    http_sockets = None
-    https_sockets = None
-
-    if settings.ALLOW_HTTP:
-        http_sockets = bind_sockets(settings.HTTP_PORT, address=settings.LOCAL_IP)
-        listening_on_some_port = True
-
-    if (os.path.exists(settings.TLS_CERTIFICATE) and
-        os.path.exists(settings.TLS_PRIVATE_KEY)):
-        https_sockets = bind_sockets(settings.HTTPS_PORT, address=settings.LOCAL_IP)
-        listening_on_some_port = True
-
-    if not listening_on_some_port:
-        # We usually don't configure logging until after we fork but since
-        # we're about to crash...
-        logging_config.configure_logging("parent")
-        _log.critical("Failed to listen on any ports.")
-        raise Exception("Failed to listen on any ports")
 
     if args.background:
         # Get a new logfile, rotating the old one if present.
@@ -124,22 +104,12 @@ def standalone():
         # We're a child process, start up.
         _log.info("Process %s starting up", task_id)
         connection.init_connection()
-        if http_sockets:
-            _log.info("Going to listen for HTTP on port %s", settings.HTTP_PORT)
-            http_server = httpserver.HTTPServer(application)
-            http_server.add_sockets(http_sockets)
-        else:
-            _log.info("Not starting HTTP, set ALLOW_HTTP in local_settings.py to enable HTTP.")
-        if https_sockets:
-            _log.info("Going to listen for HTTPS on port %s", settings.HTTPS_PORT)
-            https_server = httpserver.HTTPServer(application,
-                       ssl_options={
-                           "certfile": settings.TLS_CERTIFICATE,
-                           "keyfile": settings.TLS_PRIVATE_KEY,
-                       })
-            https_server.add_sockets(https_sockets)
-        else:
-            _log.critical("Not starting HTTPS")
+
+        http_server = httpserver.HTTPServer(application)
+        unix_socket = bind_unix_socket(settings.HTTP_UNIX + "-" + str(task_id),
+                                       0666);
+        http_server.add_socket(unix_socket)
+
         homestead.ping()
         background.start_background_worker_io_loop()
         io_loop = tornado.ioloop.IOLoop.instance()
@@ -148,8 +118,6 @@ def standalone():
         # This shouldn't happen since the children should run their IOLoops
         # forever.
         _log.critical("Children all exited")
-
-
 
 if __name__ == '__main__':
     standalone()
