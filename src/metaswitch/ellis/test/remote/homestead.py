@@ -65,7 +65,6 @@ class TestHomestead(unittest.TestCase):
     """
 
     def standard_setup(self, settings, AsyncHTTPClient):
-        settings.ALLOW_HTTP = True
         settings.HOMESTEAD_URL = "homestead"
         settings.SIP_DIGEST_REALM = "foo.bar"
         self.mock_httpclient = Mock()
@@ -79,12 +78,11 @@ class TestHomesteadPing(TestHomestead):
     @patch("metaswitch.ellis.remote.homestead.settings")
     def test_ping_mainline(self, settings, AsyncHTTPClient):
         self.standard_setup(settings, AsyncHTTPClient)
-        settings.ALLOW_HTTP = False
         mock_response = MagicMock()
         mock_response.body = "OK"
         self.mock_httpclient.fetch.return_value = mock_response
         homestead.ping()
-        self.mock_httpclient.fetch.assert_called_once_with("https://homestead/ping", ANY)
+        self.mock_httpclient.fetch.assert_called_once_with("http://homestead/ping", ANY)
 
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
