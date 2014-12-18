@@ -53,12 +53,7 @@ _log = logging.getLogger("ellis.remote")
 def ping():
     """Make sure we can reach homestead"""
     homestead_client = httpclient.AsyncHTTPClient()
-    if settings.ALLOW_HTTP:
-        scheme = "http"
-    else:
-        scheme = "https"
-
-    url = "%s://%s/ping" % (scheme, settings.HOMESTEAD_URL)
+    url = "http://%s/ping" % (settings.HOMESTEAD_URL)
 
     def ping_callback(response):
         if response.body == "OK":
@@ -278,13 +273,8 @@ def _sync_http_request(url, **kwargs):
 
 
 def _url_host():
-    if settings.ALLOW_HTTP:
-        scheme = "http"
-        _log.warn("Passing SIP password in the clear over http")
-    else:
-        scheme = "https"
-    url = "%s://%s" % \
-          (scheme, settings.HOMESTEAD_URL)
+    _log.warn("Passing SIP password in the clear over http")
+    url = "http://%s" % (settings.HOMESTEAD_URL)
     return url
 
 
