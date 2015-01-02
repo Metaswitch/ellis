@@ -144,8 +144,12 @@ Ellis is installed to `/usr/share/clearwater/ellis/`.
 Startup logs (from Monit) are written to `/var/log/monit.log` and
 `/var/log/syslog`.
 
-Ellis logs are written to `/var/log/ellis/`.
+Ellis logs are written to `/var/log/ellis/`. The logging level is set
+to INFO by default. To also view DEBUG logs add the following to 
+`local_settings.py`
 
+    LOG_LEVEL = logging.DEBUG
+    
 To run the server as part of development use:
 
     make run
