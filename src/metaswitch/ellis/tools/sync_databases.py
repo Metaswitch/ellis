@@ -43,8 +43,7 @@ import json
 from tornado.ioloop import IOLoop
 from tornado.httpclient import AsyncHTTPClient
 
-from metaswitch.common import ifcs, utils
-from metaswitch.ellis import logging_config
+from metaswitch.common import ifcs, utils, logging_config
 from metaswitch.ellis.data import numbers, connection
 from metaswitch.ellis.remote import homestead, xdm
 from metaswitch.ellis import settings
@@ -229,7 +228,7 @@ def standalone():
     """
     Entry point to script
     """
-    logging_config.configure_logging("sync_databases")
+    logging_config.configure_logging("sync_databases", settings)
     check_existing_uris()
     remove_nonexisting_uris()
     IOLoop.instance().start()

@@ -41,10 +41,10 @@ import random
 
 from optparse import OptionParser
 
-from metaswitch.ellis import logging_config
 from metaswitch.ellis.data import numbers, connection
 from sqlalchemy.exc import IntegrityError
 from metaswitch.ellis import settings
+from metaswitch.common import logging_config
 
 _log = logging.getLogger("ellis.create_numbers")
 
@@ -70,7 +70,7 @@ def standalone(start, num, pstn, realm):
     print "Created %d numbers, %d already present in database" % (create_count, num - create_count)
 
 if __name__ == '__main__':
-    logging_config.configure_logging("create_db")
+    logging_config.configure_logging("create_db", settings)
     parser = OptionParser()
     parser.add_option("-s",
                       "--start",
