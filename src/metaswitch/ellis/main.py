@@ -45,11 +45,11 @@ import tornado.process
 from tornado.netutil import bind_unix_socket
 from metaswitch.ellis.api import URLS
 from metaswitch.ellis.data import connection
-from metaswitch.ellis import settings, logging_config
+from metaswitch.ellis import settings
 from metaswitch.ellis.remote import homestead
 from tornado import httpserver
 from metaswitch.ellis import background
-from metaswitch.common import utils
+from metaswitch.common import utils, logging_config
 
 _log = logging.getLogger("ellis")
 
@@ -100,7 +100,7 @@ def standalone():
     num_processes = settings.TORNADO_PROCESSES_PER_CORE * tornado.process.cpu_count()
     task_id = tornado.process.fork_processes(num_processes)
     if task_id is not None:
-        logging_config.configure_logging(task_id)
+        logging_config.configure_logging(task_id, settings)
         # We're a child process, start up.
         _log.info("Process %s starting up", task_id)
         connection.init_connection()
