@@ -65,8 +65,9 @@ case "$1" in
         rm -rf $ELLIS_DIR/env
         rm -rf /var/run/$NAME
 
-        # Don't remove the ellis user if we're just upgrading.
+        # Don't remove the ellis user or ellis sockets if we're just upgrading.
         if [ $1 != upgrade ]; then
+          rm -f /tmp/.ellis-sock*
           if grep -q "^$NAME:" /etc/passwd ; then
             userdel $NAME
           fi
