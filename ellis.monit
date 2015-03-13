@@ -34,7 +34,7 @@
 
 # Check the Ellis process.
 
-# Monitor the service's PID file, CPU and memory use.
+# Monitor the service's PID file and memory use.
 check process ellis with pidfile /var/run/ellis/ellis.pid
 
   start program = "/etc/monit/run_logged /etc/init.d/ellis start"

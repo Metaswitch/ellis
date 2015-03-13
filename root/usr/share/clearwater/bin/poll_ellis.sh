@@ -36,5 +36,16 @@
 
 . /etc/clearwater/config
 http_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
-/usr/share/clearwater/bin/poll-http $http_ip
-exit $?
+
+# Send HTTP request and check that the response is "OK".
+http_url=http://$http_ip/ping
+curl -f -g -m 2 -s $http_url 2> /tmp/poll-ellis.sh.stderr.$$ | tee /tmp/poll-ellis.sh.stdout.$$ | head -1 | egrep -q "^OK$"
+rc=$?
+
+# Check the return code and log if appropriate.
+if [ $rc != 0 ] ; then
+ echo HTTP failed to $http_url >&2
+ cat /tmp/poll-ellis.sh.stderr.$$ >&2
+ cat /tmp/poll-ellis.sh.stdout.$$ >&2
+fi
+rm -f /tmp/poll-ellis.sh.stderr.$$ /tmp/poll-ellis.sh.stdout.$$
