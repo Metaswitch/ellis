@@ -44,8 +44,10 @@ rc=$?
 
 # Check the return code and log if appropriate.
 if [ $rc != 0 ] ; then
- echo HTTP failed to $http_url >&2
- cat /tmp/poll-ellis.sh.stderr.$$ >&2
- cat /tmp/poll-ellis.sh.stdout.$$ >&2
+  echo HTTP failed to $http_url    >&2
+  cat /tmp/poll-ellis.sh.stderr.$$ >&2
+  cat /tmp/poll-ellis.sh.stdout.$$ >&2
 fi
 rm -f /tmp/poll-ellis.sh.stderr.$$ /tmp/poll-ellis.sh.stdout.$$
+
+exit $rc
