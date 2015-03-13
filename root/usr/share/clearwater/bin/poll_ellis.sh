@@ -34,15 +34,7 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# This script uses HTTP to poll an ellis process and check whether it is healthy.
-
-# In case ellis has only just restarted, give it a few seconds to come up.
-sleep 5
-
-# Grab our configuration - we just use the local IP address.
 . /etc/clearwater/config
-
-# For HTTP, we need to wrap IPv6 addresses in square brackets.
 http_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
 
 # Send HTTP request and check that the response is "OK".
