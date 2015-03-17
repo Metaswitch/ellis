@@ -57,7 +57,15 @@ As part of the environment, a special python executable is generated in the
 `bin/` subdirectory.  That executable is preconfigured to use the correct
 `PYTHONPATH` to pick up the dependencies in the `_env/` directory.
 
-To build the code, type `make env`.
+To build the code, you will need to make the environment, then run the
+set up scripts. This is done by the following commands (run from the top level
+Ellis directory):
+
+    make env
+    _env/bin/easy_install --allow-hosts=None -f eggs/ eggs/*.egg
+    _env/bin/python setup.py install
+    cd common
+    ../_env/bin/python setup.py install
 
 To build the Debian package, type `make deb` (or `make deb-only` if
 you have already built the code). This creates a Debian package in
