@@ -120,7 +120,7 @@ class NumbersHandler(_base.LoggedInHandler):
         _log.debug("Number allocation API call (PSTN = %s)", self.get_argument('pstn', 'false'))
         user_id = self.get_and_check_user_id(username)
         db_sess = self.db_session()
-        pstn = self.get_argument('pstn', 'false') == 'true'
+        pstn = self.get_argument('pstn', 'false').lower() == 'true'
         private_id = self.get_argument('private_id', None)
         try:
             number_id = numbers.allocate_number(db_sess, user_id, pstn)
@@ -326,7 +326,7 @@ class NumberHandler(_base.LoggedInHandler):
         self.is_admin_request()
         user_id = self.get_and_check_user_id(username)
         db_sess = self.db_session()
-        pstn = self.get_argument('pstn', 'false') == 'true'
+        pstn = self.get_argument('pstn', 'false').lower() == 'true'
         private_id = self.get_argument('private_id', None)
         new_private_id = self.get_argument('new_private_id', None)
         try:

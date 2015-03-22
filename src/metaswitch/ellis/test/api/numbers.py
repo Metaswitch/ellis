@@ -209,9 +209,9 @@ class TestNumbersHandler(BaseTest):
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
         self.request.arguments = {}
         if pstn:
-            self.request.arguments["pstn"] = ["true"]
+            self.request.arguments["pstn"] = ["tRuE"]
         else:
-            self.request.arguments["pstn"] = ["false"]
+            self.request.arguments["pstn"] = ["fAlSe"]
         if private_id:
             self.request.arguments["private_id"] = [private_id]
         allocate_number.return_value = NUMBER_ID
