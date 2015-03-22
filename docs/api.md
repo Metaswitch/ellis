@@ -116,12 +116,10 @@ Number management
     /accounts/<username>/numbers/<SIP URI>/
     /accounts/<username>/numbers/<SIP URI>/password
 
-Make an POST request to `/accounts/<username>/numbers/` to allocate a new number (chosen randomly from the pool) to an account. Specify the following parameters in the body:
+Make an POST request to `/accounts/<username>/numbers/` to allocate a new number (chosen randomly from the pool) to an account. Optionally, specify the following parameters, either in the form-encoded body or as URL parameters:
 
-    {
-      "pstn":             <boolean specifying if number should be a PSTN>,
       "private_id":       <private identity to associate this number with, null if none yet exists>
-    }
+      "pstn":             <boolean specifying if number should be a PSTN>,
 
 Note that `private_id` must be a private identity that already exists - if you specify an arbitrary one, Ellis will not create it for you. If you want to provision numbers and private identities of your own choosing, you should read "Provisioning specific numbers" below or use the [Homer](https://github.com/Metaswitch/crest/blob/dev/docs/homer_api.md) and [Homestead APIs](https://github.com/Metaswitch/crest/blob/dev/docs/homestead_api.md) directly.
 
@@ -162,13 +160,15 @@ Provisioning specific numbers
 
 Make an empty POST request to `/accounts/<username>/numbers/<SIP URI>/` to create that specific SIP URI. Note that:
   * Requests to this URI *must* have the NGV-API-Key header specified - this is not an operation that ordinary users can perform
-  * The 'private_id' URL parameter is mandatory. This is assumed to be an existing private ID to associate the SIP URI with, unless the 'new_private_id' parameter is set to true, in which case this private ID will be created and the password returned.
+
+Specify the following parameters, either in the form-encoded body or as URL parameters:
+
+      "private_id":       <private identity to associate this number with>,
+      "new_private_id":   <boolean specifying if private identity should be created>
+
+The 'private_id' URL parameter is mandatory. This is assumed to be an existing private ID to associate the SIP URI with, unless the 'new_private_id' parameter is set to true, in which case this private ID will be created and the password returned.
 
 Response is the same as for a POST to `/accounts/<username>/numbers/`.
-
-Example URL:
-
-`http://ellis.example.com/accounts/Example.User%40example.com/numbers/sip:12345@example.com?private_id=private@example.com&new_private_id=true`
 
 Global Address Book
 ===================
