@@ -328,7 +328,7 @@ class NumberHandler(_base.LoggedInHandler):
         db_sess = self.db_session()
         pstn = self.get_argument('pstn', 'false').lower() == 'true'
         private_id = self.get_argument('private_id', None)
-        new_private_id = self.get_argument('new_private_id', None)
+        new_private_id = self.get_argument('new_private_id', 'false').lower() == 'true'
         try:
             number_id = uuid.UUID(numbers.get_sip_uri_number_id(db_sess, sip_uri))
         except NotFound:
