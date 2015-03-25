@@ -255,6 +255,7 @@ class TestNumbersHandler(BaseTest):
             post_response["private_id"] = "generated_private_id"
         self.handler.finish.assert_called_once_with(post_response)
 
+    @patch("metaswitch.ellis.remote.xdm.put_simservs")
     @patch("metaswitch.ellis.remote.homestead.put_filter_criteria")
     @patch("metaswitch.ellis.remote.homestead.create_public_id")
     @patch("metaswitch.common.utils.generate_sip_password")
@@ -269,7 +270,8 @@ class TestNumbersHandler(BaseTest):
                                     sip_pub_to_priv,
                                     gen_sip_pass,
                                     create_public_id,
-                                    put_filter_criteria):
+                                    put_filter_criteria,
+                                    put_simservs):
         # Setup
         self.handler.get_and_check_user_id = MagicMock(return_value=USER_ID)
         self.request.arguments = {}
