@@ -100,7 +100,7 @@ def standalone():
     num_processes = settings.TORNADO_PROCESSES_PER_CORE * tornado.process.cpu_count()
     task_id = tornado.process.fork_processes(num_processes)
     if task_id is not None:
-        logging_config.configure_logging(task_id, settings)
+        logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, task_id)
         # We're a child process, start up.
         _log.info("Process %s starting up", task_id)
         connection.init_connection()

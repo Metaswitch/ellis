@@ -48,6 +48,7 @@ from metaswitch.ellis import settings
 from metaswitch.ellis.remote import homestead
 from metaswitch.ellis.remote import xdm
 from metaswitch.common import utils
+from metaswitch.common.phonenumber_utils import format_phone_number
 from metaswitch.common import ifcs
 
 _log = logging.getLogger("ellis.api")
@@ -77,7 +78,7 @@ class NumbersHandler(_base.LoggedInHandler):
             number["sip_username"] = utils.sip_uri_to_phone_number(number["number"])
             number["domain"] = utils.sip_uri_to_domain(number["number"])
             number["number"] = utils.sip_uri_to_phone_number(number["number"])
-            number["formatted_number"] = utils.format_phone_number(number["number"])
+            number["formatted_number"] = format_phone_number(number["number"])
 
             _request_group = HTTPCallbackGroup(partial(self._on_get_success, number["sip_uri"]), self._on_get_failure)
             # We only store the public identities in Ellis, and must query
@@ -146,7 +147,7 @@ class NumbersHandler(_base.LoggedInHandler):
         # Work out the response we'll send if the upstream requests
         # are successful.
         number = utils.sip_uri_to_phone_number(sip_uri)
-        pretty_number = utils.format_phone_number(number)
+        pretty_number = format_phone_number(number)
         self.__response = {"sip_uri": sip_uri,
                            "sip_username": number,
                            "number": number,
@@ -341,7 +342,7 @@ class NumberHandler(_base.LoggedInHandler):
         # Work out the response we'll send if the upstream requests
         # are successful.
         number = utils.sip_uri_to_phone_number(sip_uri)
-        pretty_number = utils.format_phone_number(number)
+        pretty_number = format_phone_number(number)
         self.__response = {"sip_uri": sip_uri,
                            "sip_username": number,
                            "number": number,

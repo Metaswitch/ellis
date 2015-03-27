@@ -217,7 +217,7 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
                         self.__request_text = body.decode(charset)
                     except Exception as e:
                         raise HTTPError(httplib.BAD_REQUEST, e)
-                    _log.debug("Decoded %s as %s: got %s", body, charset, self.__request_text)
+                    _log.debug("Decoded %r as %s: got %s", body, charset, self.__request_text)
                 else:
                     raise HTTPError(httplib.UNSUPPORTED_MEDIA_TYPE,
                                     "text/plain required")
@@ -235,7 +235,7 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
                 _log.debug("No body: fall back on field %s", field_name)
                 ret = self.get_argument(field_name, None)
         except Exception as e:
-            _log.debug("Failed (%s): fall back on field %s", e, field_name)
+            _log.debug("Failed (%r): fall back on field %s", e, field_name)
             ret = self.get_argument(field_name, None)
             if not ret:
                 _log.debug("Ret is still %s", ret)
