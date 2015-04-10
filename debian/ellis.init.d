@@ -50,7 +50,7 @@ DESC=ellis       # Introduce a short description here
 NAME=ellis       # Introduce the short server's name here (not suitable for --name)
 USER=ellis       # Username to run as
 DAEMON=/usr/share/clearwater/ellis/env/bin/python # Introduce the server's location here
-DAEMON_ARGS="-m metaswitch.ellis.main --background" # Arguments to run the daemon with
+DAEMON_ARGS="-m metaswitch.ellis.main" # Arguments to run the daemon with
 DAEMON_DIR=/usr/share/clearwater/ellis/
 PIDFILE=/var/run/$NAME/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
@@ -81,7 +81,7 @@ do_start()
 	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
 		|| return 1
 	start-stop-daemon --start --quiet --chdir $DAEMON_DIR --chuid $USER --pidfile $PIDFILE --exec $DAEMON -- \
-		$DAEMON_ARGS \
+		$DAEMON_ARGS --background \
 		|| return 2
 	# Add code here, if necessary, that waits for the process to be ready
 	# to handle requests from services started subsequently which depend
@@ -107,6 +107,16 @@ do_stop()
 	# Many daemons don't delete their pidfiles when they exit.
 	rm -f $PIDFILE
 	return "$RETVAL"
+}
+
+#
+# Function that runs the daemon/service in the foreground
+#
+do_run()
+{
+        [ -d /var/run/$NAME ] || install -m 755 -o $USER -g root -d /var/run/$NAME
+        start-stop-daemon --start --quiet --chdir $DAEMON_DIR --chuid $USER --exec $DAEMON -- $DAEMON_ARGS \
+                || return 2
 }
 
 #
@@ -146,6 +156,14 @@ case "$1" in
 		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
 	esac
 	;;
+  run)
+        [ "$VERBOSE" != no ] && log_daemon_msg "Running $DESC" "$NAME"
+        do_run
+        case "$?" in
+          0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+          2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+        esac
+        ;;
   status)
        status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
        ;;
@@ -203,8 +221,7 @@ case "$1" in
         esac
         ;;
   *)
-	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
-	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+	echo "Usage: $SCRIPTNAME {start|stop|run|status|restart|force-reload|abort|abort-restart}" >&2
 	exit 3
 	;;
 esac
