@@ -68,6 +68,31 @@ SCRIPTNAME=/etc/init.d/$NAME
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
 . /lib/lsb/init-functions
 
+# Check if any of Ellis's tools are currently running.
+tools_running()
+{
+  pgrep -f "src/metaswitch/ellis/tools" >/dev/null 2>&1
+}
+
+# If any of Ellis's tools are currently running wait up to 20s for them to
+# complete.
+wait_for_tools()
+{
+  if tools_running; then
+    log_daemon_msg "Waiting for tools to complete..." "$NAME"
+
+    for i in `seq 1 20`; do
+      if tools_running; then
+        sleep 1
+      else
+        break
+      fi
+    done
+
+    log_daemon_msg "Tools finished" "$NAME"
+  fi
+}
+
 #
 # Function that starts the daemon/service
 #
@@ -98,6 +123,12 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
+
+        # Stopping Ellis terminates all processes that use its version of
+        # python, including any of its tools. Wait for the tools to complete,
+        # otherwise we can break automated installs.
+        wait_for_tools
+
         # Kill parent and children. Don't specify pidfile, or we'll kill only
         # the parent. This must be run while $DAEMON exists in the filesystem,
         # or start-stop-daemon will exit without doing anything.
