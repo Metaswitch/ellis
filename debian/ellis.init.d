@@ -89,7 +89,13 @@ wait_for_tools()
       fi
     done
 
-    log_daemon_msg "Tools finished" "$NAME"
+    if tools_running; then
+      log_daemon_msg "Tools failed to exit" "$NAME"
+      return 1
+    else
+      log_daemon_msg "Tools finished" "$NAME"
+      return 0
+    fi
   fi
 }
 
@@ -127,7 +133,7 @@ do_stop()
         # Stopping Ellis terminates all processes that use its version of
         # python, including any of its tools. Wait for the tools to complete,
         # otherwise we can break automated installs.
-        wait_for_tools
+        wait_for_tools || return 2
 
         # Kill parent and children. Don't specify pidfile, or we'll kill only
         # the parent. This must be run while $DAEMON exists in the filesystem,
