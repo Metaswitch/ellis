@@ -56,9 +56,9 @@ def standalone(start, num, pstn, realm):
         start = 5108580271 if pstn else 6505550000
     for x in xrange(num):
         if pstn:
-            public_id = "sip:+1%010d@%s" % (start + x, realm)
+            public_id = "sip:+1%d@%s" % (start + x, realm)
         else:
-            public_id = "sip:%010d@%s" % (start + x, realm)
+            public_id = "sip:%d@%s" % (start + x, realm)
         try:
 	    numbers.add_number_to_pool(s, public_id, pstn, False)
         except IntegrityError:
