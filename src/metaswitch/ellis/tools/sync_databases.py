@@ -228,7 +228,7 @@ def standalone():
     """
     Entry point to script
     """
-    logging_config.configure_logging("sync_databases", settings)
+    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, "sync_databases")
     check_existing_uris()
     remove_nonexisting_uris()
     IOLoop.instance().start()
