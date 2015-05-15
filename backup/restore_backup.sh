@@ -74,7 +74,7 @@ echo "Restoring backup for ellis..."
 # Stop monit from restarting ellis while we restore
 # It isn't strictly necessary to stop ellis, however leaving it running makes the backup a
 # lot slower as ellis prevents tables being dropped immediately by being connected to mysql
-monit stop ellis 
+monit stop -g ellis 
 service ellis stop
 mysql -v -u root ellis < $BACKUP_DIR/$BACKUP_NAME/$BACKUP_FILE
-monit start ellis || service ellis start
+monit start -g ellis || service ellis start
