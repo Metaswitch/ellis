@@ -35,7 +35,8 @@
 # Check the MySQL process.
 
 # Monitor the service's PID file and memory use.
-check process mysql with pidfile /var/run/mysqld/mysqld.pid
+check process mysql_process with pidfile /var/run/mysqld/mysqld.pid
+  group mysql 
 
   start program = "/etc/monit/run_logged /etc/init.d/mysql start"
   stop program = "/etc/monit/run_logged /etc/init.d/mysql stop"
