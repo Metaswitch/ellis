@@ -77,7 +77,7 @@ case "$1" in
         mysql -u root --password= < $ELLIS_DIR/src/metaswitch/ellis/data/schema.sql
         mysql -u root --password= < $ELLIS_DIR/src/metaswitch/ellis/data/apply_db_updates.sql
 
-        service clearwater-infrastructure
+        service clearwater-infrastructure restart
 
         # Start monit monitoring ellis
         cp $ELLIS_DIR/*.monit /etc/monit/conf.d/
