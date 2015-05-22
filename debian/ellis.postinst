@@ -77,8 +77,7 @@ case "$1" in
         mysql -u root --password= < $ELLIS_DIR/src/metaswitch/ellis/data/schema.sql
         mysql -u root --password= < $ELLIS_DIR/src/metaswitch/ellis/data/apply_db_updates.sql
 
-        /usr/share/clearwater/infrastructure/scripts/ellis
-        /usr/share/clearwater/infrastructure/scripts/create-ellis-nginx-config
+        service clearwater-infrastructure
 
         # Start monit monitoring ellis
         cp $ELLIS_DIR/*.monit /etc/monit/conf.d/
@@ -89,12 +88,6 @@ case "$1" in
         # significant lag.)
         # Don't fail if it's already stopped.
         service ellis stop || true
-
-        # Enable the ellis nginx site
-        if ( nginx_ensite ellis > /dev/null )
-        then
-          service nginx stop
-        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
