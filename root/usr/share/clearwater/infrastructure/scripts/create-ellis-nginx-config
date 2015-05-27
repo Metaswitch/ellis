@@ -39,6 +39,7 @@
 . /etc/clearwater/config
 
 site_file=/etc/nginx/sites-available/ellis
+enabled_file=/etc/nginx/sites-enabled/ellis
 temp_file=$(mktemp ellis.nginx.XXXXXXXX)
 let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)*2-1
 
@@ -71,7 +72,7 @@ server {
 }
 EOF2
 
-if ! diff $temp_file $site_file > /dev/null 2>&1
+if ! diff $temp_file $enabled_file > /dev/null 2>&1
 then
   # Update the site file
   mv $temp_file $site_file
