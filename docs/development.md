@@ -22,7 +22,7 @@ work on other systems.
     sudo apt-get install ntp build-essential autoconf scons pkg-config libtool libcloog-ppl0 dpkg-dev devscripts dh-make python-setuptools python-virtualenv python-dev libcurl4-openssl-dev libmysqlclient-dev libgmp10 libgmp-dev libc-ares-dev ncurses-dev libxml2-dev libxslt1-dev libzmq3-dev
     ```
 
-The build has been tested on Ubuntu 12.04, with Python 2.7.3. Other
+The build has been tested on Ubuntu 14.04, with Python 2.7.3. Other
 environments should work but have not been tested.
 
 Code
