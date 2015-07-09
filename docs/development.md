@@ -19,7 +19,7 @@ work on other systems.
 2. Install the packages you need.
 
     ```
-    sudo apt-get install ntp build-essential autoconf scons pkg-config libtool libcloog-ppl0 dpkg-dev devscripts dh-make python-setuptools python-virtualenv python-dev libcurl4-openssl-dev libmysqlclient-dev libgmp10 libgmp-dev libc-ares-dev ncurses-dev libxml2-dev libxslt1-dev libzmq3-dev
+    sudo apt-get install ntp build-essential autoconf scons pkg-config libtool libcloog-ppl1 dpkg-dev devscripts dh-make python-setuptools python-virtualenv python-dev libcurl4-openssl-dev libmysqlclient-dev libgmp10 libgmp-dev libc-ares-dev ncurses-dev libxml2-dev libxslt1-dev libzmq3-dev
     ```
 
 The build has been tested on Ubuntu 14.04, with Python 2.7.3. Other
