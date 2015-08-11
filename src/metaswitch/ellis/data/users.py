@@ -40,7 +40,6 @@ import datetime
 import base64
 
 from metaswitch.ellis.data._base import AlreadyExists
-from metaswitch.ellis.data import connection
 from metaswitch.ellis.data._base import NotFound
 from metaswitch.ellis import settings
 from metaswitch.common import utils

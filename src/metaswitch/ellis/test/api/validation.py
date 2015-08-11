@@ -37,16 +37,16 @@
 
 import unittest
 
-from metaswitch.ellis.api.validation import *
+import metaswitch.ellis.api.validation as validation
 
 class TestValidation(unittest.TestCase):
 
     def test_required(self):
-        self.assertEquals(validate({"foo": "bar"},
-                                   {"foo": (REQUIRED, STRING, r'.*')}),
+        self.assertEquals(validation.validate({"foo": "bar"},
+                                              {"foo": (validation.REQUIRED, validation.STRING, r'.*')}),
                           (True, None))
-        self.assertEquals(validate({"foo": "bar"},
-                                   {"foo2": (REQUIRED, STRING, r'.*')}),
+        self.assertEquals(validation.validate({"foo": "bar"},
+                                              {"foo2": (validation.REQUIRED, validation.STRING, r'.*')}),
                           (False, 'Missing field: foo2'))
 
 

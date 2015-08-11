@@ -37,7 +37,7 @@
 
 import unittest
 import uuid
-from mock import MagicMock, ANY, patch
+from mock import ANY, patch
 from metaswitch.ellis.data.numbers import (get_sip_uri_number_id,
                                                get_sip_uri_owner_id,
                                                remove_owner,
@@ -46,7 +46,6 @@ from metaswitch.ellis.data.numbers import (get_sip_uri_number_id,
                                                get_number,
                                                get_numbers,
                                                update_gab_list)
-from metaswitch.ellis.test.utils import return_values
 from metaswitch.ellis.test.data._base import BaseDataTest
 from metaswitch.ellis.data import NotFound
 

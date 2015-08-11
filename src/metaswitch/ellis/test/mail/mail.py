@@ -33,7 +33,7 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 
-from mock import patch, MagicMock, ANY, call
+from mock import patch, MagicMock, ANY
 import unittest
 
 from metaswitch.ellis.mail import mail

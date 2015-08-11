@@ -38,7 +38,6 @@ import json
 import traceback
 import httplib
 import cgi
-import threading
 
 import msgpack
 import tornado.web
