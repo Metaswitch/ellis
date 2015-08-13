@@ -34,18 +34,10 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
-import urllib
-
 import unittest
 import json
 from mock import MagicMock, Mock, patch, ANY
-
-from metaswitch.ellis import settings
 from metaswitch.ellis.remote import homestead
-
-from tornado import httpclient
-from tornado.httputil import HTTPHeaders
 
 PRIVATE_URI = "pri@foo.bar"
 PUBLIC_URI = "sip:pub@foo.bar"
@@ -142,11 +134,8 @@ class TestHomesteadPrivateIDs(TestHomestead):
     def test_create_private_id_mainline(self, settings, md5):
         callback = Mock()
         md5.return_value = "md5_hash"
-        body = json.dumps({"digest_ha1": "md5_hash"})
         homestead.create_private_id(PRIVATE_URI, "realm", "pw", callback)
-
         md5.assert_called_once_with("pri@foo.bar:realm:pw")
-
 
     @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
     @patch("tornado.httpclient.AsyncHTTPClient")

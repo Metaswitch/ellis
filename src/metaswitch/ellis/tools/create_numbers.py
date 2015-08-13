@@ -36,8 +36,6 @@
 
 
 import logging
-import sys
-import random
 
 from optparse import OptionParser
 
@@ -60,10 +58,10 @@ def standalone(start, num, pstn, realm):
         else:
             public_id = "sip:%d@%s" % (start + x, realm)
         try:
-	    numbers.add_number_to_pool(s, public_id, pstn, False)
+            numbers.add_number_to_pool(s, public_id, pstn, False)
         except IntegrityError:
             # Entry already exists, not creating in db
-	    pass
+            pass
         else:
             create_count += 1
     s.commit()
@@ -96,7 +94,8 @@ if __name__ == '__main__':
                       default=settings.SIP_DIGEST_REALM,
                       help="Create numbers in this digest realm - if not specified, the home domain will be used")
     (options, args) = parser.parse_args()
+
     if args:
-      parser.print_help()
+        parser.print_help()
     else:
-      standalone(options.start, options.num, options.pstn, options.realm)
+        standalone(options.start, options.num, options.pstn, options.realm)

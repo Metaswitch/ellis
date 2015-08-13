@@ -38,7 +38,6 @@
 import os
 import argparse
 import logging
-import atexit
 import tornado.web
 import tornado.ioloop
 import tornado.process

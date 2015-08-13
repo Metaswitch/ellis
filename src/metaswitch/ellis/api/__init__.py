@@ -33,7 +33,7 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 
-from tornado.web import RequestHandler, StaticFileHandler
+from tornado.web import RequestHandler
 
 from metaswitch.ellis.api import users, static, session, numbers, _base
 from metaswitch.ellis import settings

@@ -37,12 +37,9 @@
 
 import uuid
 import unittest
-import httplib
 from mock import MagicMock, ANY, Mock, patch
 
-from metaswitch.ellis import settings
 from metaswitch.ellis.api import numbers
-from metaswitch.common.ifcs import generate_ifcs
 from metaswitch.ellis.test.api._base import BaseTest
 
 USER_ID = uuid.UUID('90babc2a-d376-494d-a94a-2b1aca07130b')

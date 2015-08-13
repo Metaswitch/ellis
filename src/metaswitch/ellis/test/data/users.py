@@ -32,14 +32,13 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
-from mock import patch, MagicMock, ANY, call
+from mock import patch, ANY, call
 import unittest
 import datetime
 
 from metaswitch.ellis.data import users
 from metaswitch.ellis.test.data._base import BaseDataTest
-from metaswitch.ellis.data._base import AlreadyExists, NotFound
+from metaswitch.ellis.data import AlreadyExists, NotFound
 
 class TestUsers(BaseDataTest):
 

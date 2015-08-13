@@ -32,5 +32,6 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
-from metaswitch.ellis.data._base import NotFound, AlreadyExists
+# Importing helper exceptions so that users of the package don't need to know
+# the package structure
+from metaswitch.ellis.data._base import NotFound, AlreadyExists # noqa

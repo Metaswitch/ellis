@@ -34,22 +34,11 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
-import uuid
 import unittest
-import httplib
 import logging
-import copy
-from mock import MagicMock, ANY, Mock, patch
+from mock import MagicMock, patch
 
-from tornado.web import HTTPError
-
-from metaswitch.ellis import settings
-from metaswitch.ellis.api import session, users
-from metaswitch.ellis.api._base import HTTPErrorEx
-from metaswitch.ellis.data import AlreadyExists
-from metaswitch.ellis.data._base import NotFound
-from metaswitch.ellis import settings
+from metaswitch.ellis.api import session
 from metaswitch.ellis.test.api._base import BaseTest
 
 _log = logging.getLogger("ellis.api")
@@ -67,7 +56,7 @@ class TestSessionHandler(BaseTest):
         self.request.arguments = {}
         arguments = self.request.arguments
         def get_argument(name, default, *args):
-           return arguments[name] if name in arguments else default
+            return arguments[name] if name in arguments else default
         self.handler.get_argument = MagicMock(side_effect=get_argument)
         self.request.headers = {}
 

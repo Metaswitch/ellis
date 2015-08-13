@@ -46,15 +46,11 @@ from metaswitch.common.throttler import Throttler
 from metaswitch.ellis.api import _base
 from metaswitch.ellis.api import numbers as api_numbers
 from metaswitch.ellis.api._base import HTTPErrorEx
-from metaswitch.ellis.api.utils import HTTPCallbackGroup
 from metaswitch.ellis.api.validation import REQUIRED, OPTIONAL, STRING, validate
 from metaswitch.ellis.data import users, numbers
 from metaswitch.ellis.data import AlreadyExists, NotFound
 from metaswitch.ellis.mail import mail
 from metaswitch.ellis import settings
-from metaswitch.ellis.remote import homestead
-from metaswitch.ellis.remote import xdm
-from metaswitch.common import utils
 
 _log = logging.getLogger("ellis.api")
 
@@ -147,7 +143,7 @@ class AccountPasswordHandler(_base.BaseHandler):
         try:
             users.set_recovered_password(db_sess, address, token, password)
             db_sess.commit()
-        except ValueError as e:
+        except ValueError:
             # Wrong token.
             raise HTTPError(httplib.UNPROCESSABLE_ENTITY, "Invalid token or email address")
         except NotFound:

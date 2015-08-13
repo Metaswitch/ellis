@@ -43,11 +43,10 @@ from mock import MagicMock, ANY, Mock, patch
 
 from tornado.web import HTTPError
 
-from metaswitch.ellis import settings
 from metaswitch.ellis.api import users
 from metaswitch.ellis.api._base import HTTPErrorEx
 from metaswitch.ellis.data import AlreadyExists
-from metaswitch.ellis.data._base import NotFound
+from metaswitch.ellis.data import NotFound
 from metaswitch.ellis import settings
 from metaswitch.ellis.test.api._base import BaseTest
 
@@ -87,7 +86,7 @@ class TestAccountsHandler(BaseTest):
         self.request.arguments = copy.copy(DEFAULT_ARGUMENTS)
         arguments = self.request.arguments
         def get_argument(name, default, *args):
-           return arguments[name] if name in arguments else default
+            return arguments[name] if name in arguments else default
         self.handler.get_argument = MagicMock(side_effect=get_argument)
         self.request.headers = {}
 
@@ -310,6 +309,7 @@ class TestAccountPasswordHandler(BaseTest):
         self.handler.finish = MagicMock()
         the_password = None
         def save(self, email, token, password):
+            global the_password
             the_password = password
         set_recovered_password(side_effect=save)
 

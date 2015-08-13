@@ -33,10 +33,8 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 
-import os
 import smtplib
 import logging
-import cgi
 import random
 import urllib
 import string
