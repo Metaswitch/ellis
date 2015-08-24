@@ -38,21 +38,23 @@
 
 . /etc/clearwater/config
 
-site_file=/etc/nginx/sites-available/ellis
-enabled_file=/etc/nginx/sites-enabled/ellis
-temp_file=$(mktemp ellis.nginx.XXXXXXXX)
-let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)*2-1
+if [ -n "$home_domain" ] && [ -n "$public_hostname" ] && [ -n "$local_ip" ] && [ -n "$public_ip" ]
+then
+  site_file=/etc/nginx/sites-available/ellis
+  enabled_file=/etc/nginx/sites-enabled/ellis
+  temp_file=$(mktemp ellis.nginx.XXXXXXXX)
+  let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)*2-1
 
-cat > $temp_file << EOF1
+  cat > $temp_file << EOF1
 upstream http_ellis {
 EOF1
 
-for sock_index in $(seq 0 $sock_seq_end)
-do
-  echo "        server unix:/tmp/.ellis-sock-$sock_index;" >> $temp_file
-done
+  for sock_index in $(seq 0 $sock_seq_end)
+  do
+    echo "        server unix:/tmp/.ellis-sock-$sock_index;" >> $temp_file
+  done
 
-cat >> $temp_file << EOF2
+  cat >> $temp_file << EOF2
         # The minimum number of idle connections to keep alive to the upstream.
         keepalive 16;
 }
@@ -72,16 +74,17 @@ server {
 }
 EOF2
 
-if ! diff $temp_file $enabled_file > /dev/null 2>&1
-then
-  # Update the site file
-  mv $temp_file $site_file
-
-  # Enable the homestead-prov nginx site
-  if ( nginx_ensite ellis > /dev/null )
+  if ! diff $temp_file $enabled_file > /dev/null 2>&1
   then
-    service nginx stop
+    # Update the site file
+    mv $temp_file $site_file
+
+    # Enable the homestead-prov nginx site
+    if ( nginx_ensite ellis > /dev/null )
+    then
+      service nginx stop
+    fi
+  else
+    rm $temp_file
   fi
-else
-  rm $temp_file
 fi
