@@ -47,6 +47,7 @@ def main():
     parser.add_argument("-k", "--keep-going", action="store_true", dest="keep_going", help="keep going on errors")
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", help="don't display the user")
     parser.add_argument("--hsprov", metavar="IP:PORT", action="store", help="IP address and port of homestead-prov")
+    parser.add_argument("--plaintext", action="store_true", help="store password in plaintext")
     parser.add_argument("--ifc", metavar="iFC-FILE", action="store", dest="ifc_file", help="XML file containing the iFC")
     parser.add_argument("--prefix", action="store", default="123", dest="twin_prefix", help="twin-prefix (default: 123)")
     parser.add_argument("dns", metavar="<directory-number>[...<directory-number>]")
@@ -68,7 +69,7 @@ def main():
         public_id = "sip:%s@%s" % (dn, args.domain)
         private_id = "%s@%s" % (dn, args.domain)
 
-        if utils.create_user(private_id, public_id, args.domain, args.password, ifc):
+        if utils.create_user(private_id, public_id, args.domain, args.password, ifc, plaintext=args.plaintext):
             if not args.quiet and not utils.display_user(private_id, public_id):
                 success = False
         else:

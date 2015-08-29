@@ -68,7 +68,7 @@ def parse_dn_ranges(dn_ranges):
     <single-dn>,... and yields each individual DN.
     """
     for dn_range in dn_ranges.split(","):
-	# Split on .. into start and end DNs.  If there's no .., set them identically.
+        # Split on .. into start and end DNs.  If there's no .., set them identically.
         dn_range = dn_range.split("..")
         start_dn = dn_range[0]
         end_dn = dn_range[1] if len(dn_range) > 1 else dn_range[0]
@@ -128,7 +128,7 @@ def check_connection():
         return False
     return True
 
-def create_user(private_id, public_id, domain, password, ifc):
+def create_user(private_id, public_id, domain, password, ifc, plaintext=False):
     callback = Callback()
 
     homestead.get_digest(private_id, callback)
@@ -140,7 +140,7 @@ def create_user(private_id, public_id, domain, password, ifc):
         _log.error("Private ID %s already exists - not creating", private_id)
         return True
 
-    homestead.create_private_id(private_id, domain, password, callback)
+    homestead.create_private_id(private_id, domain, password, callback, plaintext=plaintext)
     response = callback.wait()[0]
     if isinstance(response, HTTPError):
         _log.error("Failed to create private ID %s - HTTP status code %d", private_id, response.code)
@@ -154,11 +154,11 @@ def create_user(private_id, public_id, domain, password, ifc):
 
     return True
 
-def update_user(private_id, public_id, domain, password, ifc):
+def update_user(private_id, public_id, domain, password, ifc, plaintext=False):
     callback = Callback()
 
     if password:
-        homestead.put_password(private_id, domain, password, callback)
+        homestead.put_password(private_id, domain, password, callback, plaintext=plaintext)
         response = callback.wait()[0]
         if isinstance(response, HTTPError):
             _log.error("Failed to update password for private ID %s - HTTP status code %d", private_id, response.code)
@@ -205,11 +205,14 @@ def display_user(private_id, public_id, short=False):
     if response.code == 200:
         av = json.loads(response.body)
         if 'digest_ha1' in av:
+            password = av['digest_ha1']
+            if 'plaintext_password' in av:
+                password += " (%s)" % (av['plaintext_password'],)
             if short:
-                print "%s:%s" % (private_id, av['digest_ha1'])
+                print "%s:%s" % (private_id, password)
             else:
                 print "  HA1 digest:"
-                print "    %s" % (av['digest_ha1'],)
+                print "    %s" % (password,)
     else:
         _log.error("Failed to retrieve digest for private ID %s - HTTP status code %d", private_id, response.code)
         success = False

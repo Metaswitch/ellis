@@ -125,6 +125,23 @@ class TestHomesteadPasswords(TestHomestead):
             follow_redirects=False,
             allow_ipv6=True)
 
+    @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_put_password_plaintext(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        body = json.dumps({"plaintext_password": "pw", "realm": "realm"})
+        callback = Mock()
+        homestead.put_password(PRIVATE_URI, "realm", "pw", callback, plaintext=True)
+        self.mock_httpclient.fetch.assert_called_once_with(
+            'http://homestead/private/pri%40foo.bar',
+            callback,
+            method='PUT',
+            body=body,
+            headers={'Content-Type': 'application/json'},
+            follow_redirects=False,
+            allow_ipv6=True)
+
 class TestHomesteadPrivateIDs(TestHomestead):
     """Tests for creating and deleting private IDs"""
 
