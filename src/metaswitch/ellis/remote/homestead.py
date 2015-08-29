@@ -50,12 +50,12 @@ from functools import partial
 _log = logging.getLogger("ellis.remote")
 
 
-def ping():
+def ping(callback=None):
     """Make sure we can reach homestead"""
     homestead_client = httpclient.AsyncHTTPClient()
-    url = "http://%s/ping" % (settings.HOMESTEAD_URL)
+    url = _ping_url()
 
-    def ping_callback(response):
+    def default_callback(response):
         if response.body == "OK":
             _log.info("Pinged Homestead OK")
         else:
@@ -65,7 +65,7 @@ def ping():
             _log.error("Failed to ping Homestead at %s."
                        " Have you configured your HOMESTEAD_URL?" % url)
 
-    homestead_client.fetch(url, ping_callback)
+    homestead_client.fetch(url, callback or default_callback)
 
 
 def get_digest(private_id, callback):
@@ -281,6 +281,10 @@ def _url_host():
 def _url_prefix():
     return _url_host() + "/"
 
+
+def _ping_url():
+    """Returns the ping URL for checking that the server is responsive"""
+    return _make_url("ping")
 
 def _private_id_url(private_id):
     """Returns the URL for accessing/setting/creating this private ID's
