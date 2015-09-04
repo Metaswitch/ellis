@@ -64,7 +64,7 @@ def main():
         private_id = "%s@%s" % (dn, args.domain)
 
         if not utils.display_user(private_id, public_id, short=args.short):
-           success = False
+            success = False
 
         if not success and not args.keep_going:
             break

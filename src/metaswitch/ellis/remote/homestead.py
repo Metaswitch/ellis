@@ -78,10 +78,10 @@ def get_digest(private_id, callback):
     _http_request(url, callback, method='GET')
 
 
-def create_private_id(private_id, realm, password, callback):
+def create_private_id(private_id, realm, password, callback, plaintext=False):
     """Creates a private ID and associates it with an implicit
     registration set."""
-    password_resp = put_password(private_id, realm, password, None)
+    password_resp = put_password(private_id, realm, password, None, plaintext=plaintext)
     # Having no callback makes this synchronous - but check for errors
     if isinstance(password_resp, HTTPError):
         IOLoop.instance().add_callback(partial(callback, password_resp))
@@ -101,16 +101,19 @@ def create_private_id(private_id, realm, password, callback):
     IOLoop.instance().add_callback(partial(callback, response))
 
 
-def put_password(private_id, realm, password, callback):
+def put_password(private_id, realm, password, callback, plaintext=False):
     """
     Posts a new password to Homestead for a given private id
     callback receives the HTTPResponse object.
     """
     url = _private_id_url(private_id)
-    digest = utils.md5("%s:%s:%s" % (private_id,
-                                     realm,
-                                     password))
-    body = json.dumps({"digest_ha1": digest, "realm": realm})
+    if plaintext:
+        body = json.dumps({"plaintext_password": password, "realm": realm})
+    else:
+        digest = utils.md5("%s:%s:%s" % (private_id,
+                                         realm,
+                                         password))
+        body = json.dumps({"digest_ha1": digest, "realm": realm})
     headers = {"Content-Type": "application/json"}
     if callback:
         _http_request(url, callback, method='PUT', headers=headers, body=body)
