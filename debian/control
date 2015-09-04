@@ -14,3 +14,8 @@ Architecture: any
 Depends: clearwater-infrastructure, mysql-server, libgmp10, python-setuptools, python-virtualenv, clearwater-nginx
 Suggests: clearwater-logging, clearwater-snmpd
 Description: ellis, the user/number management interface
+
+Package: clearwater-prov-tools
+Architecture: any
+Depends: clearwater-infrastructure, python-setuptools, python-virtualenv
+Description: Provisioning tools for Clearwater

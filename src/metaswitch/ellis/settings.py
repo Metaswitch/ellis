@@ -59,7 +59,6 @@ TORNADO_PROCESSES_PER_CORE = 2
 # Calculate useful directories relative to the project.
 _MY_DIR = os.path.dirname(__file__)
 PROJECT_DIR = os.path.abspath(os.path.join(_MY_DIR, "..", "..", ".."))
-DATA_DIR = os.path.join(PROJECT_DIR, "data")
 LOGS_DIR = os.path.join(PROJECT_DIR, "logs")
 CERTS_DIR = os.path.join(PROJECT_DIR, "certificates")
 STATIC_DIR = os.path.join(PROJECT_DIR, "web-content")
@@ -136,5 +135,4 @@ if os.path.exists(_local_settings_file):
     execfile(_local_settings_file)
 
 # Must do this after we've loaded the local settings, in case the paths change
-ensure_dir_exists(DATA_DIR)
 ensure_dir_exists(LOGS_DIR)
