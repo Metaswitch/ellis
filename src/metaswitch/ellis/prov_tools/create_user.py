@@ -50,7 +50,7 @@ def main():
     parser.add_argument("--plaintext", action="store_true", help="store password in plaintext")
     parser.add_argument("--ifc", metavar="iFC-FILE", action="store", dest="ifc_file", help="XML file containing the iFC")
     parser.add_argument("--prefix", action="store", default="123", dest="twin_prefix", help="twin-prefix (default: 123)")
-    parser.add_argument("dns", metavar="<directory-number>[...<directory-number>]")
+    parser.add_argument("dns", metavar="<directory-number>[..<directory-number>]")
     parser.add_argument("domain", metavar="<domain>")
     parser.add_argument("password", metavar="<password>")
     args = parser.parse_args()

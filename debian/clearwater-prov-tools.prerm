@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# @file ellis.prerm
+# @file clearwater-prov-tools.prerm
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -55,7 +55,11 @@ TOOLS_DIR=/usr/share/clearwater/clearwater-prov-tools
 case "$1" in
     remove|upgrade|deconfigure)
         rm -rf $TOOLS_DIR/env
-        rm -rf /var/log/clearwater-prov-tools
+        if [ $1 != "upgrade" ]; then
+            # We shouldn't do this cleanup on upgrade - deleting the
+            # logs might lose valuable information
+            rm -rf /var/log/clearwater-prov-tools
+        fi
     ;;
 
     failed-upgrade)

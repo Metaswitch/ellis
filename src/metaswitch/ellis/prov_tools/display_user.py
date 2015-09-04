@@ -48,7 +48,7 @@ def main():
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", help="suppress errors when ignoring them")
     parser.add_argument("-s", "--short", action="store_true", dest="short", help="less verbose display")
     parser.add_argument("--hsprov", metavar="IP:PORT", action="store", help="IP address and port of homestead-prov")
-    parser.add_argument("dns", metavar="<directory-number>[...<directory-number>]")
+    parser.add_argument("dns", metavar="<directory-number>[..<directory-number>]")
     parser.add_argument("domain", metavar="<domain>")
     args = parser.parse_args()
 

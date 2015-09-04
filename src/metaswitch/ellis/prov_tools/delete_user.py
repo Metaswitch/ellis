@@ -47,7 +47,7 @@ def main():
     parser.add_argument("-f", "--force", action="store_true", dest="force", help="proceed with delete in the face of errors")
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", help="silence 'forced' error messages")
     parser.add_argument("--hsprov", metavar="IP:PORT", action="store", help="IP address and port of homestead-prov")
-    parser.add_argument("dns", metavar="<directory-number>[...<directory-number>]")
+    parser.add_argument("dns", metavar="<directory-number>[..<directory-number>]")
     parser.add_argument("domain", metavar="<domain>")
     args = parser.parse_args()
 

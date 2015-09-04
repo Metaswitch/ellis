@@ -43,13 +43,6 @@ then
       -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$(escape $home_domain)'"/g' \
       -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$(escape $hs_provisioning_hostname)'"/g' \
       -e 's/^\(XDM_URL\) = .*$/\1 = "'$(escape $xdms_hostname)'"/g' \
-      -e 's/^\(SMTP_SMARTHOST\) = .*$/\1 = "'$(escape $smtp_smarthost)'"/g' \
-      -e 's/^\(SMTP_USERNAME\) = .*$/\1 = "'$(escape $smtp_username)'"/g' \
-      -e 's/^\(SMTP_PASSWORD\) = .*$/\1 = "'$(escape $smtp_password)'"/g' \
-      -e 's/^\(EMAIL_RECOVERY_SENDER\) = .*$/\1 = "'$(escape $email_recovery_sender)'"/g' \
-      -e 's/^\(SIGNUP_CODE\) = .*$/\1 = "'$(escape $signup_key)'"/g' \
-      -e 's/^\(COOKIE_SECRET\) = .*$/\1 = "'$(escape $ellis_cookie_key)'"/g' \
-      -e 's/^\(API_KEY\) = .*$/\1 = "'$(escape $ellis_api_key)'"/g' \
       -e 's/^\(LOGS_DIR\) = .*$/\1 = "\/var\/log\/clearwater-prov-tools"/g' \
       </usr/share/clearwater/clearwater-prov-tools/src/metaswitch/ellis/local_settings.py >/tmp/local_settings.py.$$
   for dst in /usr/share/clearwater/clearwater-prov-tools/src/metaswitch/ellis/local_settings.py \

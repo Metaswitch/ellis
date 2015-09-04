@@ -95,8 +95,12 @@ def build_ifc(ifc_file, domain, twin_prefix):
     ${DOMAIN} or ${PREFIX} placeholders in it.
     """
     if ifc_file:
-        with open(ifc_file, 'r') as f:
-            ifc = f.read()
+        try:
+            with open(ifc_file, 'r') as f:
+                ifc = f.read()
+                return None
+        except IOError as e:
+            _log.error("Failed to read %s - %s", ifc_file, e.strerror)
     else:
         ifc=('<?xml version="1.0" ?>\n'
               '<ServiceProfile>\n'
