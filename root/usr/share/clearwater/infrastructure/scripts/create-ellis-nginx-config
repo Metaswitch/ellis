@@ -72,8 +72,8 @@ server {
         ssl_ciphers "HIGH:!aNULL:!MD5 or HIGH:!aNULL:!MD5:!3DES";
         ssl_prefer_server_ciphers on;
 
-        ssl_certificate $ellis_ssl_cert;
-        ssl_certificate_key $ellis_ssl_key;
+        ssl_certificate $ssl_cert_file;
+        ssl_certificate_key $ssl_key_file;
 
         listen       [::]:443 ipv6only=off;
         server_name  $ellis_hostname ellis.$home_domain $local_ip $public_ip $public_hostname;
