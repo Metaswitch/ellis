@@ -42,6 +42,8 @@ if [ -n "$home_domain" ] && [ -n "$public_hostname" ] && [ -n "$local_ip" ] && [
 then
   site_file=/etc/nginx/sites-available/ellis
   enabled_file=/etc/nginx/sites-enabled/ellis
+  ssl_cert_file=/etc/nginx/ssl/ellis.crt
+  ssl_key_file=/etc/nginx/ssl/ellis.key
   temp_file=$(mktemp ellis.nginx.XXXXXXXX)
   let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)*2-1
 
@@ -58,10 +60,23 @@ EOF1
         # The minimum number of idle connections to keep alive to the upstream.
         keepalive 16;
 }
+EOF2
 
+  if [ -e "$ssl_cert_file" ] && [ -e "$ssl_key_file" ]
+  then
+    cat >> $temp_file << EOF3
 server {
-        listen       [::]:80 default_server; # ipv6only=off is set in the base config
-        server_name  ellis.$home_domain $local_ip $public_ip $public_hostname;
+        ssl on;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_session_timeout 5m;
+        ssl_ciphers "HIGH:!aNULL:!MD5 or HIGH:!aNULL:!MD5:!3DES";
+        ssl_prefer_server_ciphers on;
+
+        ssl_certificate $ssl_cert_file;
+        ssl_certificate_key $ssl_key_file;
+
+        listen       [::]:443 ipv6only=off;
+        server_name  $ellis_hostname ellis.$home_domain $local_ip $public_ip $public_hostname;
 
         location / {
                 proxy_pass http://http_ellis;
@@ -72,7 +87,34 @@ server {
                 proxy_set_header Connection "";
         }
 }
-EOF2
+
+server {
+        listen       [::]:80 default_server; # ipv6only=off is set in the base config
+        server_name  $ellis_hostname ellis.$home_domain $local_ip $public_ip $public_hostname;
+
+        return       301   https://\$host\$request_uri;
+}
+EOF3
+
+  else
+
+    cat >> $temp_file << EOF4
+server {
+        listen       [::]:80 default_server; # ipv6only=off is set in the base config
+        server_name  $ellis_hostname ellis.$home_domain $local_ip $public_ip $public_hostname;
+
+        location / {
+                proxy_pass http://http_ellis;
+                proxy_http_version 1.1;
+
+                # The client may have instructed the server to close the
+                # connection - do not forward this upstream.
+                proxy_set_header Connection "";
+        }
+}
+EOF4
+
+  fi
 
   if ! diff $temp_file $enabled_file > /dev/null 2>&1
   then
