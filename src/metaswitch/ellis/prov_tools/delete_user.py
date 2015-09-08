@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/share/clearwater/clearwater-prov-tools/env/bin/python
 
-# @file ellis
+# @file delete_user.py
 #
 # Project Clearwater - IMS in the Cloud
-# Copyright (C) 2014 Metaswitch Networks Ltd
+# Copyright (C) 2015  Metaswitch Networks Ltd
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -34,30 +34,41 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-. /etc/clearwater/config
+import sys
+import logging
+import argparse
+from metaswitch.ellis import settings
+from metaswitch.ellis.prov_tools import utils
 
-if [ -n "$hs_provisioning_hostname" ] && [ -n "$home_domain" ] && [ -n "$xdms_hostname" ] && [ -n "$local_ip" ]
-then
-  function escape { echo $1 | sed -e 's/\//\\\//g' ; }
-  sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape $local_ip)'"/g' \
-      -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$(escape $home_domain)'"/g' \
-      -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$(escape $hs_provisioning_hostname)'"/g' \
-      -e 's/^\(XDM_URL\) = .*$/\1 = "'$(escape $xdms_hostname)'"/g' \
-      -e 's/^\(SMTP_SMARTHOST\) = .*$/\1 = "'$(escape $smtp_smarthost)'"/g' \
-      -e 's/^\(SMTP_USERNAME\) = .*$/\1 = "'$(escape $smtp_username)'"/g' \
-      -e 's/^\(SMTP_PASSWORD\) = .*$/\1 = "'$(escape $smtp_password)'"/g' \
-      -e 's/^\(EMAIL_RECOVERY_SENDER\) = .*$/\1 = "'$(escape $email_recovery_sender)'"/g' \
-      -e 's/^\(SIGNUP_CODE\) = .*$/\1 = "'$(escape $signup_key)'"/g' \
-      -e 's/^\(COOKIE_SECRET\) = .*$/\1 = "'$(escape $ellis_cookie_key)'"/g' \
-      -e 's/^\(API_KEY\) = .*$/\1 = "'$(escape $ellis_api_key)'"/g' \
-      </usr/share/clearwater/ellis/src/metaswitch/ellis/local_settings.py >/tmp/local_settings.py.$$
-  for dst in /usr/share/clearwater/ellis/src/metaswitch/ellis/local_settings.py \
-             /usr/share/clearwater/ellis/env/lib/python2.7/site-packages/ellis-0.1-py2.7.egg/metaswitch/ellis/local_settings.py
-  do
-    if [ -f $dst ]
-    then
-      cp /tmp/local_settings.py.$$ $dst
-    fi
-  done
-  rm /tmp/local_settings.py.$$
-fi
+_log = logging.getLogger();
+
+def main():
+    parser = argparse.ArgumentParser(description="Delete user")
+    parser.add_argument("-f", "--force", action="store_true", dest="force", help="proceed with delete in the face of errors")
+    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", help="silence 'forced' error messages")
+    parser.add_argument("--hsprov", metavar="IP:PORT", action="store", help="IP address and port of homestead-prov")
+    parser.add_argument("dns", metavar="<directory-number>[..<directory-number>]")
+    parser.add_argument("domain", metavar="<domain>")
+    args = parser.parse_args()
+
+    utils.setup_logging(level=logging.CRITICAL if args.quiet else logging.ERROR)
+    settings.HOMESTEAD_URL = args.hsprov or settings.HOMESTEAD_URL
+
+    if not utils.check_connection():
+        sys.exit(1)
+
+    success = True
+    for dn in utils.parse_dn_ranges(args.dns):
+        public_id = "sip:%s@%s" % (dn, args.domain)
+        private_id = "%s@%s" % (dn, args.domain)
+
+        if not utils.delete_user(private_id, public_id, force=args.force):
+            success = False
+
+        if not success and not args.force:
+            break
+
+    sys.exit(0 if success else 1)
+
+if __name__ == '__main__':
+    main()

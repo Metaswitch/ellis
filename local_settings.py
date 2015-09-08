@@ -32,14 +32,14 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-LOCAL_IP = ""
+LOCAL_IP = MUST_BE_CONFIGURED
 STATIC_DIR = "/usr/share/clearwater/ellis/web-content"
 XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/ellis/common/metaswitch/common/default_simservs.xml"
 LOGS_DIR = "/var/log/ellis"
 PID_FILE = "/var/run/ellis/ellis.pid"
-SIP_DIGEST_REALM = ""
-HOMESTEAD_URL = ""
-XDM_URL = ""
+SIP_DIGEST_REALM = MUST_BE_CONFIGURED
+HOMESTEAD_URL = MUST_BE_CONFIGURED
+XDM_URL = MUST_BE_CONFIGURED
 SMTP_SMARTHOST = "smtp.example.com"
 SMTP_PORT = 25
 SMTP_USERNAME = ""

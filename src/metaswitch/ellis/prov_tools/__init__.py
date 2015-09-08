@@ -1,9 +1,7 @@
-#!/bin/bash
-
-# @file ellis
+# @file __init__.py
 #
 # Project Clearwater - IMS in the Cloud
-# Copyright (C) 2014 Metaswitch Networks Ltd
+# Copyright (C) 2013  Metaswitch Networks Ltd
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -34,30 +32,3 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-. /etc/clearwater/config
-
-if [ -n "$hs_provisioning_hostname" ] && [ -n "$home_domain" ] && [ -n "$xdms_hostname" ] && [ -n "$local_ip" ]
-then
-  function escape { echo $1 | sed -e 's/\//\\\//g' ; }
-  sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape $local_ip)'"/g' \
-      -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$(escape $home_domain)'"/g' \
-      -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$(escape $hs_provisioning_hostname)'"/g' \
-      -e 's/^\(XDM_URL\) = .*$/\1 = "'$(escape $xdms_hostname)'"/g' \
-      -e 's/^\(SMTP_SMARTHOST\) = .*$/\1 = "'$(escape $smtp_smarthost)'"/g' \
-      -e 's/^\(SMTP_USERNAME\) = .*$/\1 = "'$(escape $smtp_username)'"/g' \
-      -e 's/^\(SMTP_PASSWORD\) = .*$/\1 = "'$(escape $smtp_password)'"/g' \
-      -e 's/^\(EMAIL_RECOVERY_SENDER\) = .*$/\1 = "'$(escape $email_recovery_sender)'"/g' \
-      -e 's/^\(SIGNUP_CODE\) = .*$/\1 = "'$(escape $signup_key)'"/g' \
-      -e 's/^\(COOKIE_SECRET\) = .*$/\1 = "'$(escape $ellis_cookie_key)'"/g' \
-      -e 's/^\(API_KEY\) = .*$/\1 = "'$(escape $ellis_api_key)'"/g' \
-      </usr/share/clearwater/ellis/src/metaswitch/ellis/local_settings.py >/tmp/local_settings.py.$$
-  for dst in /usr/share/clearwater/ellis/src/metaswitch/ellis/local_settings.py \
-             /usr/share/clearwater/ellis/env/lib/python2.7/site-packages/ellis-0.1-py2.7.egg/metaswitch/ellis/local_settings.py
-  do
-    if [ -f $dst ]
-    then
-      cp /tmp/local_settings.py.$$ $dst
-    fi
-  done
-  rm /tmp/local_settings.py.$$
-fi

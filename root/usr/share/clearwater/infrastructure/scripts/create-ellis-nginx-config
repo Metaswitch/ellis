@@ -38,31 +38,33 @@
 
 . /etc/clearwater/config
 
-site_file=/etc/nginx/sites-available/ellis
-enabled_file=/etc/nginx/sites-enabled/ellis
-ssl_cert_file=/etc/nginx/ssl/ellis.crt
-ssl_key_file=/etc/nginx/ssl/ellis.key
-temp_file=$(mktemp ellis.nginx.XXXXXXXX)
-let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)*2-1
+if [ -n "$home_domain" ] && [ -n "$public_hostname" ] && [ -n "$local_ip" ] && [ -n "$public_ip" ]
+then
+  site_file=/etc/nginx/sites-available/ellis
+  enabled_file=/etc/nginx/sites-enabled/ellis
+  ssl_cert_file=/etc/nginx/ssl/ellis.crt
+  ssl_key_file=/etc/nginx/ssl/ellis.key
+  temp_file=$(mktemp ellis.nginx.XXXXXXXX)
+  let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)*2-1
 
-cat > $temp_file << EOF1
+  cat > $temp_file << EOF1
 upstream http_ellis {
 EOF1
 
-for sock_index in $(seq 0 $sock_seq_end)
-do
-  echo "        server unix:/tmp/.ellis-sock-$sock_index;" >> $temp_file
-done
+  for sock_index in $(seq 0 $sock_seq_end)
+  do
+    echo "        server unix:/tmp/.ellis-sock-$sock_index;" >> $temp_file
+  done
 
-cat >> $temp_file << EOF2
+  cat >> $temp_file << EOF2
         # The minimum number of idle connections to keep alive to the upstream.
         keepalive 16;
 }
 EOF2
 
-if [ -e "$ssl_cert_file" ] && [ -e "$ssl_key_file" ]
-then
-  cat >> $temp_file << EOF3
+  if [ -e "$ssl_cert_file" ] && [ -e "$ssl_key_file" ]
+  then
+    cat >> $temp_file << EOF3
 server {
         ssl on;
         ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
@@ -94,9 +96,9 @@ server {
 }
 EOF3
 
-else
+  else
 
-  cat >> $temp_file << EOF4
+    cat >> $temp_file << EOF4
 server {
         listen       [::]:80 default_server; # ipv6only=off is set in the base config
         server_name  $ellis_hostname ellis.$home_domain $local_ip $public_ip $public_hostname;
@@ -112,18 +114,19 @@ server {
 }
 EOF4
 
-fi
-
-if ! diff $temp_file $enabled_file > /dev/null 2>&1
-then
-  # Update the site file
-  mv $temp_file $site_file
-
-  # Enable the homestead-prov nginx site
-  if ( nginx_ensite ellis > /dev/null )
-  then
-    service nginx stop
   fi
-else
-  rm $temp_file
+
+  if ! diff $temp_file $enabled_file > /dev/null 2>&1
+  then
+    # Update the site file
+    mv $temp_file $site_file
+
+    # Enable the homestead-prov nginx site
+    if ( nginx_ensite ellis > /dev/null )
+    then
+      service nginx stop
+    fi
+  else
+    rm $temp_file
+  fi
 fi
