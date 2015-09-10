@@ -63,7 +63,7 @@ case "$1" in
         cd $TOOLS_DIR/common
         $TOOLS_DIR/env/bin/python $TOOLS_DIR/common/setup.py install
         cd -
-        mkdir /var/log/clearwater-prov-tools
+        mkdir -p /var/log/clearwater-prov-tools
 
         service clearwater-infrastructure restart
     ;;
