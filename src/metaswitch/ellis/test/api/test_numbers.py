@@ -40,7 +40,11 @@ import unittest
 from mock import MagicMock, ANY, Mock, patch
 
 from metaswitch.ellis.api import numbers
+from metaswitch.ellis import settings
 from metaswitch.ellis.test.api._base import BaseTest
+
+# Set to match expected working directory when running 'make test'
+settings.XDM_DEFAULT_SIMSERVS_FILE = "common/metaswitch/common/default_simservs.xml"
 
 USER_ID = uuid.UUID('90babc2a-d376-494d-a94a-2b1aca07130b')
 USER_ID_HEX = '90babc2ad376494da94a2b1aca07130b'
@@ -421,7 +425,7 @@ class TestNumberHandler(BaseTest):
 
         # Asserts
         remove_owner.assert_called_once_with(self.db_sess, sip_uri)
-        self.db_sess.commit.assert_called_once()
+        self.db_sess.commit.assert_called_once_with()
         on_success_handler.assert_called_once_with({})
 
 

@@ -320,7 +320,10 @@ class TestAccountPasswordHandler(BaseTest):
         self.handler.post(EMAIL)
 
         # Should succeed, but set the wrong password.
-        set_recovered_password.assert_called_once()
+        set_recovered_password.assert_called_with(ANY,
+                                                  ANY,
+                                                  ANY,
+                                                  ANY)
         self.assertNotEqual(PASSWORD, the_password)
         self.handler.set_status.assert_called_once_with(200)
         self.handler.finish.assert_called_once_with({})
