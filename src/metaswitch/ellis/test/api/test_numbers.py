@@ -43,9 +43,6 @@ from metaswitch.ellis.api import numbers
 from metaswitch.ellis import settings
 from metaswitch.ellis.test.api._base import BaseTest
 
-# Set to match expected working directory when running 'make test'
-settings.XDM_DEFAULT_SIMSERVS_FILE = "common/metaswitch/common/default_simservs.xml"
-
 USER_ID = uuid.UUID('90babc2a-d376-494d-a94a-2b1aca07130b')
 USER_ID_HEX = '90babc2ad376494da94a2b1aca07130b'
 NUMBER_ID = uuid.UUID('c9b15e68-5e8b-4bcf-9523-3eda4e677afd')

@@ -34,7 +34,6 @@
 
 LOCAL_IP = MUST_BE_CONFIGURED
 STATIC_DIR = "/usr/share/clearwater/ellis/web-content"
-XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/ellis/common/metaswitch/common/default_simservs.xml"
 LOGS_DIR = "/var/log/ellis"
 PID_FILE = "/var/run/ellis/ellis.pid"
 SIP_DIGEST_REALM = MUST_BE_CONFIGURED

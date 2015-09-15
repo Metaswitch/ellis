@@ -49,7 +49,7 @@ from metaswitch.ellis.remote import homestead
 from metaswitch.ellis.remote import xdm
 from metaswitch.common import utils
 from metaswitch.common.phonenumber_utils import format_phone_number
-from metaswitch.common import ifcs
+from metaswitch.common import ifcs, simservs
 
 _log = logging.getLogger("ellis.api")
 
@@ -185,9 +185,7 @@ class NumbersHandler(_base.LoggedInHandler):
         self.__response["private_id"] = private_id
 
         # Concurrently, store the default simservs in XDM.
-        with open(settings.XDM_DEFAULT_SIMSERVS_FILE) as xml_file:
-            default_xml = xml_file.read()
-        xdm.put_simservs(sip_uri, default_xml, self._request_group.callback())
+        xdm.put_simservs(sip_uri, simservs.default_simservs(), self._request_group.callback())
 
     def _on_post_success(self, responses):
         _log.debug("Successfully updated all the backends")
@@ -385,9 +383,7 @@ class NumberHandler(_base.LoggedInHandler):
         self.__response["private_id"] = private_id
 
         # Concurrently, store the default simservs in XDM.
-        with open(settings.XDM_DEFAULT_SIMSERVS_FILE) as xml_file:
-            default_xml = xml_file.read()
-        xdm.put_simservs(sip_uri, default_xml, self._request_group.callback())
+        xdm.put_simservs(sip_uri, simservs.default_simservs(), self._request_group.callback())
 
     def _on_post_success(self, responses):
         _log.debug("Successfully updated all the backends")

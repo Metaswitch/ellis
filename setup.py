@@ -53,5 +53,5 @@ setup(
         '': ['*.eml'],
         },
     test_suite='metaswitch.ellis.test',
-    install_requires=["Mock", "py-bcrypt", "tornado==2.3", "msgpack-python", "phonenumbers", "SQLAlchemy"],
+    install_requires=["Mock", "py-bcrypt", "tornado==2.3", "msgpack-python", "phonenumbers", "SQLAlchemy", "MySQL-python"],
     )

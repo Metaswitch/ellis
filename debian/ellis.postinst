@@ -58,24 +58,20 @@ case "$1" in
     configure)
         # Create the specific user.
         if ! grep -q "^$NAME:" /etc/passwd ; then
-            useradd --system -M -d /nonexistent -s /bin/false $NAME
+            useradd --system -M -d $ELLIS_DIR -s /bin/false $NAME
         fi
+        # Fix up old installs with a home directory of /nonexistent
+        usermod $NAME -d $ELLIS_DIR
         # Ensure the log directory exists and is owned by the user.
         mkdir -p -m 755 /var/log/$NAME
         chown -R $NAME:root /var/log/$NAME
 
         virtualenv --python=$(which python) $ELLIS_DIR/env
-        $ELLIS_DIR/env/bin/easy_install --allow-hosts=None -f $ELLIS_DIR/eggs/ $ELLIS_DIR/eggs/*.egg
-        cd $ELLIS_DIR
-        $ELLIS_DIR/env/bin/python $ELLIS_DIR/setup.py install
-        cd -
-        cd $ELLIS_DIR/common
-        $ELLIS_DIR/env/bin/python $ELLIS_DIR/common/setup.py install
-        cd -
-        chown -R $NAME:root $ELLIS_DIR/env
+        $ELLIS_DIR/env/bin/easy_install --allow-hosts=None -f $ELLIS_DIR/.eggs/ $ELLIS_DIR/.eggs/*.egg
+        chown -R $NAME:root $ELLIS_DIR
 
-        mysql -u root --password= < $ELLIS_DIR/src/metaswitch/ellis/data/schema.sql
-        mysql -u root --password= < $ELLIS_DIR/src/metaswitch/ellis/data/apply_db_updates.sql
+        mysql -u root --password= < $ELLIS_DIR/schema.sql
+        mysql -u root --password= < $ELLIS_DIR/apply_db_updates.sql
 
         service clearwater-infrastructure restart
 
