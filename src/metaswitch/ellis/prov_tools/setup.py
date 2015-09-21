@@ -1,7 +1,7 @@
-# @file ellis.monit
+# @file setup.py
 #
 # Project Clearwater - IMS in the Cloud
-# Copyright (C) 2015  Metaswitch Networks Ltd
+# Copyright (C) 2013  Metaswitch Networks Ltd
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -32,34 +32,25 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# Check the Ellis process.
+import logging
+import sys
 
-# Monitor the service's PID file and memory use.
-check process ellis_process with pidfile /var/run/ellis/ellis.pid
-  group ellis
+from setuptools import setup, find_packages
+from logging import StreamHandler
 
-  start program = "/etc/monit/run_logged /etc/init.d/ellis start"
-  stop program = "/etc/monit/run_logged /etc/init.d/ellis stop"
-  restart program = "/etc/monit/run_logged /etc/init.d/ellis restart"
+_log = logging.getLogger()
+_log.setLevel(logging.DEBUG)
+_handler = StreamHandler(sys.stderr)
+_handler.setLevel(logging.DEBUG)
+_log.addHandler(_handler)
 
-  # Check the service's resource usage, and abort the process if it's too high. This will
-  # generate a core file and trigger diagnostics collection.
-  if memory > 80% for 6 cycles then exec "/etc/init.d/ellis abort"
-
-# Check the HTTP interface. This depends on the Ellis process (and so won't run
-# unless the Ellis process is running)
-check program poll_ellis with path "/usr/share/clearwater/bin/poll_ellis.sh"
-  group ellis
-  depends on ellis_process
-
-  # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/ellis abort"
-
-# Check the HTTPS interface. This depends on the Ellis process (and so won't run
-# unless the Ellis process is running)
-check program poll_ellis_https with path "/usr/share/clearwater/bin/poll_ellis_https.sh"
-  group ellis
-  depends on ellis_process
-
-  # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/ellis abort"
+setup(
+    name='clearwater-prov-tools',
+    version='0.1',
+    packages=find_packages('src'),
+    package_dir={'':'src'},
+    package_data={
+        '': ['*.eml'],
+        },
+    install_requires=["tornado"],
+    )

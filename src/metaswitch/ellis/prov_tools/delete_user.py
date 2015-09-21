@@ -1,4 +1,6 @@
-# @file ellis.monit
+#!/usr/share/clearwater/clearwater-prov-tools/env/bin/python
+
+# @file delete_user.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2015  Metaswitch Networks Ltd
@@ -32,34 +34,41 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# Check the Ellis process.
+import sys
+import logging
+import argparse
+from metaswitch.ellis import settings
+from metaswitch.ellis.prov_tools import utils
 
-# Monitor the service's PID file and memory use.
-check process ellis_process with pidfile /var/run/ellis/ellis.pid
-  group ellis
+_log = logging.getLogger();
 
-  start program = "/etc/monit/run_logged /etc/init.d/ellis start"
-  stop program = "/etc/monit/run_logged /etc/init.d/ellis stop"
-  restart program = "/etc/monit/run_logged /etc/init.d/ellis restart"
+def main():
+    parser = argparse.ArgumentParser(description="Delete user")
+    parser.add_argument("-f", "--force", action="store_true", dest="force", help="proceed with delete in the face of errors")
+    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", help="silence 'forced' error messages")
+    parser.add_argument("--hsprov", metavar="IP:PORT", action="store", help="IP address and port of homestead-prov")
+    parser.add_argument("dns", metavar="<directory-number>[..<directory-number>]")
+    parser.add_argument("domain", metavar="<domain>")
+    args = parser.parse_args()
 
-  # Check the service's resource usage, and abort the process if it's too high. This will
-  # generate a core file and trigger diagnostics collection.
-  if memory > 80% for 6 cycles then exec "/etc/init.d/ellis abort"
+    utils.setup_logging(level=logging.CRITICAL if args.quiet else logging.ERROR)
+    settings.HOMESTEAD_URL = args.hsprov or settings.HOMESTEAD_URL
 
-# Check the HTTP interface. This depends on the Ellis process (and so won't run
-# unless the Ellis process is running)
-check program poll_ellis with path "/usr/share/clearwater/bin/poll_ellis.sh"
-  group ellis
-  depends on ellis_process
+    if not utils.check_connection():
+        sys.exit(1)
 
-  # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/ellis abort"
+    success = True
+    for dn in utils.parse_dn_ranges(args.dns):
+        public_id = "sip:%s@%s" % (dn, args.domain)
+        private_id = "%s@%s" % (dn, args.domain)
 
-# Check the HTTPS interface. This depends on the Ellis process (and so won't run
-# unless the Ellis process is running)
-check program poll_ellis_https with path "/usr/share/clearwater/bin/poll_ellis_https.sh"
-  group ellis
-  depends on ellis_process
+        if not utils.delete_user(private_id, public_id, force=args.force):
+            success = False
 
-  # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/ellis abort"
+        if not success and not args.force:
+            break
+
+    sys.exit(0 if success else 1)
+
+if __name__ == '__main__':
+    main()

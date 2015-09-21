@@ -1,7 +1,9 @@
-# @file ellis.monit
+#!/bin/bash
+
+# @file clearwater-prov-tools
 #
 # Project Clearwater - IMS in the Cloud
-# Copyright (C) 2015  Metaswitch Networks Ltd
+# Copyright (C) 2015 Metaswitch Networks Ltd
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -32,34 +34,24 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# Check the Ellis process.
+. /etc/clearwater/config
 
-# Monitor the service's PID file and memory use.
-check process ellis_process with pidfile /var/run/ellis/ellis.pid
-  group ellis
-
-  start program = "/etc/monit/run_logged /etc/init.d/ellis start"
-  stop program = "/etc/monit/run_logged /etc/init.d/ellis stop"
-  restart program = "/etc/monit/run_logged /etc/init.d/ellis restart"
-
-  # Check the service's resource usage, and abort the process if it's too high. This will
-  # generate a core file and trigger diagnostics collection.
-  if memory > 80% for 6 cycles then exec "/etc/init.d/ellis abort"
-
-# Check the HTTP interface. This depends on the Ellis process (and so won't run
-# unless the Ellis process is running)
-check program poll_ellis with path "/usr/share/clearwater/bin/poll_ellis.sh"
-  group ellis
-  depends on ellis_process
-
-  # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/ellis abort"
-
-# Check the HTTPS interface. This depends on the Ellis process (and so won't run
-# unless the Ellis process is running)
-check program poll_ellis_https with path "/usr/share/clearwater/bin/poll_ellis_https.sh"
-  group ellis
-  depends on ellis_process
-
-  # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/ellis abort"
+if [ -n "$hs_provisioning_hostname" ] && [ -n "$home_domain" ] && [ -n "$xdms_hostname" ] && [ -n "$local_ip" ]
+then
+  function escape { echo $1 | sed -e 's/\//\\\//g' ; }
+  sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape $local_ip)'"/g' \
+      -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$(escape $home_domain)'"/g' \
+      -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$(escape $hs_provisioning_hostname)'"/g' \
+      -e 's/^\(XDM_URL\) = .*$/\1 = "'$(escape $xdms_hostname)'"/g' \
+      -e 's/^\(LOGS_DIR\) = .*$/\1 = "\/var\/log\/clearwater-prov-tools"/g' \
+      </usr/share/clearwater/clearwater-prov-tools/src/metaswitch/ellis/local_settings.py >/tmp/local_settings.py.$$
+  for dst in /usr/share/clearwater/clearwater-prov-tools/src/metaswitch/ellis/local_settings.py \
+             /usr/share/clearwater/clearwater-prov-tools/env/lib/python2.7/site-packages/clearwater_prov_tools-0.1-py2.7.egg/metaswitch/ellis/local_settings.py
+  do
+    if [ -f $dst ]
+    then
+      cp /tmp/local_settings.py.$$ $dst
+    fi
+  done
+  rm /tmp/local_settings.py.$$
+fi

@@ -1,4 +1,6 @@
-# @file ellis.monit
+#!/bin/bash
+
+# @file poll_ellis_https.sh
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2015  Metaswitch Networks Ltd
@@ -32,34 +34,32 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# Check the Ellis process.
+. /etc/clearwater/config
+https_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
 
-# Monitor the service's PID file and memory use.
-check process ellis_process with pidfile /var/run/ellis/ellis.pid
-  group ellis
+https_domain=${ellis_hostname:-ellis.$home_domain}
+https_url=https://$https_domain/ping
+ssl_cert_file=/etc/nginx/ssl/ellis.crt
+ssl_key_file=/etc/nginx/ssl/ellis.key
 
-  start program = "/etc/monit/run_logged /etc/init.d/ellis start"
-  stop program = "/etc/monit/run_logged /etc/init.d/ellis stop"
-  restart program = "/etc/monit/run_logged /etc/init.d/ellis restart"
+if [ -e "$ssl_cert_file" ] && [ -e "$ssl_key_file" ]
+then
+  # Send HTTPS request and check that the response is "OK".
+  curl -f -g -m 2 -s --resolve $https_domain:443:$https_ip --cacert $ssl_cert_file $https_url 2> /tmp/poll-ellis-https.sh.stderr.$$ | tee /tmp/poll-ellis-https.sh.stdout.$$ | head -1 | egrep -q "^OK$"
+  rc=$?
 
-  # Check the service's resource usage, and abort the process if it's too high. This will
-  # generate a core file and trigger diagnostics collection.
-  if memory > 80% for 6 cycles then exec "/etc/init.d/ellis abort"
+else
+  # SSL is not enabled, ignore.
+  rc=0
 
-# Check the HTTP interface. This depends on the Ellis process (and so won't run
-# unless the Ellis process is running)
-check program poll_ellis with path "/usr/share/clearwater/bin/poll_ellis.sh"
-  group ellis
-  depends on ellis_process
+fi
 
-  # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/ellis abort"
+# Check the return code and log if appropriate.
+if [ $rc != 0 ] ; then
+  echo HTTP failed to $http_url    >&2
+  cat /tmp/poll-ellis-https.sh.stderr.$$ >&2
+  cat /tmp/poll-ellis-https.sh.stdout.$$ >&2
+fi
+rm -f /tmp/poll-ellis-https.sh.stderr.$$ /tmp/poll-ellis-https.sh.stdout.$$
 
-# Check the HTTPS interface. This depends on the Ellis process (and so won't run
-# unless the Ellis process is running)
-check program poll_ellis_https with path "/usr/share/clearwater/bin/poll_ellis_https.sh"
-  group ellis
-  depends on ellis_process
-
-  # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/ellis abort"
+exit $rc
