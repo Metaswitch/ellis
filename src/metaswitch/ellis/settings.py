@@ -95,7 +95,6 @@ HOMESTEAD_URL = "hs.cw-ngv.com:8889"
 
 # XDM Server.
 XDM_URL = "homer.cw-ngv.com:7888"
-XDM_DEFAULT_SIMSERVS_FILE = os.path.join(_MY_DIR, "../../../common/metaswitch/common/default_simservs.xml")
 
 # UNIX domain socket prefix
 HTTP_UNIX="/tmp/.ellis-sock"

@@ -41,6 +41,7 @@ from tornado import ioloop
 from metaswitch.ellis.data import connection
 from metaswitch.ellis.remote import xdm
 from metaswitch.ellis import settings
+from metaswitch.common.simservs import default_simservs
 
 def get_simservs(user, callback):
     uri = xdm.simservs_uri(user)
@@ -55,8 +56,7 @@ errors = 0
 
 def standalone():
     global num_responses, num_requests
-    with open(settings.XDM_DEFAULT_SIMSERVS_FILE, "rb") as xml_file:
-        xml = xml_file.read()
+    xml = default_simservs()
     print "XML: %s" % xml
 
     db_sess = connection.Session()
@@ -76,7 +76,7 @@ def standalone():
 
         def get_callback(response, sip_uri=sip_uri):
             """
-            Handle response to initial GET, only PUT new data if there 
+            Handle response to initial GET, only PUT new data if there
             wasn't anything there.
             """
             global num_responses, num_requests
@@ -89,7 +89,7 @@ def standalone():
 
         def put_callback(response, sip_uri=sip_uri):
             """
-            Handle put response, report errors, issue a final GET to 
+            Handle put response, report errors, issue a final GET to
             check we succeeded.
             """
             global num_responses, num_requests, errors
