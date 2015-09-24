@@ -197,28 +197,36 @@ def delete_user(private_id, public_id, force=False):
 
     return success
 
-def display_user(private_id, public_id, short=False):
+def display_user(public_id, short=False):
     success = True
     callback = Callback()
 
     if not short:
-        print "%s:" % (private_id,)
+        print "Public User ID %s:" % (public_id,)
 
-    homestead.get_digest(private_id, callback)
+    homestead.get_associated_privates(public_id, callback)
     response = callback.wait()[0]
     if response.code == 200:
-        av = json.loads(response.body)
-        if 'digest_ha1' in av:
-            password = av['digest_ha1']
-            if 'plaintext_password' in av:
-                password += " (%s)" % (av['plaintext_password'],)
-            if short:
-                print "%s:%s" % (private_id, password)
+        private_ids = json.loads(response.body)
+        for private_id in private_ids['private_ids']:
+            homestead.get_digest(private_id, callback)
+            response = callback.wait()[0]
+            if response.code == 200:
+                av = json.loads(response.body)
+                if 'digest_ha1' in av:
+                    password = av['digest_ha1']
+                    if 'plaintext_password' in av:
+                        password += " (%s)" % (av['plaintext_password'],)
+                    if short:
+                        print "%s/%s: %s" % (public_id, private_id, password)
+                    else:
+                        print "  Private User ID %s:" % (private_id,)
+                        print "    HA1 digest: %s" % (password,)
             else:
-                print "  HA1 digest:"
-                print "    %s" % (password,)
+                _log.error("Failed to retrieve digest for private ID %s - HTTP status code %d", private_id, response.code)
+                success = False
     else:
-        _log.error("Failed to retrieve digest for private ID %s - HTTP status code %d", private_id, response.code)
+        _log.error("Failed to retrieve private IDs for public ID - HTTP status code %d", public_id, response.code)
         success = False
 
     if not short:
@@ -236,3 +244,48 @@ def display_user(private_id, public_id, short=False):
             success = False
 
     return success
+
+
+def list_users(target_users_per_chunk=100, keep_going=False):
+    MAX_CHUNK_PROPORTION = 2**24
+    chunk_proportion = MAX_CHUNK_PROPORTION
+    chunk = 0
+    exception = StopIteration
+    while chunk < chunk_proportion:
+        try:
+            _log.debug("Bulk-retrieving public IDs (chunk %d/%d)\n", chunk, chunk_proportion)
+            public_ids = get_users(chunk, chunk_proportion)
+            _log.debug("Retrieved %d public IDs\n", len(public_ids))
+            for public_id in (public_id_obj['public_id'] for public_id_obj in public_ids):
+                yield public_id
+
+            # Move onto the next chunk and then decide whether we should change chunk size.
+            chunk += 1
+            if len(public_ids) < target_users_per_chunk * 0.5 and chunk % 2 == 0:
+                _log.debug("Too few public IDs in chunk - increase chunk size")
+                chunk /= 2
+                chunk_proportion /= 2
+            elif len(public_ids) > target_users_per_chunk * 2 and chunk_proportion < MAX_CHUNK_PROPORTION:
+                _log.debug("Too many public IDs in chunk - reduce chunk size")
+                chunk *= 2
+                chunk_proportion *= 2
+
+        except HTTPError as e:
+            # We caught an error.  We should rethrow it, but maybe defer that for now.
+            exception = e
+            if not keep_going:
+                break
+    raise exception
+
+
+def get_users(chunk, chunk_proportion, full=False):
+    callback = Callback()
+
+    homestead.get_public_ids(chunk, chunk_proportion, True, callback)
+    response = callback.wait()[0]
+    if response.error:
+        _log.error("Failed to bulk retrieve public IDs (chunk %d/%d) - HTTP status code %d", chunk, chunk_proportion, response.code)
+        raise response.error
+
+    chunk_rsp = json.loads(response.body)
+    return chunk_rsp.get('public_ids', [])

@@ -37,6 +37,8 @@ import logging
 import urllib
 import json
 import re
+import datetime
+import time
 
 from tornado import httpclient
 from tornado.ioloop import IOLoop
@@ -237,6 +239,13 @@ def put_filter_criteria(public_id, ifcs, callback):
     url = _url_host() + _make_url_without_prefix(sp_location + "/filter_criteria")
     _http_request(url, callback, method='PUT', body=ifcs)
 
+def get_public_ids(chunk, chunk_proportion, excludeuuids, callback):
+    """
+    Retrieves all public IDs (possibly by chunk) provisioned on Homestead.
+    """
+    url = _public_ids_url(chunk, chunk_proportion, excludeuuids)
+    _http_request(url, callback, method='GET')
+
 
 # Utility functions
 
@@ -250,29 +259,48 @@ def _location(httpresponse):
         raise HTTPError(500)
 
 
-def _http_request(url, callback, **kwargs):
+def _http_request(url, callback, overload_retries=3, **kwargs):
     http_client = httpclient.AsyncHTTPClient()
     if 'follow_redirects' not in kwargs:
         kwargs['follow_redirects'] = False
     kwargs['allow_ipv6'] = True
-    http_client.fetch(url, callback, **kwargs)
+    retries_holder = {'retries': overload_retries}
+
+    def do_http_request():
+        _log.debug("Sending HTTP request to %s" % url)
+        http_client.fetch(url, callback_wrapper, **kwargs)
+
+    def callback_wrapper(response):
+        _log.debug("Received response from %s with code %d" % (url, response.code))
+        if response.code == 503 and retries_holder['retries'] > 1:
+            _log.debug("503 response - retrying %d more time(s)..." % retries_holder['retries'])
+            retries_holder['retries'] -= 1
+            IOLoop.instance().add_timeout(datetime.timedelta(milliseconds=500), do_http_request)
+        else:
+            callback(response)
+
+    do_http_request()
 
 
-def _sync_http_request(url, **kwargs):
+def _sync_http_request(url, overload_retries=3, **kwargs):
     http_client = httpclient.HTTPClient()
     if 'follow_redirects' not in kwargs:
         kwargs['follow_redirects'] = False
     kwargs['allow_ipv6'] = True
-    try:
-        return http_client.fetch(url, **kwargs)
-    except HTTPError as e:
-        if e.code == 303:
-            return e.response
-        else:
-            return e
-    except Exception as e:
-        _log.error("Received exception {}, treating as 500 HTTP error".format(e))
-        return HTTPError(500)
+    while True:
+        try:
+            return http_client.fetch(url, **kwargs)
+        except HTTPError as e:
+            if e.code == 303:
+                return e.response
+            elif e.code == 503 and overload_retries > 1:
+                overload_retries -= 1
+                time.sleep(0.5)
+            else:
+                return e
+        except Exception as e:
+            _log.error("Received exception {}, treating as 500 HTTP error".format(e))
+            return HTTPError(500)
 
 
 def _url_host():
@@ -345,6 +373,14 @@ def _associate_new_irs_url(private_id, irs):
 def _sp_from_public_id_url(public_id):
     """Returns the URL for learning this public ID's service profile"""
     return _make_url('public/{}/service_profile', public_id)
+
+
+def _public_ids_url(chunk, chunk_proportion, excludeuuids):
+    """Returns the URL for retrieving all public IDs"""
+    return _make_url("public/?excludeuuids={}&chunk-proportion={}&chunk={}",
+                     "true" if excludeuuids else "false",
+                     str(chunk_proportion),
+                     str(chunk))
 
 
 def _make_url_without_prefix(format_str, *args):
