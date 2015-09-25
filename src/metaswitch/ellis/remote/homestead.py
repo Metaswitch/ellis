@@ -264,6 +264,7 @@ def _http_request(url, callback, overload_retries=3, **kwargs):
     if 'follow_redirects' not in kwargs:
         kwargs['follow_redirects'] = False
     kwargs['allow_ipv6'] = True
+    # Use a holder for the retries value, so that the functions we define below can modify it.
     retries_holder = {'retries': overload_retries}
 
     def do_http_request():
@@ -275,6 +276,7 @@ def _http_request(url, callback, overload_retries=3, **kwargs):
         if response.code == 503 and retries_holder['retries'] > 1:
             _log.debug("503 response - retrying %d more time(s)..." % retries_holder['retries'])
             retries_holder['retries'] -= 1
+            # Set a timer to retry the HTTP request in 500ms.
             IOLoop.instance().add_timeout(datetime.timedelta(milliseconds=500), do_http_request)
         else:
             callback(response)

@@ -247,6 +247,13 @@ def display_user(public_id, short=False):
 
 
 def list_users(target_users_per_chunk=100, keep_going=False):
+    """
+    A generator that lists users.  Rather than querying all users from the homestead-prov server
+    in one huge request (which would impact its performance), it tunes itself to query
+    approximately the specified number of users per chunk.  It does this by starting off with a
+    small chunk size and scaling up/down according to the number of users it receives.  All chunk
+    sizes are always powers of 2.
+    """
     MAX_CHUNK_PROPORTION = 2**24
     chunk_proportion = MAX_CHUNK_PROPORTION
     chunk = 0
@@ -265,7 +272,7 @@ def list_users(target_users_per_chunk=100, keep_going=False):
                 _log.debug("Too few public IDs in chunk - increase chunk size")
                 chunk /= 2
                 chunk_proportion /= 2
-            elif len(public_ids) > target_users_per_chunk * 2 and chunk_proportion < MAX_CHUNK_PROPORTION:
+            elif len(public_ids) > target_users_per_chunk * 2 and chunk_proportion * 2 <= MAX_CHUNK_PROPORTION:
                 _log.debug("Too many public IDs in chunk - reduce chunk size")
                 chunk *= 2
                 chunk_proportion *= 2
@@ -288,4 +295,4 @@ def get_users(chunk, chunk_proportion, full=False):
         raise response.error
 
     chunk_rsp = json.loads(response.body)
-    return chunk_rsp.get('public_ids', [])
+    return chunk_rsp['public_ids']

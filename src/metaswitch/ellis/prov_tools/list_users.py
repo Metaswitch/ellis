@@ -48,11 +48,11 @@ _log = logging.getLogger();
 def pace_wrapper(iterator, pace=10):
     next_time = time.time()
     for item in iterator:
-        now_time = time.time()
-        if now_time < next_time:
-            time.sleep(next_time - now_time)
+        now = time.time()
+        if now < next_time:
+            time.sleep(next_time - now)
         else:
-            next_time = now_time
+            next_time = now
         next_time += 1.0 / pace
         yield item
 
@@ -61,14 +61,14 @@ def main():
     parser.add_argument("-k", "--keep-going", action="store_true", dest="keep_going", help="keep going on errors")
     parser.add_argument("--hsprov", metavar="IP:PORT", action="store", help="IP address and port of homestead-prov")
     parser.add_argument("--full", action="store_true", help="displays full information for each user")
-    parser.add_argument("--pace", action="store", help="sets the target number of users to list per second")
+    parser.add_argument("--pace", action="store", type=int, help="sets the target number of users to list per second")
     parser.add_argument("-f", "--force", action="store_true", dest="force", help="forces specified pace")
     args = parser.parse_args()
 
     utils.setup_logging()
     settings.HOMESTEAD_URL = args.hsprov or settings.HOMESTEAD_URL
     default_pace = 5 if args.full else 500
-    pace = int(args.pace) if args.pace else default_pace
+    pace = args.pace or default_pace
 
     # Check the pace and get confirmation if it's too high
     if pace > default_pace and not args.force:
@@ -76,8 +76,8 @@ def main():
             print("Pace %d greater than recommended value (%d) when --full specified" % (pace, default_pace))
         else:
             print("Pace %d greater than recommended value (%d)" % (pace, default_pace))
-        print("This may impact call processing!  Are you sure?")
-        print("Type <yes> below or rerun with --force to confirm")
+        print("This may impact call processing!  Are you sure? [y/N]")
+        print("(... or specify --force to skip this check and force the specified pace)")
         if raw_input().lower() == "yes":
             print("Continuing...")
         else:
