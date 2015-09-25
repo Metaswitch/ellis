@@ -62,8 +62,12 @@ ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -
 	${ENV_DIR}/bin/python setup.py bdist_egg -d .eggs
 	cd common && EGG_DIR=../.eggs make build_common_egg
 	
+	${ENV_DIR}/bin/python src/metaswitch/ellis/prov_tools/setup.py bdist_egg -d .prov_tools_eggs
+	cd common && EGG_DIR=../.prov_tools_eggs make build_common_egg
+
 	# Download the egg files they depend upon
 	${ENV_DIR}/bin/easy_install -zmaxd .eggs/ .eggs/*.egg
+	${ENV_DIR}/bin/easy_install -zmaxd .prov_tools_eggs/ .prov_tools_eggs/*.egg
 	
 	# Install the downloaded egg files (this should match the postinst)
 	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .eggs/ .eggs/*.egg
@@ -88,4 +92,4 @@ pyclean:
 
 .PHONY: envclean
 envclean:
-	-rm -r .eggs build ${ENV_DIR}
+	-rm -r .eggs .prov_tools_eggs build ${ENV_DIR}

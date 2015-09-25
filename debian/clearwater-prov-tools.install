@@ -1,12 +1,3 @@
-eggs/py_bcrypt-*.egg usr/share/clearwater/clearwater-prov-tools/eggs
-eggs/pycrypto-*.egg usr/share/clearwater/clearwater-prov-tools/eggs
-eggs/pyzmq-*.egg usr/share/clearwater/clearwater-prov-tools/eggs
-eggs/setuptools-*.egg usr/share/clearwater/clearwater-prov-tools/eggs
-eggs/tornado-*.egg usr/share/clearwater/clearwater-prov-tools/eggs
-src/metaswitch/ellis/prov_tools/setup.py usr/share/clearwater/clearwater-prov-tools/
-src usr/share/clearwater/clearwater-prov-tools/
-common/setup.py usr/share/clearwater/clearwater-prov-tools/common/
-common/metaswitch usr/share/clearwater/clearwater-prov-tools/common/
-common/metaswitchcommon.egg-info usr/share/clearwater/clearwater-prov-tools/common/
-local_settings.py usr/share/clearwater/clearwater-prov-tools/src/metaswitch/ellis/
+.prov_tools_eggs/*.egg usr/share/clearwater/clearwater-prov-tools/.eggs
+local_settings.py usr/share/clearwater/clearwater-prov-tools/
 clearwater-prov-tools.root/* .
