@@ -65,7 +65,7 @@ def main():
         private_id = "%s@%s" % (dn, args.domain)
 
         if utils.update_user(private_id, public_id, args.domain, args.password, None, plaintext=args.plaintext):
-            if not args.quiet and not utils.display_user(private_id, public_id):
+            if not args.quiet and not utils.display_user(public_id):
                 success = False
         else:
             success = False
