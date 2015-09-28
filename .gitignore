@@ -19,3 +19,5 @@ build/
 .metadata/
 .coverage
 htmlcov/
+/.eggs/
+/.prov_tools_eggs/
