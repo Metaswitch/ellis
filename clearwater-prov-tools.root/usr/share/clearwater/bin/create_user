@@ -31,4 +31,4 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-/usr/share/clearwater/clearwater-prov-tools/env/bin/python -m metaswitch.ellis.prov_tools.create_user $@
+/usr/share/clearwater/clearwater-prov-tools/env/bin/python -m metaswitch.ellis.prov_tools.create_user "$@"
