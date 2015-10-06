@@ -63,7 +63,7 @@ class TestSessionHandler(BaseTest):
     @patch("metaswitch.ellis.data.users.get_user_by_email_and_password", return_value = {})
     def test_post_mainline(self, get_user_by):
         # Setup
-        self.request.arguments["username"] = "Clarkson"
+        self.request.arguments["email"] = "Clarkson"
         self.request.arguments["password"] = "squirrel"
         self.handler.set_status = MagicMock()
         self.handler.set_secure_cookie = MagicMock()
@@ -86,7 +86,7 @@ class TestSessionHandler(BaseTest):
     @patch("metaswitch.ellis.data.users.get_user_by_email_and_password")
     def test_post_fail(self, get_user_by):
         # Setup
-        self.request.arguments["username"] = "Clarkson"
+        self.request.arguments["email"] = "Clarkson"
         self.request.arguments["password"] = "squivvel"
         self.handler.set_status = MagicMock()
         self.handler.finish = MagicMock()

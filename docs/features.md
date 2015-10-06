@@ -27,7 +27,7 @@ Numbers
 
 Ellis manages a database of *numbers*. Each number is either available
 for use, or belongs to a user. Numbers may be internal or PSTN
-numbers, and may or may not be exposed in the global address book.
+numbers, and may or may not be exposed in the global address book. Ellis can't actually provision numbers that can make or receive calls from the PSTN (unless you have a PSTN trunk configured) - rather a 'PSTN number' just represents a different pool of numbers, which are typically configured as numbers in international format, e.g. +15108580274.
 
 Ellis provides a command-line tool for provisioning the pool of
 numbers available for use.

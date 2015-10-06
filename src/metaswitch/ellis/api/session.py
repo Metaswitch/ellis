@@ -51,7 +51,7 @@ class SessionHandler(_base.BaseHandler):
         pass
 
     def post(self):
-        username = self.request_data["username"]
+        username = self.request_data["email"]
         password = self.request_data["password"]
         user = users.get_user_by_email_and_password(self.db_session(), username, password)
         if user:
