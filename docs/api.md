@@ -43,7 +43,7 @@ Example commands using curl as the HTTP client, for both JSON and url-encoded bo
 curl -v -H "NGV-Signup-Code: secret" -H "Content-Type: application/x-www-form-urlencoded" -X POST -d "email=bob.alice@example.com&password=example&full_name=Bobby Alice" "http://ellis-1.example.com:80/accounts"
 ```
 ```
-curl -v -H "NGV-Signup-Code: secret" -H "Content-Type: application/json" -d "{\"email\": \"bob.alice@example.com\", \"password\": \"example\", \"full_name\": \"Bobby Alice\"}" -X POST "http://ellis-1.exmample.com:80/accounts"
+curl -v -H "NGV-Signup-Code: secret" -H "Content-Type: application/json" -d "{\"email\": \"bob.alice@example.com\", \"password\": \"example\", \"full_name\": \"Bobby Alice\"}" -X POST "http://ellis-1.example.com:80/accounts"
 ```
 
 Response:
