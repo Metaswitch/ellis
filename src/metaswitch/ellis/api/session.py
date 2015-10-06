@@ -61,6 +61,6 @@ class SessionHandler(_base.BaseHandler):
             _log.debug("User %s provided incorrect password", username)
             self.send_error(httplib.FORBIDDEN, reason="Incorrect username or password")
     post.validation = {
-        "username": (REQUIRED, STRING, r'.+'),
+        "email": (REQUIRED, STRING, r'.+'),
         "password": (REQUIRED, STRING, r'.+'),
     }
