@@ -132,7 +132,7 @@ Number management
 Make a POST request to `/accounts/<email>/numbers/` to allocate a new number (chosen randomly from the pool) to an account. Optionally, specify the following parameters, either in the form-encoded body or as URL parameters:
 
       "private_id":       <private identity to associate this number with, null if none yet exists>
-      "pstn":             <boolean specifying if number should be a PSTN>
+      "pstn":             <boolean specifying if number should be a PSTN number>
 
 Note that `private_id` must be a private identity that already exists - if you specify an arbitrary one, Ellis will not create it for you. If you want to provision numbers and private identities of your own choosing, you should read "Provisioning specific numbers" below or use the [Homer](https://github.com/Metaswitch/crest/blob/dev/docs/homer_api.md) and [Homestead APIs](https://github.com/Metaswitch/crest/blob/dev/docs/homestead_api.md) directly.
 
@@ -141,7 +141,7 @@ Response
     {
       "formatted_number": <the phone number formatted for local display>,
       "number":           <the phone number, currently, this will be equal to the sip_username>,
-      "pstn":             <boolean specifying if number is a PSTN>,
+      "pstn":             <boolean specifying if number is a PSTN number>,
       "private_id":       <private identity associated with this number>
       "sip_password":     <a randomly-generated SIP password for the number, only available at creation>,
       "sip_uri":          <the SIP uri of the number>,
