@@ -48,7 +48,7 @@ curl -v -H "NGV-Signup-Code: secret" -H "Content-Type: application/json" -d "{\"
 
 Response:
 
- * 301 if the client specifies it would prefer a redirect to a status-code based response.
+ * 302 if the client specifies it would prefer a redirect to a status-code based response.
  * Otherwise:
    - 201 created on success
    - 409 conflict if the account already exists
@@ -98,7 +98,7 @@ Response:
   * 503 Service Unavailable if the request has been throttled. `Retry-After:` is set appropriately.
 
 Alternatively, browser support can be used - in this case the response
-is 301, the token may be supplied in the recovery_token parameter, and
+is 302, the token may be supplied in the recovery_token parameter, and
 the password may be supplied in the password parameter.
 
 Browser login
@@ -117,7 +117,7 @@ Body:
 
 Response:
 
- * 301 if the client specifies it would prefer a redirect to a status-code based response.
+ * 302 if the client specifies it would prefer a redirect to a status-code based response.
  * Otherwise:
    - 201 created on success (including a secure cookie that authenticates the request)
    - 403 forbidden if the credentials are invalid
