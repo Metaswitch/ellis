@@ -420,7 +420,7 @@ class TestAccountHandler(BaseTest):
         self.handler.get_and_check_user_id.assert_called_once_with(EMAIL)
         delete_user.assert_called_once_with(self.db_sess, USER_ID)
         self.handler.set_status.assert_called_once_with(httplib.NO_CONTENT)
-        self.handler.finish.assert_called_once_with({})
+        self.handler.finish.assert_called_once_with()
 
     @patch("metaswitch.ellis.data.users.delete_user")
     @patch("metaswitch.ellis.data.numbers.remove_owner")
@@ -460,7 +460,7 @@ class TestAccountHandler(BaseTest):
         self.handler._on_delete_post_success([Mock()])
         delete_user.assert_called_once_with(self.db_sess, USER_ID)
         self.handler.set_status.assert_called_once_with(httplib.NO_CONTENT)
-        self.handler.finish.assert_called_once_with({})
+        self.handler.finish.assert_called_once_with()
 
     @patch("metaswitch.ellis.data.users.delete_user")
     @patch("metaswitch.ellis.data.numbers.remove_owner")
