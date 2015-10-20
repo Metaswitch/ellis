@@ -273,7 +273,10 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
             self.redirect(redirect_url)
         else:
             self.set_status(status_code)
-            self.finish(data)
+            if status_code == httplib.NO_CONTENT:
+                self.finish()
+            else:
+                self.finish(data)
 
     def forward_error(self, response):
         """
