@@ -44,7 +44,6 @@ from functools import partial
 from metaswitch.ellis.api import _base
 from metaswitch.ellis.api.utils import HTTPCallbackGroup
 from metaswitch.ellis.data import numbers, NotFound
-from metaswitch.ellis import settings
 from metaswitch.ellis.remote import homestead
 from metaswitch.ellis.remote import xdm
 from metaswitch.common import utils
