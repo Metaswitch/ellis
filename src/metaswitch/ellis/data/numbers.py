@@ -121,32 +121,30 @@ def allocate_number(db_sess, user_id, pstn = False):
     # Randomize the number allocated.  ORDER BY RAND() is not the fastest way of
     # doing this, but it's fast enough and Ellis is only intended as a demo
     # tool anyway.
-    if (pstn):
-        _log.debug("Allocating a PSTN number")
-        sql_query = """
-                    SELECT number_id FROM numbers
-                    WHERE owner_id IS NULL
-                    AND pstn
-                    ORDER BY RAND()
-                    LIMIT 1;
-                    """
-    else:
-        _log.debug("Allocating a non-PSTN number")
-        sql_query = """
-                    SELECT number_id FROM numbers
-                    WHERE owner_id IS NULL
-                    AND NOT pstn
-                    ORDER BY RAND()
-                    LIMIT 1;
-                    """
+    _log.debug("Allocating a number (%s)"
+               'PSTN' if pstn else 'non-PSTN')
 
-    cursor = db_sess.execute(sql_query)
-    available_number = cursor.fetchone()
+    db_sess.execute(
+        """
+        SET @number_id := NULL;
+        UPDATE numbers
+        SET number_id = @number_id := number_id,
+            owner_id = :user_id,
+            gab_listed = 1
+        WHERE owner_id IS NULL
+        AND pstn = :pstn
+        ORDER BY RAND()
+        LIMIT 1;
+        """,
+        {
+            "user_id": user_id,
+            "pstn": 1 if pstn else 0
+        })
+    cursor = db_sess.execute("SELECT @number_id;")
+    (number_id,) = cursor.fetchone()
 
-    if available_number:
-        (number_id,) = available_number
+    if number_id:
         _log.debug("Fetched %s", number_id)
-        allocate_specific_number(db_sess, user_id, number_id)
         return uuid.UUID(number_id)
 
     raise NotFound()

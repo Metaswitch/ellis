@@ -138,8 +138,7 @@ class TestNumbers(BaseDataTest):
 
     @patch("random.randint")
     def test_allocate_number_not_found(self, randint):
-        randint.return_value = 0
-        self.mock_cursor.fetchone.return_value = None
+        self.mock_cursor.fetchone.return_value = (None, )
         self.assertRaises(NotFound, allocate_number, self.mock_session, OWNER_ID)
 
     def test_get_number(self):
