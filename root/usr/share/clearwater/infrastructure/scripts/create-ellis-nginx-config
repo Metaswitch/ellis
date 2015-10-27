@@ -40,6 +40,7 @@
 
 if [ -n "$home_domain" ] && [ -n "$public_hostname" ] && [ -n "$local_ip" ] && [ -n "$public_ip" ]
 then
+  ellis_hostname=${ellis_hostname:-ellis.$home_domain}
   site_file=/etc/nginx/sites-available/ellis
   enabled_file=/etc/nginx/sites-enabled/ellis
   ssl_cert_file=/etc/nginx/ssl/ellis.crt
@@ -76,7 +77,7 @@ server {
         ssl_certificate_key $ssl_key_file;
 
         listen       [::]:443 ipv6only=off;
-        server_name  $ellis_hostname ellis.$home_domain $local_ip $public_ip $public_hostname;
+        server_name  $ellis_hostname $local_ip $public_ip $public_hostname;
 
         location / {
                 proxy_pass http://http_ellis;
@@ -90,7 +91,7 @@ server {
 
 server {
         listen       [::]:80 default_server; # ipv6only=off is set in the base config
-        server_name  $ellis_hostname ellis.$home_domain $local_ip $public_ip $public_hostname;
+        server_name  $ellis_hostname $local_ip $public_ip $public_hostname;
 
         return       301   https://\$host\$request_uri;
 }
@@ -101,7 +102,7 @@ EOF3
     cat >> $temp_file << EOF4
 server {
         listen       [::]:80 default_server; # ipv6only=off is set in the base config
-        server_name  $ellis_hostname ellis.$home_domain $local_ip $public_ip $public_hostname;
+        server_name  $ellis_hostname $local_ip $public_ip $public_hostname;
 
         location / {
                 proxy_pass http://http_ellis;
@@ -110,6 +111,9 @@ server {
                 # The client may have instructed the server to close the
                 # connection - do not forward this upstream.
                 proxy_set_header Connection "";
+
+                # Preserve the Ellis hostname.
+                proxy_set_header Host $ellis_hostname;
         }
 }
 EOF4
