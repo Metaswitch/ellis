@@ -86,6 +86,9 @@ server {
                 # The client may have instructed the server to close the
                 # connection - do not forward this upstream.
                 proxy_set_header Connection "";
+
+                # Preserve the Ellis hostname.
+                proxy_set_header Host $ellis_hostname;
         }
 }
 
