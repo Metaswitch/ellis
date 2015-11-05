@@ -81,6 +81,7 @@ class AccountsHandler(_base.BaseHandler):
                                      data["full_name"], data["email"],
                                      int(data["expires"]) if "expires" in data else None)
         except AlreadyExists:
+            db_sess.rollback()
             raise HTTPError(httplib.CONFLICT, "Email already exists")
         else:
             db_sess.commit()
@@ -116,13 +117,14 @@ class AccountPasswordHandler(_base.BaseHandler):
         db_sess = self.db_session()
         try:
             token = users.get_token(db_sess, address)
-            db_sess.commit()
         except ValueError:
             # To avoid revealing who subscribes to our service to
             # third parties, this must behave identically to the case
             # where the email is recognised.
+            db_sess.rollback()
             _log.info("Silently ignoring unrecognised email")
         else:
+            db_sess.commit()
             user = users.get_details(db_sess, address)
             urlbase = self.request.protocol + "://" + self.request.host + \
                 settings.EMAIL_RECOVERY_PATH
@@ -143,13 +145,10 @@ class AccountPasswordHandler(_base.BaseHandler):
         try:
             users.set_recovered_password(db_sess, address, token, password)
             db_sess.commit()
-        except ValueError:
-            # Wrong token.
-            raise HTTPError(httplib.UNPROCESSABLE_ENTITY, "Invalid token or email address")
-        except NotFound:
-            # Unknown email address - for security reasons, this must
-            # behave identically to the case where the email is
-            # recognised.
+        except (ValueError, NotFound) as e:
+            # Wrong token or unknown email address - for security reasons, these
+            # must behave identically.
+            db_sess.rollback()
             raise HTTPError(httplib.UNPROCESSABLE_ENTITY, "Invalid token or email address")
         self.send_success(httplib.OK)
 
