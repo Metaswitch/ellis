@@ -145,7 +145,7 @@ class AccountPasswordHandler(_base.BaseHandler):
         try:
             users.set_recovered_password(db_sess, address, token, password)
             db_sess.commit()
-        except (ValueError, NotFound) as e:
+        except (ValueError, NotFound):
             # Wrong token or unknown email address - for security reasons, these
             # must behave identically.
             db_sess.rollback()
