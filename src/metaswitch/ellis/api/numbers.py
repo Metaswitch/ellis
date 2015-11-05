@@ -139,6 +139,7 @@ class NumbersHandler(_base.LoggedInHandler):
             db_sess.commit()
         except NotFound:
             # FIXME email operator to tell them we're out of numbers!
+            db_sess.rollback()
             _log.warning("No available numbers")
             raise HTTPError(httplib.SERVICE_UNAVAILABLE,
                             "No available numbers")
