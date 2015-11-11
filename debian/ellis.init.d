@@ -73,18 +73,18 @@ SCRIPTNAME=/etc/init.d/$NAME
 #
 do_start()
 {
-	# Return
-	#   0 if daemon has been started
-	#   1 if daemon was already running
-	#   2 if daemon could not be started
-  
+  # Return
+  #   0 if daemon has been started
+  #   1 if daemon was already running
+  #   2 if daemon could not be started
+
   [ -d /var/run/$NAME ] || install -m 755 -o $USER -g root -d /var/run/$NAME
 
   start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
-		|| return 1
-	start-stop-daemon --start --quiet --chdir $DAEMON_DIR --chuid $USER --pidfile $PIDFILE --exec $DAEMON -- \
-		$DAEMON_ARGS --background \
-		|| return 2
+    || return 1
+  start-stop-daemon --start --quiet --chdir $DAEMON_DIR --chuid $USER --pidfile $PIDFILE --exec $DAEMON -- \
+    $DAEMON_ARGS --background \
+    || return 2
 }
 
 #
@@ -111,9 +111,9 @@ do_stop()
 #
 do_run()
 {
-        [ -d /var/run/$NAME ] || install -m 755 -o $USER -g root -d /var/run/$NAME
-        start-stop-daemon --start --quiet --chdir $DAEMON_DIR --chuid $USER --exec $DAEMON -- $DAEMON_ARGS \
-                || return 2
+  [ -d /var/run/$NAME ] || install -m 755 -o $USER -g root -d /var/run/$NAME
+  start-stop-daemon --start --quiet --chdir $DAEMON_DIR --chuid $USER --exec $DAEMON -- $DAEMON_ARGS \
+    || return 2
 }
 
 #
@@ -139,86 +139,86 @@ case "$1" in
     [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC " "$NAME"
     do_start
     case "$?" in
-		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
-	esac
-  ;;
+      0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+      2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
   stop)
-	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
-	do_stop
-	case "$?" in
-		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
-	esac
-	;;
+    [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+    do_stop
+    case "$?" in
+      0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+      2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
   run)
-        [ "$VERBOSE" != no ] && log_daemon_msg "Running $DESC" "$NAME"
-        do_run
-        case "$?" in
-          0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-          2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
-        esac
-        ;;
+    [ "$VERBOSE" != no ] && log_daemon_msg "Running $DESC" "$NAME"
+    do_run
+    case "$?" in
+      0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+    2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
   status)
-       status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
-       ;;
+    status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+    ;;
   #reload|force-reload)
-	#
-	# If do_reload() is not implemented then leave this commented out
-	# and leave 'force-reload' as an alias for 'restart'.
-	#
-	#log_daemon_msg "Reloading $DESC" "$NAME"
-	#do_reload
-	#log_end_msg $?
-	#;;
+    #
+    # If do_reload() is not implemented then leave this commented out
+    # and leave 'force-reload' as an alias for 'restart'.
+    #
+    #log_daemon_msg "Reloading $DESC" "$NAME"
+    #do_reload
+    #log_end_msg $?
+    #;;
   restart|force-reload)
-	#
-	# If the "reload" option is implemented then remove the
-	# 'force-reload' alias
-	#
-	log_daemon_msg "Restarting $DESC" "$NAME"
-	do_stop
-	case "$?" in
-	  0|1)
-		do_start
-		case "$?" in
-			0) log_end_msg 0 ;;
-			1) log_end_msg 1 ;; # Old process is still running
-			*) log_end_msg 1 ;; # Failed to start
-		esac
-		;;
-	  *)
-	  	# Failed to stop
-		log_end_msg 1
-		;;
-	esac
-	;;
-  abort)
-	log_daemon_msg "Aborting $DESC" "$NAME"
-	do_abort
-	;;
-  abort-restart)
-        log_daemon_msg "Abort-Restarting $DESC" "$NAME"
-        do_abort
+    #
+    # If the "reload" option is implemented then remove the
+    # 'force-reload' alias
+    #
+    log_daemon_msg "Restarting $DESC" "$NAME"
+    do_stop
+    case "$?" in
+      0|1)
+        do_start
         case "$?" in
-          0|1)
-                do_start
-                case "$?" in
-                        0) log_end_msg 0 ;;
-                        1) log_end_msg 1 ;; # Old process is still running
-                        *) log_end_msg 1 ;; # Failed to start
-                esac
-                ;;
-          *)
-                # Failed to stop
-                log_end_msg 1
-                ;;
+          0) log_end_msg 0 ;;
+          1) log_end_msg 1 ;; # Old process is still running
+          *) log_end_msg 1 ;; # Failed to start
         esac
         ;;
+      *)
+        # Failed to stop
+        log_end_msg 1
+      ;;
+    esac
+    ;;
+  abort)
+    log_daemon_msg "Aborting $DESC" "$NAME"
+    do_abort
+    ;;
+  abort-restart)
+    log_daemon_msg "Abort-Restarting $DESC" "$NAME"
+    do_abort
+    case "$?" in
+      0|1)
+        do_start
+        case "$?" in
+          0) log_end_msg 0 ;;
+          1) log_end_msg 1 ;; # Old process is still running
+          *) log_end_msg 1 ;; # Failed to start
+        esac
+        ;;
+      *)
+      # Failed to stop
+      log_end_msg 1
+      ;;
+    esac
+    ;;
   *)
-	echo "Usage: $SCRIPTNAME {start|stop|run|status|restart|force-reload|abort|abort-restart}" >&2
-	exit 3
-	;;
+    echo "Usage: $SCRIPTNAME {start|stop|run|status|restart|force-reload|abort|abort-restart}" >&2
+    exit 3
+    ;;
 esac
 
 :
