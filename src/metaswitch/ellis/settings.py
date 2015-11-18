@@ -68,7 +68,7 @@ LOG_FILE_PREFIX = "ellis"
 LOG_FILE_MAX_BYTES = 10000000
 LOG_BACKUP_COUNT = 10
 LOG_LEVEL = logging.INFO
-PID_FILE = os.path.join(PROJECT_DIR, "server.pid")
+PID_FILE = "/var/run/ellis/ellis.pid"
 
 # Tornado cookie encryption key.  Tornado instances that share this key will
 # all trust each other's cookies.
