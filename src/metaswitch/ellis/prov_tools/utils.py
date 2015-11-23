@@ -226,7 +226,7 @@ def display_user(public_id, short=False):
                 _log.error("Failed to retrieve digest for private ID %s - HTTP status code %d", private_id, response.code)
                 success = False
     else:
-        _log.error("Failed to retrieve private IDs for public ID - HTTP status code %d", public_id, response.code)
+        _log.error("Failed to retrieve private IDs for public ID %s - HTTP status code %d", public_id, response.code)
         success = False
 
     if not short:
