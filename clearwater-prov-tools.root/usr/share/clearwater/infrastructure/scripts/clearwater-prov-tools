@@ -36,15 +36,12 @@
 
 . /etc/clearwater/config
 
-if [ -n "$hs_provisioning_hostname" ] && [ -n "$home_domain" ] && [ -n "$xdms_hostname" ] && [ -n "$local_ip" ]
-then
-  function escape { echo $1 | sed -e 's/\//\\\//g' ; }
-  sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape $local_ip)'"/g' \
-      -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$(escape $home_domain)'"/g' \
-      -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$(escape $hs_provisioning_hostname)'"/g' \
-      -e 's/^\(XDM_URL\) = .*$/\1 = "'$(escape $xdms_hostname)'"/g' \
-      -e 's/^\(LOGS_DIR\) = .*$/\1 = "\/var\/log\/clearwater-prov-tools"/g' \
-      </usr/share/clearwater/clearwater-prov-tools/local_settings.py >/tmp/local_settings.py.$$
-  
-  mv /tmp/local_settings.py.$$ /usr/share/clearwater/clearwater-prov-tools/env/lib/python2.7/site-packages/clearwater_prov_tools-0.1-py2.7.egg/metaswitch/ellis/local_settings.py
-fi
+function escape { echo $1 | sed -e 's/\//\\\//g' ; }
+sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape "$local_ip")'"/g' \
+  -e 's/^\(SIP_DIGEST_REALM\) = .*$/\1 = "'$(escape "$home_domain")'"/g' \
+  -e 's/^\(HOMESTEAD_URL\) = .*$/\1 = "'$(escape "$hs_provisioning_hostname")'"/g' \
+  -e 's/^\(XDM_URL\) = .*$/\1 = "'$(escape "$xdms_hostname")'"/g' \
+  -e 's/^\(LOGS_DIR\) = .*$/\1 = "\/var\/log\/clearwater-prov-tools"/g' \
+  </usr/share/clearwater/clearwater-prov-tools/local_settings.py >/tmp/local_settings.py.$$
+
+mv /tmp/local_settings.py.$$ /usr/share/clearwater/clearwater-prov-tools/env/lib/python2.7/site-packages/clearwater_prov_tools-0.1-py2.7.egg/metaswitch/ellis/local_settings.py
