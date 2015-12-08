@@ -98,9 +98,9 @@ def build_ifc(ifc_file, domain, twin_prefix):
         try:
             with open(ifc_file, 'r') as f:
                 ifc = f.read()
-                return None
         except IOError as e:
             _log.error("Failed to read %s - %s", ifc_file, e.strerror)
+            return None
     else:
         ifc=('<?xml version="1.0" ?>\n'
               '<ServiceProfile>\n'
