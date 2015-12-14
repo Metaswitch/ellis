@@ -64,9 +64,9 @@ def main():
 
         if choice != 'y':
             if choice != 'n':
-                print "Invalid response. Aborting"
+                print "Exiting due to invalid input: Expected 'y' or 'n'."
             else:
-                print "Aborting"
+                print "Exiting on user request."
             exit(0)
 
     success = True
