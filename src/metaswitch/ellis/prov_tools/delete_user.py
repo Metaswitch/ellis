@@ -46,6 +46,7 @@ def main():
     parser = argparse.ArgumentParser(description="Delete user")
     parser.add_argument("-f", "--force", action="store_true", dest="force", help="proceed with delete in the face of errors")
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", help="silence 'forced' error messages")
+    parser.add_argument("-y", "--yes", action="store_true", dest="no_prompt", help="auto-accept the prompt displayed before deleting the user(s)")
     parser.add_argument("--hsprov", metavar="IP:PORT", action="store", help="IP address and port of homestead-prov")
     parser.add_argument("dns", metavar="<directory-number>[..<directory-number>]")
     parser.add_argument("domain", metavar="<domain>")
@@ -56,6 +57,17 @@ def main():
 
     if not utils.check_connection():
         sys.exit(1)
+
+    if not args.no_prompt:
+        print 'Are you sure you wish to delete the following users: {}? [y/n]'.format(args.dns)
+        choice = raw_input().lower()
+
+        if choice != 'y':
+            if choice != 'n':
+                print "Exiting due to invalid input: Expected 'y' or 'n'."
+            else:
+                print "Exiting on user request."
+            exit(0)
 
     success = True
     for dn in utils.parse_dn_ranges(args.dns):
