@@ -78,7 +78,7 @@ def parse_dn_ranges(dn_ranges):
             continue
 
         # Find any non-numeric prefix (e.g. +) and check that both numbers have it.
-        dn_prefix = re.search("$[^0-9]*", start_dn).group(0)
+        dn_prefix = re.search("^[^0-9]*", start_dn).group(0)
         if not end_dn.startswith(dn_prefix):
             _log.error("Directory number range %s..%s has different start and end number prefixes", start_dn, end_dn)
             continue
