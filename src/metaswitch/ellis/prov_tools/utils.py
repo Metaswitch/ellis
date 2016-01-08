@@ -199,6 +199,7 @@ def delete_user(private_id, public_id, force=False):
 
 def display_user(public_id, short=False):
     success = True
+    user_missing = False
     callback = Callback()
 
     if not short:
@@ -227,6 +228,8 @@ def display_user(public_id, short=False):
                 success = False
     else:
         _log.error("Failed to retrieve private IDs for public ID %s - HTTP status code %d", public_id, response.code)
+        if response.code == 404:
+            user_missing = True
         success = False
 
     if not short:
@@ -241,7 +244,12 @@ def display_user(public_id, short=False):
             print ifc_str
         else:
             _log.error("Failed to retrieve iFC for public ID %s - HTTP status code %d", public_id, response.code)
+            if response.code == 404:
+                user_missing = user_missing and True
             success = False
+
+    if user_missing:
+        _log.error("Failed to find any information for public ID %s.", public_id)
 
     return success
 
