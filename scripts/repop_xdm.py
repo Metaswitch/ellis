@@ -60,7 +60,7 @@ def standalone():
     print "XML: %s" % xml
 
     db_sess = connection.Session()
-    c = db_sess.execute("SELECT number FROM numbers WHERE owner_id IS NULL;")
+    c = db_sess.execute("SELECT number FROM numbers WHERE owner_id IS NOT NULL;")
 
     def inc_resp_count():
         global num_responses, num_requests
