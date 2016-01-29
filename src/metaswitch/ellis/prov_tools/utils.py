@@ -197,16 +197,16 @@ def delete_user(private_id, public_id, force=False):
 
     return success
 
-def display_user(public_id, short=False):
+def display_user(public_id, short=False, quiet=False):
     success = True
-    user_missing = False
     callback = Callback()
 
-    if not short:
+    if not short and not quiet:
         print "Public User ID %s:" % (public_id,)
 
     homestead.get_associated_privates(public_id, callback)
     response = callback.wait()[0]
+    public_id_missing = (response.code == 404)
     if response.code == 200:
         private_ids = json.loads(response.body)
         for private_id in private_ids['private_ids']:
@@ -218,9 +218,9 @@ def display_user(public_id, short=False):
                     password = av['digest_ha1']
                     if 'plaintext_password' in av:
                         password += " (%s)" % (av['plaintext_password'],)
-                    if short:
+                    if short and not quiet:
                         print "%s/%s: %s" % (public_id, private_id, password)
-                    else:
+                    elif not quiet:
                         print "  Private User ID %s:" % (private_id,)
                         print "    HA1 digest: %s" % (password,)
             else:
@@ -228,27 +228,29 @@ def display_user(public_id, short=False):
                 success = False
     else:
         _log.error("Failed to retrieve private IDs for public ID %s - HTTP status code %d", public_id, response.code)
-        if response.code == 404:
-            user_missing = True
         success = False
 
+    # Default to True so that if we don't check, we may still report that no
+    # information was found.
+    filter_criteria_missing = True
     if not short:
         homestead.get_filter_criteria(public_id, callback)
         response = callback.wait()[0]
+        filter_criteria_missing = (response.code == 404)
         if response.code == 200:
             ifc = xml.dom.minidom.parseString(response.body)
             ifc_str = ifc.toprettyxml(indent="  ")
             ifc_str = "\n".join(filter(lambda l: l.strip() != "", ifc_str.split("\n")))
             ifc_str = "    " + ifc_str.replace("\n", "\n    ")
-            print "  iFC:"
-            print ifc_str
+
+            if not quiet:
+                print "  iFC:"
+                print ifc_str
         else:
             _log.error("Failed to retrieve iFC for public ID %s - HTTP status code %d", public_id, response.code)
-            if response.code == 404:
-                user_missing = user_missing and True
             success = False
 
-    if user_missing:
+    if filter_criteria_missing and public_id_missing:
         _log.error("Failed to find any information for public ID %s.", public_id)
 
     return success

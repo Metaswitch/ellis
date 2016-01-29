@@ -70,7 +70,7 @@ def main():
         private_id = "%s@%s" % (dn, args.domain)
 
         if utils.create_user(private_id, public_id, args.domain, args.password, ifc, plaintext=args.plaintext):
-            if not args.quiet and not utils.display_user(public_id):
+            if not args.quiet and not utils.display_user(public_id, quiet=True):
                 success = False
         else:
             success = False
