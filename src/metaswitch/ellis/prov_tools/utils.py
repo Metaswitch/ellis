@@ -197,6 +197,8 @@ def delete_user(private_id, public_id, force=False):
 
     return success
 
+# quiet flag will prevent any output to stdout. This way we can check that the
+# user exists and has valid xml, without swamping the output with large iFCs
 def display_user(public_id, short=False, quiet=False):
     success = True
     callback = Callback()
