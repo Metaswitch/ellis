@@ -197,14 +197,18 @@ def delete_user(private_id, public_id, force=False):
 
     return success
 
+def conditional_print(condition, text):
+    if condition:
+        print text
+
 # quiet flag will prevent any output to stdout. This way we can check that the
 # user exists and has valid xml, without swamping the output with large iFCs
 def display_user(public_id, short=False, quiet=False):
     success = True
     callback = Callback()
 
-    if not short and not quiet:
-        print "Public User ID %s:" % (public_id,)
+    if not short:
+        conditional_print(not quiet, "Public User ID %s:" % (public_id))
 
     homestead.get_associated_privates(public_id, callback)
     response = callback.wait()[0]
@@ -220,11 +224,11 @@ def display_user(public_id, short=False, quiet=False):
                     password = av['digest_ha1']
                     if 'plaintext_password' in av:
                         password += " (%s)" % (av['plaintext_password'],)
-                    if short and not quiet:
-                        print "%s/%s: %s" % (public_id, private_id, password)
-                    elif not quiet:
-                        print "  Private User ID %s:" % (private_id,)
-                        print "    HA1 digest: %s" % (password,)
+                    if short:
+                        conditional_print(not quiet, "%s/%s: %s" % (public_id, private_id, password))
+                    else:
+                        conditional_print(not quiet, "  Private User ID %s:" % (private_id,))
+                        conditional_print(not quiet, "    HA1 digest: %s" % (password,))
             else:
                 _log.error("Failed to retrieve digest for private ID %s - HTTP status code %d", private_id, response.code)
                 success = False
@@ -245,9 +249,8 @@ def display_user(public_id, short=False, quiet=False):
             ifc_str = "\n".join(filter(lambda l: l.strip() != "", ifc_str.split("\n")))
             ifc_str = "    " + ifc_str.replace("\n", "\n    ")
 
-            if not quiet:
-                print "  iFC:"
-                print ifc_str
+            conditional_print(not quiet, "  iFC:")
+            conditional_print(not quiet, ifc_str)
         else:
             _log.error("Failed to retrieve iFC for public ID %s - HTTP status code %d", public_id, response.code)
             success = False
