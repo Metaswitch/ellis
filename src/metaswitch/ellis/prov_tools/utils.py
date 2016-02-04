@@ -197,15 +197,22 @@ def delete_user(private_id, public_id, force=False):
 
     return success
 
-def display_user(public_id, short=False):
+def conditional_print(condition, text):
+    if condition:
+        print text
+
+# quiet flag will prevent any output to stdout. This way we can check that the
+# user exists and has valid xml, without swamping the output with large iFCs
+def display_user(public_id, short=False, quiet=False):
     success = True
     callback = Callback()
 
     if not short:
-        print "Public User ID %s:" % (public_id,)
+        conditional_print(not quiet, "Public User ID %s:" % (public_id))
 
     homestead.get_associated_privates(public_id, callback)
     response = callback.wait()[0]
+    public_id_missing = (response.code == 404)
     if response.code == 200:
         private_ids = json.loads(response.body)
         for private_id in private_ids['private_ids']:
@@ -218,10 +225,10 @@ def display_user(public_id, short=False):
                     if 'plaintext_password' in av:
                         password += " (%s)" % (av['plaintext_password'],)
                     if short:
-                        print "%s/%s: %s" % (public_id, private_id, password)
+                        conditional_print(not quiet, "%s/%s: %s" % (public_id, private_id, password))
                     else:
-                        print "  Private User ID %s:" % (private_id,)
-                        print "    HA1 digest: %s" % (password,)
+                        conditional_print(not quiet, "  Private User ID %s:" % (private_id,))
+                        conditional_print(not quiet, "    HA1 digest: %s" % (password,))
             else:
                 _log.error("Failed to retrieve digest for private ID %s - HTTP status code %d", private_id, response.code)
                 success = False
@@ -229,19 +236,27 @@ def display_user(public_id, short=False):
         _log.error("Failed to retrieve private IDs for public ID %s - HTTP status code %d", public_id, response.code)
         success = False
 
+    # Default to True so that if we don't check, we may still report that no
+    # information was found.
+    filter_criteria_missing = True
     if not short:
         homestead.get_filter_criteria(public_id, callback)
         response = callback.wait()[0]
+        filter_criteria_missing = (response.code == 404)
         if response.code == 200:
             ifc = xml.dom.minidom.parseString(response.body)
             ifc_str = ifc.toprettyxml(indent="  ")
             ifc_str = "\n".join(filter(lambda l: l.strip() != "", ifc_str.split("\n")))
             ifc_str = "    " + ifc_str.replace("\n", "\n    ")
-            print "  iFC:"
-            print ifc_str
+
+            conditional_print(not quiet, "  iFC:")
+            conditional_print(not quiet, ifc_str)
         else:
             _log.error("Failed to retrieve iFC for public ID %s - HTTP status code %d", public_id, response.code)
             success = False
+
+    if filter_criteria_missing and public_id_missing:
+        _log.error("Failed to find any information for public ID %s.", public_id)
 
     return success
 
