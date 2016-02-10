@@ -87,7 +87,7 @@ def parse_dn_ranges(dn_ranges):
         suffix_len = len(start_dn) - len(dn_prefix)
         start_num = int(start_dn[len(dn_prefix):])
         end_num = int(end_dn[len(dn_prefix):])
-        for num in range(start_num, end_num + 1):
+        for num in xrange(start_num, end_num + 1):
             yield "%s%0*d" % (dn_prefix, suffix_len, num)
 
 def build_ifc(ifc_file, domain, twin_prefix):
