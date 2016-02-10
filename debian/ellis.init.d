@@ -78,7 +78,7 @@ do_start()
   #   1 if daemon was already running
   #   2 if daemon could not be started
 
-  install -m 755 -o $USER -g root -d /var/run/$NAME && chown -r $NAME /var/run/$NAME
+  install -m 755 -o $USER -g root -d /var/run/$NAME && chown -R $NAME /var/run/$NAME
 
   start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
     || return 1
@@ -111,7 +111,7 @@ do_stop()
 #
 do_run()
 {
-  install -m 755 -o $USER -g root -d /var/run/$NAME && chown -r $NAME /var/run/$NAME
+  install -m 755 -o $USER -g root -d /var/run/$NAME && chown -R $NAME /var/run/$NAME
   start-stop-daemon --start --quiet --chdir $DAEMON_DIR --chuid $USER --exec $DAEMON -- $DAEMON_ARGS \
     || return 2
 }
