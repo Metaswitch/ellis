@@ -268,7 +268,9 @@ def _http_request(url, callback, overload_retries=3, **kwargs):
     retries_holder = {'retries': overload_retries}
 
     def do_http_request():
-        _log.debug("Sending HTTP request to %s" % url)
+        _log.debug("Sending HTTP %s request to %s",
+                   kwargs.get('method', 'GET'),
+                   url)
         http_client.fetch(url, callback_wrapper, **kwargs)
 
     def callback_wrapper(response):
