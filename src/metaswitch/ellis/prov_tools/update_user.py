@@ -1,6 +1,6 @@
 #!/usr/share/clearwater/clearwater-prov-tools/env/bin/python
 
-# @file create_user.py
+# @file update_user.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2015  Metaswitch Networks Ltd

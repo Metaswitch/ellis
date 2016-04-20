@@ -45,7 +45,6 @@ _log = logging.getLogger();
 def main():
     parser = argparse.ArgumentParser(description="Create user")
     parser.add_argument("-k", "--keep-going", action="store_true", dest="keep_going", help="keep going on errors")
-    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", help="don't display the user")
     parser.add_argument("--hsprov", metavar="IP:PORT", action="store", help="IP address and port of homestead-prov")
     parser.add_argument("--plaintext", action="store_true", help="store password in plaintext")
     parser.add_argument("--ifc", metavar="iFC-FILE", action="store", dest="ifc_file", help="XML file containing the iFC")
