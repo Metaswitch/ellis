@@ -79,7 +79,8 @@ class NumbersHandler(_base.LoggedInHandler):
             number["number"] = utils.sip_uri_to_phone_number(number["number"])
             number["formatted_number"] = format_phone_number(number["number"])
 
-            _request_group = HTTPCallbackGroup(partial(self._on_get_success, number["sip_uri"]), self._on_get_failure)
+            _request_group = HTTPCallbackGroup(partial(self._on_get_success, number["sip_uri"]),
+                                               partial(self._on_get_failure, number["sip_uri"]))
             # We only store the public identities in Ellis, and must query
             # Homestead for the associated private identities
             homestead.get_associated_privates(number["sip_uri"],
@@ -110,8 +111,14 @@ class NumbersHandler(_base.LoggedInHandler):
 
         self.finish({"numbers": self._numbers})
 
-    def _on_get_failure(self, response):
-        _log.warn("Failed to fetch private identities from homestead")
+    def _on_get_failure(self, sip_uri, response):
+        _log.warn("Failed to fetch private identities from homestead for %s", sip_uri)
+        if isinstance(response, tornado.httpclient.HTTPError) and response.code == 404:
+            # The number has no records in Homestead, so forget about it locally
+            _log.debug("Returning %s to the pool", sip_uri)
+            numbers.remove_owner(db_sess, sip_uri)
+            db_sess.commit()
+            
         self.forward_error(response)
 
     @asynchronous
