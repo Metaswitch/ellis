@@ -285,11 +285,13 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
         code = 0
         if isinstance(response, tornado.httpclient.HTTPError):
             code = response.code
+            url = response.request.url
         else:
             code = response.error
+            url = None
         self.send_error(httplib.BAD_GATEWAY,
                         reason="Upstream request failed",
-                        detail={"Upstream error": str(code)})
+                        detail={"Upstream error": str(code), "Upstream URL": str(url)})
 
     def send_error(self, status_code=500, reason="unknown", detail={}, **kwargs):
         """
