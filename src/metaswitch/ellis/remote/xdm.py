@@ -49,6 +49,9 @@ def simservs_uri(user):
     return uri
 
 def fetch_with_headers(user, uri, callback, **kwargs):
+    _log.info("Sending HTTP %s request to %s",
+              kwargs.get('method', 'GET'),
+              url)
     client = httpclient.AsyncHTTPClient()
     headers = kwargs.setdefault("headers", {})
     headers.update({"X-XCAP-Asserted-Identity": user})
