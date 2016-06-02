@@ -46,16 +46,12 @@ then
   ssl_cert_file=/etc/nginx/ssl/ellis.crt
   ssl_key_file=/etc/nginx/ssl/ellis.key
   temp_file=$(mktemp ellis.nginx.XXXXXXXX)
-  let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)*2-1
 
   cat > $temp_file << EOF1
 upstream http_ellis {
 EOF1
 
-  for sock_index in $(seq 0 $sock_seq_end)
-  do
-    echo "        server unix:/tmp/.ellis-sock-$sock_index;" >> $temp_file
-  done
+    echo "        server unix:/tmp/.ellis-sock;" >> $temp_file
 
   cat >> $temp_file << EOF2
         # The minimum number of idle connections to keep alive to the upstream.

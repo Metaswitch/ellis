@@ -105,15 +105,13 @@ def standalone():
 
     # Only run one process, not one per core - we don't need the performance
     # and this keeps everything in one log file
-    task_id = 0
     prctl.prctl(prctl.NAME, "ellis")
-    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, task_id)
-    # We're a child process, start up.
-    _log.info("Process %s starting up", task_id)
+    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX)
+    _log.info("Ellis process starting up")
     connection.init_connection()
 
     http_server = httpserver.HTTPServer(application)
-    unix_socket = bind_unix_socket(settings.HTTP_UNIX + "-" + str(task_id),
+    unix_socket = bind_unix_socket(settings.HTTP_UNIX,
                                    0666);
     http_server.add_socket(unix_socket)
 
