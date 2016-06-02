@@ -118,6 +118,8 @@ class NumbersHandler(_base.LoggedInHandler):
             _log.debug("Returning %s to the pool", sip_uri)
             numbers.remove_owner(db_sess, sip_uri)
             db_sess.commit()
+            # Also try and remove it from Homer, but do nothing if we fail
+            xdm.delete_simservs(sip_uri, lambda responses: None)
             
         self.forward_error(response)
 
