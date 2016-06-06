@@ -39,7 +39,6 @@ import os
 import argparse
 import logging
 import prctl
-import signal
 import tornado.web
 import tornado.ioloop
 import tornado.process
