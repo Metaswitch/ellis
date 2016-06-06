@@ -285,7 +285,11 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
         code = 0
         if isinstance(response, tornado.httpclient.HTTPError):
             code = response.code
-            url = response.request.url
+            if response.response:
+                url = response.response.effective_url
+        elif isinstance(response, tornado.httpclient.HTTPResponse):
+            code = response.code
+            url = response.effective_url
         else:
             code = response.error
             url = None
