@@ -103,31 +103,22 @@ def standalone():
         # We failed to take the lock - another process is already running
         exit(1)
 
-    # Fork off a child process per core.  In the parent process, the
-    # fork_processes call blocks until the children exit.
-    num_processes = settings.TORNADO_PROCESSES_PER_CORE * tornado.process.cpu_count()
-    task_id = tornado.process.fork_processes(num_processes)
-    if task_id is not None:
-        prctl.prctl(prctl.NAME, "ellis")
-        prctl.prctl(prctl.PDEATHSIG, signal.SIGTERM)
-        logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, task_id)
-        # We're a child process, start up.
-        _log.info("Process %s starting up", task_id)
-        connection.init_connection()
+    # Only run one process, not one per core - we don't need the performance
+    # and this keeps everything in one log file
+    prctl.prctl(prctl.NAME, "ellis")
+    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX)
+    _log.info("Ellis process starting up")
+    connection.init_connection()
 
-        http_server = httpserver.HTTPServer(application)
-        unix_socket = bind_unix_socket(settings.HTTP_UNIX + "-" + str(task_id),
-                                       0666);
-        http_server.add_socket(unix_socket)
+    http_server = httpserver.HTTPServer(application)
+    unix_socket = bind_unix_socket(settings.HTTP_UNIX,
+                                   0666);
+    http_server.add_socket(unix_socket)
 
-        homestead.ping()
-        background.start_background_worker_io_loop()
-        io_loop = tornado.ioloop.IOLoop.instance()
-        io_loop.start()
-    else:
-        # This shouldn't happen since the children should run their IOLoops
-        # forever.
-        _log.critical("Children all exited")
+    homestead.ping()
+    background.start_background_worker_io_loop()
+    io_loop = tornado.ioloop.IOLoop.instance()
+    io_loop.start()
 
 if __name__ == '__main__':
     standalone()

@@ -268,9 +268,9 @@ def _http_request(url, callback, overload_retries=3, **kwargs):
     retries_holder = {'retries': overload_retries}
 
     def do_http_request():
-        _log.debug("Sending HTTP %s request to %s",
-                   kwargs.get('method', 'GET'),
-                   url)
+        _log.info("Sending HTTP %s request to %s",
+                  kwargs.get('method', 'GET'),
+                  url)
         http_client.fetch(url, callback_wrapper, **kwargs)
 
     def callback_wrapper(response):
@@ -287,6 +287,9 @@ def _http_request(url, callback, overload_retries=3, **kwargs):
 
 
 def _sync_http_request(url, overload_retries=3, **kwargs):
+    _log.info("Sending HTTP %s request to %s",
+              kwargs.get('method', 'GET'),
+              url)
     http_client = httpclient.HTTPClient()
     if 'follow_redirects' not in kwargs:
         kwargs['follow_redirects'] = False
@@ -308,7 +311,6 @@ def _sync_http_request(url, overload_retries=3, **kwargs):
 
 
 def _url_host():
-    _log.warn("Passing SIP password in the clear over http")
     url = "http://%s" % (settings.HOMESTEAD_URL)
     return url
 
