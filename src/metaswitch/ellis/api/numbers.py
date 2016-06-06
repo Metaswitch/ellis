@@ -113,9 +113,10 @@ class NumbersHandler(_base.LoggedInHandler):
 
     def _on_get_failure(self, sip_uri, response):
         _log.warn("Failed to fetch private identities from homestead for %s", sip_uri)
-        if isinstance(response, tornado.httpclient.HTTPError) and response.code == 404:
+        if hasattr(response, 'code') and response.code == 404:
             # The number has no records in Homestead, so forget about it locally
-            _log.debug("Returning %s to the pool", sip_uri)
+            _log.warn("Returning %s to the pool", sip_uri)
+            db_sess = self.db_session()
             numbers.remove_owner(db_sess, sip_uri)
             db_sess.commit()
             # Also try and remove it from Homer, but do nothing if we fail
