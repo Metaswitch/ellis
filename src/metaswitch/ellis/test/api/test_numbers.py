@@ -91,7 +91,8 @@ class TestNumbersHandler(BaseTest):
         # Assert that we kick off asynchronous GET at homestead
         self.handler.get_and_check_user_id.assert_called_once_with("foobar")
         HTTPCallbackGroup.assert_called_once_with(ANY, # functools.partial object
-                                                  self.handler._on_get_failure)
+                                                  ANY  # functools.partial object
+                                                  )
 
         get_associated_privates.assert_called_once_with(SIP_URI,
                                                         ANY # function
