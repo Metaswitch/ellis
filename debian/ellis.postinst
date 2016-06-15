@@ -67,7 +67,7 @@ case "$1" in
         chown -R $NAME:root /var/log/$NAME
 
         virtualenv --python=$(which python) $ELLIS_DIR/env
-        $ELLIS_DIR/env/bin/easy_install --allow-hosts=None -f $ELLIS_DIR/.eggs/ $ELLIS_DIR/.eggs/*.egg
+        $ELLIS_DIR/env/bin/easy_install --allow-hosts=None --always-unzip -f $ELLIS_DIR/.eggs/ $ELLIS_DIR/.eggs/*.egg
         chown -R $NAME:root $ELLIS_DIR
 
         mysql -u root --password= < $ELLIS_DIR/schema.sql
