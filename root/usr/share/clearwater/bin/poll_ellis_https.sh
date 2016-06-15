@@ -35,7 +35,7 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 . /etc/clearwater/config
-https_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
+https_ip=$(/usr/share/clearwater/bin/bracket-ipv6-address $local_ip)
 
 https_domain=${ellis_hostname:-ellis.$home_domain}
 https_url=https://$https_domain/ping
