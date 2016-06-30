@@ -11,7 +11,7 @@ Homepage: http://projectclearwater.org/
 
 Package: ellis
 Architecture: any
-Depends: clearwater-infrastructure, mysql-server, libgmp10, python-setuptools, python-virtualenv, clearwater-nginx, clearwater-log-cleanup
+Depends: clearwater-infrastructure, mysql-server, libgmp10, python-setuptools, python-virtualenv, clearwater-nginx, clearwater-log-cleanup, clearwater-monit
 Suggests: clearwater-logging, clearwater-snmpd
 Description: ellis, the user/number management interface
 
