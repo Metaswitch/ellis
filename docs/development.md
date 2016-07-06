@@ -44,7 +44,7 @@ If you are using git, you can check out the Ellis codebase with
 This accesses the repository over SSH on Github, and will not work unless you have a Github account and registered SSH key. If you do not have both of these, you will need to configure Git to read over HTTPS instead:
 
     git config --global url."https://github.com/".insteadOf git@github.com:
-    git clone --recursive git@github.com:Metaswitch/ellis.git 
+    git clone --recursive git@github.com:Metaswitch/ellis.git
 
 Building
 ========
@@ -153,11 +153,11 @@ Startup logs (from Monit) are written to `/var/log/monit.log` and
 `/var/log/syslog`.
 
 Ellis logs are written to `/var/log/ellis/`. The logging level is set
-to INFO by default. To also view DEBUG logs add the following to 
+to INFO by default. To also view DEBUG logs add the following to
 `local_settings.py`
 
     LOG_LEVEL = logging.DEBUG
-    
+
 To run the server as part of development use:
 
     make run
