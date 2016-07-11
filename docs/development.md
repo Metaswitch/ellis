@@ -44,28 +44,21 @@ If you are using git, you can check out the Ellis codebase with
 This accesses the repository over SSH on Github, and will not work unless you have a Github account and registered SSH key. If you do not have both of these, you will need to configure Git to read over HTTPS instead:
 
     git config --global url."https://github.com/".insteadOf git@github.com:
-    git clone --recursive git@github.com:Metaswitch/ellis.git 
+    git clone --recursive git@github.com:Metaswitch/ellis.git
 
 Building
 ========
 
-The build requires GNU Make. It uses virtualenv and buildout to create
-a virtual Python environment in `_env/` containing only the required
-dependencies, at the expected versions.
+The build requires GNU Make. It uses virtualenv to create a virtual Python
+environment in `_env/` containing only the required dependencies, at the
+expected versions, and then install the Ellis code into it.
 
 As part of the environment, a special python executable is generated in the
 `bin/` subdirectory.  That executable is preconfigured to use the correct
 `PYTHONPATH` to pick up the dependencies in the `_env/` directory.
 
-To build the code, you will need to make the environment, then run the
-set up scripts. This is done by the following commands (run from the top level
-Ellis directory):
-
-    make env
-    _env/bin/easy_install --allow-hosts=None -f eggs/ eggs/*.egg
-    _env/bin/python setup.py install
-    cd common
-    ../_env/bin/python setup.py install
+To create the virtual environment and install the code, run `make env` in the
+top level Ellis directory.
 
 To build the Debian package, type `make deb` (or `make deb-only` if
 you have already built the code). This creates a Debian package in
@@ -153,11 +146,11 @@ Startup logs (from Monit) are written to `/var/log/monit.log` and
 `/var/log/syslog`.
 
 Ellis logs are written to `/var/log/ellis/`. The logging level is set
-to INFO by default. To also view DEBUG logs add the following to 
+to INFO by default. To also view DEBUG logs add the following to
 `local_settings.py`
 
     LOG_LEVEL = logging.DEBUG
-    
+
 To run the server as part of development use:
 
     make run
