@@ -49,15 +49,16 @@ This accesses the repository over SSH on Github, and will not work unless you ha
 Building
 ========
 
-The build requires GNU Make. It uses virtualenv and buildout to create
-a virtual Python environment in `_env/` containing only the required
-dependencies, at the expected versions.
+The build requires GNU Make. It uses virtualenv to create a virtual Python
+environment in `_env/` containing only the required dependencies, at the
+expected versions, and then install the Ellis code into it.
 
 As part of the environment, a special python executable is generated in the
 `bin/` subdirectory.  That executable is preconfigured to use the correct
 `PYTHONPATH` to pick up the dependencies in the `_env/` directory.
 
-To build the code, run `make env` in the top level Ellis directory.
+To create the virtual environment and install the code, run `make env` in the
+top level Ellis directory.
 
 To build the Debian package, type `make deb` (or `make deb-only` if
 you have already built the code). This creates a Debian package in
