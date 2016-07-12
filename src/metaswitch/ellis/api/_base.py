@@ -283,6 +283,7 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
         Forwards on an error from a remote backend
         """
         code = 0
+        url = None
         if isinstance(response, tornado.httpclient.HTTPError):
             code = response.code
             if response.response:
@@ -292,7 +293,7 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
             url = response.effective_url
         else:
             code = response.error
-            url = None
+
         self.send_error(httplib.BAD_GATEWAY,
                         reason="Upstream request failed",
                         detail={"Upstream error": str(code), "Upstream URL": str(url)})
