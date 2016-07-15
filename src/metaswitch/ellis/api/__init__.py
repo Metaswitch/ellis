@@ -46,7 +46,7 @@ PUBLIC_ID = r'[^/]+'
 
 class PingHandler(RequestHandler):
     def get(self):
-        self.finish("OK")
+        self.finish("OK") # pragma: no cover
 
 URLS = [
     # User-focussed APIs.  Typically secured with username/password.

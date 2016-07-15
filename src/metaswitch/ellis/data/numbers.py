@@ -149,7 +149,7 @@ def allocate_number(db_sess, user_id, pstn = False):
 
     raise NotFound()
 
-def allocate_specific_number(db_sess, user_id, number_id):
+def allocate_specific_number(db_sess, user_id, number_id): # pragma: no cover
         db_sess.execute("""
                         UPDATE numbers SET owner_id = :owner, gab_listed = 1
                         WHERE number_id = :number_id;
@@ -173,7 +173,7 @@ def get_number(db_sess, number_id, expected_user_id):
     except TypeError:
         raise NotFound()
 
-def is_gab_listed(db_sess, expected_user_id, sip_uri):
+def is_gab_listed(db_sess, expected_user_id, sip_uri): # pragma: no cover
     cursor = db_sess.execute("""
                              SELECT gab_listed FROM numbers
                              WHERE number = :sip_uri
@@ -195,7 +195,7 @@ def update_gab_list(db_sess, user_id, number_id, isListed):
                     {"gab": isListed, "nid": number_id})
 
 
-def get_listed_numbers(db_sess):
+def get_listed_numbers(db_sess): # pragma: no cover
     cursor = db_sess.execute("""
                               SELECT u.user_id, u.full_name, u.email, n.number, n.pstn
                               FROM numbers n

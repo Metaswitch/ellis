@@ -88,7 +88,7 @@ def send_recovery_message(urlbase, address, full_name, token):
             server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
         server.sendmail(settings.EMAIL_RECOVERY_SENDER, address, message_bytes)
         server.quit()
-    except smtplib.SMTPException as e:
+    except smtplib.SMTPException as e: # pragma: no cover
         _log.error("Unable to send email to %s via %s/%s/%s: %s", address, 
                    settings.SMTP_SMARTHOST, settings.SMTP_USERNAME, settings.SMTP_PASSWORD, e)
         raise e

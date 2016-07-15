@@ -40,12 +40,14 @@ style: ${ENV_DIR}/bin/flake8
 explain-style: ${ENV_DIR}/bin/flake8
 	${ENV_DIR}/bin/flake8 --select=E,W,C,N --show-pep8 --first --max-line-length=100 src/
 
+EXTRA_COVERAGE="src/metaswitch/ellis/api/static.py,src/metaswitch/ellis/background.py,src/metaswitch/ellis/data/connection.py,src/metaswitch/ellis/main.py,src/metaswitch/ellis/settings.py"
+
 .PHONY: coverage
 coverage: ${ENV_DIR}/bin/coverage setup.py
 	rm -rf htmlcov/
 	${ENV_DIR}/bin/coverage erase
-	${ENV_DIR}/bin/coverage run --source src --omit "**/test/**"  setup.py test
-	${ENV_DIR}/bin/coverage report -m
+	${ENV_DIR}/bin/coverage run --source src --omit "**/test/**,**/prov_tools/**,$(EXTRA_COVERAGE)"  setup.py test
+	${ENV_DIR}/bin/coverage report -m --fail-under 100
 	${ENV_DIR}/bin/coverage html
 
 .PHONY: env

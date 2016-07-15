@@ -63,7 +63,7 @@ class HTTPCallbackGroup(object):
         return callback
 
     def _response_was_successful(self, resp):
-        if isinstance(resp, HTTPError):
+        if isinstance(resp, HTTPError): # pragma: no cover
             return False
         else:
             # We have a tornado.httpclient.HTTPResponse
