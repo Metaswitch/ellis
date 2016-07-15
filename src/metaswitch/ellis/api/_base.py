@@ -74,7 +74,7 @@ class DbSessionMixin(object):
             self._db_session = connection.Session()
         return self._db_session
 
-    def on_finish(self):
+    def on_finish(self): # pragma: no cover
         super(DbSessionMixin, self).on_finish()
         if hasattr(self, "_db_session"):
             self._db_session.close()
@@ -157,14 +157,14 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
         should track superclass version.
         """
         if isinstance(e, HTTPError):
-            if e.log_message:
+            if e.log_message: # pragma: no cover
                 format = "%d %s: " + e.log_message
                 args = [e.status_code, self._request_summary()] + list(e.args)
                 logging.warning(format, *args)
             if e.status_code not in httplib.responses:
                 logging.error("Bad HTTP status code: %d", e.status_code)
                 self.send_error(500, exc_info=sys.exc_info(), exception=e)
-            else:
+            else: # pragma: no cover
                 self.send_error(e.status_code, exc_info=sys.exc_info(), exception=e)
         else:
             logging.error("Uncaught exception %s\n%r", self._request_summary(),
@@ -278,7 +278,7 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
             else:
                 self.finish(data)
 
-    def forward_error(self, response):
+    def forward_error(self, response): # pragma: no cover
         """
         Forwards on an error from a remote backend
         """
@@ -309,7 +309,7 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
         """
         redirect_url = self.get_argument("onfailure", None)
         headers = {}
-        if "exception" in kwargs:
+        if "exception" in kwargs: # pragma: no cover
             e = kwargs["exception"]
             if reason == "unknown" and isinstance(e, HTTPError):
                 reason = e.log_message or "unknown"
@@ -349,7 +349,7 @@ class BaseHandler(tornado.web.RequestHandler, DbSessionMixin):
         if self.settings.get("debug") and "exc_info" in kwargs:
             data["exception"] = traceback.format_exception(*kwargs["exc_info"])
         if 'headers' in kwargs:
-            for k,v in kwargs['headers']:
+            for k,v in kwargs['headers']: # pragma: no cover
                 self.set_header(k,v)
         self.finish(data)
 
@@ -376,7 +376,7 @@ class LoggedInHandler(BaseHandler, UsernameCookieMixin):
             if owner_id != user_id:
                 raise HTTPError(404, "User doesn't own that number")
 
-    def get_and_check_user_id(self, username):
+    def get_and_check_user_id(self, username): # pragma: no cover
         if username != self.logged_in_username and \
            self.request.headers.get("NGV-API-Key", None) != settings.API_KEY:
             raise HTTPError(403, "Username doesn't match logged in username.")
@@ -388,7 +388,7 @@ class LoggedInHandler(BaseHandler, UsernameCookieMixin):
     def is_request_authenticated(self):
         return self.logged_in_username is not None
 
-    def is_admin_request(self):
+    def is_admin_request(self): # pragma: no cover
         if self.request.headers.get("NGV-API-Key", None) != settings.API_KEY:
             raise HTTPError(403, "This is an admin-only operation.")
 

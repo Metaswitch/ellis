@@ -98,7 +98,7 @@ class NumbersHandler(_base.LoggedInHandler):
                 for number in [n for n in self._numbers if n["sip_uri"] == public_id]:
                     number["private_id"] = private_id
 
-            except (TypeError, KeyError):
+            except (TypeError, KeyError): # pragma: no cover
                 _log.error("Could not parse response: %s", response.body)
                 self.send_error(httplib.BAD_GATEWAY,
                                 reason="Upstream request failed: could not parse private identity list")
@@ -111,7 +111,7 @@ class NumbersHandler(_base.LoggedInHandler):
 
         self.finish({"numbers": self._numbers})
 
-    def _on_get_failure(self, sip_uri, response):
+    def _on_get_failure(self, sip_uri, response): # pragma: no cover
         _log.warn("Failed to fetch private identities from homestead for %s", sip_uri)
         if hasattr(response, 'code') and response.code == 404:
             # The number has no records in Homestead, so forget about it locally
@@ -147,7 +147,7 @@ class NumbersHandler(_base.LoggedInHandler):
             # * Request 2 SQL transaction times out.
             # * Request 1 probably completes..
             db_sess.commit()
-        except NotFound:
+        except NotFound: # pragma: no cover
             # FIXME email operator to tell them we're out of numbers!
             db_sess.rollback()
             _log.warning("No available numbers")
@@ -213,11 +213,11 @@ class NumbersHandler(_base.LoggedInHandler):
         remove_public_id(self.db_session(), self.sip_uri,
                          self._on_backout_success, self._on_backout_failure, force_delete=True)
 
-    def _on_backout_success(self, responses):
+    def _on_backout_success(self, responses): # pragma: no cover
         _log.warn("Backed out changes after failure")
         self.forward_error(self.__failure_response)
 
-    def _on_backout_failure(self, responses):
+    def _on_backout_failure(self, responses): # pragma: no cover
         _log.warn("Failed to back out changes after failure")
         self.forward_error(self.__failure_response)
 
@@ -265,7 +265,7 @@ def remove_public_id(db_sess, sip_uri, on_success, on_failure, force_delete):
             numbers.remove_owner(db_sess, sip_uri)
             db_sess.commit()
             on_success({})
-        else:
+        else: # pragma: no cover
             _log.warn("Non-404 response - not returning number to pool")
             on_failure(response)
 
@@ -287,7 +287,7 @@ def _delete_number(db_sess, sip_uri, private_id, delete_digest, on_success, on_f
     # Concurrently, delete data from Homestead and Homer
     request_group = HTTPCallbackGroup(on_upstream_deletion, on_failure)
 
-    if force_delete:
+    if force_delete: # pragma: no cover
         request_group = HTTPCallbackGroup(on_success, on_failure)
         _log.info("Returning number to pool before attempting deletion from Homestead and Homer")
         numbers.remove_owner(db_sess, sip_uri)
@@ -324,12 +324,12 @@ class NumberHandler(_base.LoggedInHandler):
         _log.debug("All requests successful.")
         self.finish({})
 
-    def _on_delete_failure(self, response):
+    def _on_delete_failure(self, response): # pragma: no cover
         _log.debug("At least one request failed.")
         self.forward_error(response)
 
     @asynchronous
-    def post(self, username, sip_uri):
+    def post(self, username, sip_uri): # pragma: no cover
         """Allocate a phone number."""
         _log.debug("Specific number allocation API call (%s)", sip_uri)
         self.is_admin_request()
@@ -395,11 +395,11 @@ class NumberHandler(_base.LoggedInHandler):
         # Concurrently, store the default simservs in XDM.
         xdm.put_simservs(sip_uri, simservs.default_simservs(), self._request_group.callback())
 
-    def _on_post_success(self, responses):
+    def _on_post_success(self, responses): # pragma: no cover
         _log.debug("Successfully updated all the backends")
         self.finish(self.__response)
 
-    def _on_post_failure(self, response):
+    def _on_post_failure(self, response): # pragma: no cover
         _log.warn("Failed to update all the backends")
         # Save off response so we can pass error through
         self.__failure_response = response
@@ -441,14 +441,14 @@ class SipPasswordHandler(_base.LoggedInHandler):
                                self.sip_password,
                                self._request_group.callback())
 
-    def on_get_privates_failure(self, response):
+    def on_get_privates_failure(self, response): # pragma: no cover
         _log.error("Failed to get associated private ID from homestead %s", response)
         self.forward_error(response)
 
     def on_put_password_success(self, responses):
         self.finish({"sip_password": self.sip_password})
 
-    def on_put_password_failure(self, response):
+    def on_put_password_failure(self, response): # pragma: no cover
         _log.error("Failed to set password in homestead %s", response)
         self.forward_error(response)
 
@@ -523,7 +523,7 @@ class IFCsHandler(RemoteProxyHandler):
         self.remote_name = "Homestead (iFC)"
 
 class NumberGabListedHandler(_base.LoggedInHandler):
-    def get(self, username, sip_uri):
+    def get(self, username, sip_uri): # pragma: no cover
         """Retrieves GAB listed setting for a given phone number"""
         user_id = self.get_and_check_user_id(username)
         db_sess = self.db_session()
@@ -535,7 +535,7 @@ class NumberGabListedHandler(_base.LoggedInHandler):
 
         self.finish({"gab_listed": gab_listed})
 
-    def put(self, username, sip_phone, isListed):
+    def put(self, username, sip_phone, isListed): # pragma: no cover
         """Updates GAB listed setting for a given phone number"""
         user_id = self.get_and_check_user_id(username)
         db_sess = self.db_session()
@@ -545,7 +545,7 @@ class NumberGabListedHandler(_base.LoggedInHandler):
         self.finish({})
 
 class GabListedNumbersHandler(_base.LoggedInHandler):
-    def get(self):
+    def get(self): # pragma: no cover
         """List of numbers that are available for users to contact"""
         db_sess = self.db_session()
         contact_list = numbers.get_listed_numbers(db_sess)

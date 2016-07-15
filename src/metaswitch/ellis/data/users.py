@@ -133,7 +133,7 @@ def get_user_by_email_and_password(db_sess, email, password):
     try:
         user_id, hashed, full_name, true_email, expires = cursor.fetchone()
         _log.debug("User email %s (%s) has hashed password %r", email, true_email, hashed)
-    except TypeError:
+    except TypeError: # pragma: no cover
         # Deleted under our feet?
         _log.warning("User email %s not found", email)
         return None

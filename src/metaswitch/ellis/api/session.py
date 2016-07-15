@@ -47,7 +47,7 @@ from metaswitch.ellis.data import users
 _log = logging.getLogger("ellis.api")
 
 class SessionHandler(_base.BaseHandler):
-    def authenticate_request(self):
+    def authenticate_request(self): # pragma: no cover
         pass
 
     def post(self):

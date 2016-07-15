@@ -62,7 +62,7 @@ _recover_throttler = Throttler(settings.THROTTLER_RECOVER_RATE_PER_SECOND,
 _PASSWORD_REGEXP = r'.{6,}'
 
 class AccountsHandler(_base.BaseHandler):
-    def authenticate_request(self):
+    def authenticate_request(self): # pragma: no cover
         # Do not require the API key for these calls.
         pass
 
@@ -95,7 +95,7 @@ class AccountsHandler(_base.BaseHandler):
         }
 
 class AccountPasswordHandler(_base.BaseHandler):
-    def authenticate_request(self):
+    def authenticate_request(self): # pragma: no cover
         # Do not require the API key for these calls.
         pass
 
@@ -139,7 +139,7 @@ class AccountPasswordHandler(_base.BaseHandler):
             raise HTTPErrorEx(httplib.SERVICE_UNAVAILABLE, "Request throttled", headers={"Retry-After", str(_recover_throttler.interval_sec)})
         password = self.request_text_or_field("password")
         ok, msg = validate({"password": password}, {"password": (REQUIRED, STRING, _PASSWORD_REGEXP)})
-        if not ok:
+        if not ok: # pragma: no cover
             raise HTTPError(httplib.BAD_REQUEST, "Password not acceptable")
         db_sess = self.db_session()
         try:

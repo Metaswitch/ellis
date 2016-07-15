@@ -85,12 +85,12 @@ def create_private_id(private_id, realm, password, callback, plaintext=False):
     registration set."""
     password_resp = put_password(private_id, realm, password, None, plaintext=plaintext)
     # Having no callback makes this synchronous - but check for errors
-    if isinstance(password_resp, HTTPError):
+    if isinstance(password_resp, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, password_resp))
         return None
     irs_url = _new_irs_url()
     irs_resp = _sync_http_request(irs_url, method="POST", body="")
-    if isinstance(irs_resp, HTTPError):
+    if isinstance(irs_resp, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, irs_resp))
         return None
     uuid = _get_irs_uuid(_location(irs_resp))
@@ -130,13 +130,13 @@ def delete_private_id(private_id, callback):
     """
     irs_url = _associated_irs_url(private_id)
     associated_irs_response = _sync_http_request(irs_url, method='GET')
-    if isinstance(associated_irs_response, HTTPError):
+    if isinstance(associated_irs_response, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, associated_irs_response))
         return None
     irs = json.loads(associated_irs_response.body)['associated_implicit_registration_sets'][0]
 
     irs_deletion = _sync_http_request(_irs_url(irs), method='DELETE')
-    if isinstance(irs_deletion, HTTPError):
+    if isinstance(irs_deletion, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, irs_deletion))
         return None
     url = _private_id_url(private_id)
@@ -160,14 +160,14 @@ def create_public_id(private_id, public_id, ifcs, callback):
     """
     url = _associated_irs_url(private_id)
     resp1 = _sync_http_request(url, method='GET')
-    if isinstance(resp1, HTTPError):
+    if isinstance(resp1, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, resp1))
         return None
     _log.info(resp1.body)
     irs = json.loads(resp1.body)['associated_implicit_registration_sets'][0]
     sp_url = _new_service_profile_url(irs)
     resp2 = _sync_http_request(sp_url, method='POST', body="")
-    if isinstance(resp2, HTTPError):
+    if isinstance(resp2, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, resp2))
         return None
     sp = _get_sp_uuid(_location(resp2))
@@ -176,7 +176,7 @@ def create_public_id(private_id, public_id, ifcs, callback):
            public_id + \
            "</Identity></PublicIdentity>"
     resp3 = _sync_http_request(public_url, method='PUT', body=body)
-    if isinstance(resp3, HTTPError):
+    if isinstance(resp3, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, resp3))
         return None
     put_filter_criteria(public_id, ifcs, callback)
@@ -189,13 +189,13 @@ def delete_public_id(public_id, callback):
     """
     public_to_sp_url = _sp_from_public_id_url(public_id)
     response = _sync_http_request(public_to_sp_url, method='GET')
-    if isinstance(response, HTTPError):
+    if isinstance(response, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, response))
         return None
     service_profile = _location(response)
     url = _url_host() + _make_url_without_prefix(service_profile + "/public_ids/{}", public_id)
     resp2 = _sync_http_request(url, method='DELETE')
-    if isinstance(resp2, HTTPError):
+    if isinstance(resp2, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, resp2))
         return None
     _http_request(_url_host() + service_profile, callback, method='DELETE')
@@ -217,7 +217,7 @@ def get_filter_criteria(public_id, callback):
     """
     sp_url = _sp_from_public_id_url(public_id)
     sp_resp = _sync_http_request(sp_url, method='GET')
-    if isinstance(sp_resp, HTTPError):
+    if isinstance(sp_resp, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, sp_resp))
         return None
     sp_location = _location(sp_resp)
@@ -232,7 +232,7 @@ def put_filter_criteria(public_id, ifcs, callback):
     """
     sp_url = _sp_from_public_id_url(public_id)
     resp = _sync_http_request(sp_url, method='GET')
-    if isinstance(resp, HTTPError):
+    if isinstance(resp, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, resp))
         return None
     sp_location = _location(resp)
@@ -254,7 +254,7 @@ def _location(httpresponse):
     throwing a 500 error if it is missing"""
     if httpresponse.headers.get_list('Location'):
         return httpresponse.headers.get_list('Location')[0]
-    else:
+    else: # pragma: no cover
         _log.error("Could not retrieve Location header from HTTPResponse %s" % httpresponse)
         raise HTTPError(500)
 
@@ -406,7 +406,7 @@ def _get_irs_uuid(url):
     """Retrieves the UUID of an Implicit Registration Set from a URL"""
     re_str = "irs/([^/]+)"
     match = re.search(re_str, url)
-    if not match:
+    if not match: # pragma: no cover
         raise ValueError("URL %s is badly formatted: expected it to match %s" % (url, re_str))
     return match.group(1)
 
@@ -415,6 +415,6 @@ def _get_sp_uuid(url):
     """Retrieves the UUID of a Service Profile from a URL"""
     re_str = "irs/[^/]+/service_profiles/([^/]+)"
     match = re.search(re_str, url)
-    if not match:
+    if not match: # pragma: no cover
         raise ValueError("URL %s is badly formatted: expected it to match %s" % (url, re_str))
     return match.group(1)
