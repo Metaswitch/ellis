@@ -9,6 +9,11 @@ Build-Depends: debhelper (>= 8.0.0)
 Standards-Version: 3.9.2
 Homepage: http://projectclearwater.org/
 
+Package: ellis-node
+Architecture: any
+Depends: ellis
+Description: ellis-node, the user/number management interface
+
 Package: ellis
 Architecture: any
 Depends: clearwater-infrastructure, mysql-server, libgmp10, python-setuptools, python-virtualenv, clearwater-nginx, clearwater-log-cleanup, clearwater-monit
