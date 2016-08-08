@@ -12,7 +12,7 @@ Homepage: http://projectclearwater.org/
 Package: ellis-node
 Architecture: any
 Depends: ellis
-Description: ellis-node, the user/number management interface
+Description: ellis-node, the user/number management interface node
 
 Package: ellis
 Architecture: any
