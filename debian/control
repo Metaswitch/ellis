@@ -11,7 +11,7 @@ Homepage: http://projectclearwater.org/
 
 Package: ellis-node
 Architecture: any
-Depends: ellis
+Depends: ellis (= ${binary:Version})
 Description: ellis-node, the user/number management interface node
 
 Package: ellis
