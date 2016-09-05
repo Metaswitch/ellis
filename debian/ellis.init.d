@@ -69,6 +69,26 @@ SCRIPTNAME=/etc/init.d/$NAME
 . /lib/lsb/init-functions
 
 #
+# Determine runtime settings
+#
+get_settings()
+{
+  log_level=2
+
+  . /etc/clearwater/config
+}
+
+#
+# Function to get the arguments to pass to the process
+#
+get_daemon_args()
+{
+  # Get the settings
+  get_settings
+
+  DAEMON_ARGS="$DAEMON_ARGS --log-level $log_level"
+}
+#
 # Function that starts the daemon/service
 #
 do_start()
@@ -82,6 +102,7 @@ do_start()
 
   start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
     || return 1
+  get_daemon_args
   start-stop-daemon --start --quiet --chdir $DAEMON_DIR --chuid $USER --pidfile $PIDFILE --exec $DAEMON -- \
     $DAEMON_ARGS --background \
     || return 2

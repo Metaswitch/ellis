@@ -33,7 +33,6 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import os
-import logging
 
 """
 This file contains default settings for Homestead.  To override a setting
@@ -67,7 +66,6 @@ STATIC_DIR = os.path.join(PROJECT_DIR, "web-content")
 LOG_FILE_PREFIX = "ellis"
 LOG_FILE_MAX_BYTES = 10000000
 LOG_BACKUP_COUNT = 10
-LOG_LEVEL = logging.INFO
 PID_FILE = "/var/run/ellis/ellis.pid"
 
 # Tornado cookie encryption key.  Tornado instances that share this key will
