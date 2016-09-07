@@ -42,7 +42,7 @@ from optparse import OptionParser
 from metaswitch.ellis.data import numbers, connection
 from sqlalchemy.exc import IntegrityError
 from metaswitch.ellis import settings
-from metaswitch.common import logging_config
+from metaswitch.common import utils, logging_config
 
 _log = logging.getLogger("ellis.create_numbers")
 
@@ -68,7 +68,6 @@ def standalone(start, num, pstn, realm):
     print "Created %d numbers, %d already present in database" % (create_count, num - create_count)
 
 if __name__ == '__main__':
-    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, "create_db")
     parser = OptionParser()
     parser.add_option("-s",
                       "--start",
@@ -93,9 +92,19 @@ if __name__ == '__main__':
                       type="string",
                       default=settings.SIP_DIGEST_REALM,
                       help="Create numbers in this digest realm - if not specified, the home domain will be used")
+    parser.add_option("--log-level",
+                      dest="log_level",
+                      default=2,
+                      type="int")
     (options, args) = parser.parse_args()
 
     if args:
         parser.print_help()
     else:
+        logging_config.configure_logging(
+                utils.map_clearwater_log_level(options.log_level),
+                settings.LOGS_DIR,
+                settings.LOG_FILE_PREFIX,
+                "create_db")
+
         standalone(options.start, options.num, options.pstn, options.realm)
