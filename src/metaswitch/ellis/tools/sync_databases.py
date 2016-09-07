@@ -38,6 +38,8 @@
 import logging
 import json
 
+from optparse import OptionParser
+
 from tornado.ioloop import IOLoop
 from tornado.httpclient import AsyncHTTPClient
 
@@ -226,10 +228,25 @@ def standalone():
     """
     Entry point to script
     """
-    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, "sync_databases")
     check_existing_uris()
     remove_nonexisting_uris()
     IOLoop.instance().start()
 
 if __name__ == '__main__':
-    standalone()
+    parser = OptionParser()
+    parser.add_option("--log-level",
+                      dest="log_level",
+                      default=2,
+                      type="int")
+    (options, args) = parser.parse_args()
+
+    if args:
+        parser.print_help()
+    else:
+        logging_config.configure_logging(
+                utils.map_clearwater_log_level(options.log_level),
+                settings.LOGS_DIR,
+                settings.LOG_FILE_PREFIX,
+                "sync_databases")
+
+        standalone()
