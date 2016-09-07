@@ -146,14 +146,9 @@ Startup logs (from Monit) are written to `/var/log/monit.log` and
 `/var/log/syslog`.
 
 Ellis logs are written to `/var/log/ellis/`. The logging level is set
-to INFO by default. To also view DEBUG logs add the following to
-`local_settings.py`
-
-    LOG_LEVEL = logging.DEBUG
-
-To run the server as part of development use:
-
-    make run
+to INFO by default. To also view DEBUG logs, add `log_level=5`
+to `/etc/clearwater/user_settings` - creating this file if it doesn't
+exist, and then restarting ellis.
 
 Testing
 =======

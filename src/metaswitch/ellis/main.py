@@ -71,6 +71,7 @@ def standalone():
     # Parse arguments
     parser = argparse.ArgumentParser(description="Ellis web server")
     parser.add_argument("--background", action="store_true", help="Detach and run server in background")
+    parser.add_argument("--log-level", default=2, type=int)
     args = parser.parse_args()
 
     prctl.prctl(prctl.NAME, "ellis")
@@ -105,7 +106,10 @@ def standalone():
     # Only run one process, not one per core - we don't need the performance
     # and this keeps everything in one log file
     prctl.prctl(prctl.NAME, "ellis")
-    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX)
+    logging_config.configure_logging(
+            utils.map_clearwater_log_level(args.log_level),
+            settings.LOGS_DIR,
+            settings.LOG_FILE_PREFIX)
     _log.info("Ellis process starting up")
     connection.init_connection()
 
