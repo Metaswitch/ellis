@@ -3,5 +3,6 @@
 /*.debhelper
 /*.substvars
 /ellis
+/ellis-node
 /clearwater-prov-tools
 /files
