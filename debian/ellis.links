@@ -1,0 +1,5 @@
+/usr/share/clearwater/bin/create_user /usr/bin/cw-create_user
+/usr/share/clearwater/bin/delete_user /usr/bin/cw-delete_user
+/usr/share/clearwater/bin/display_user /usr/bin/cw-display_user
+/usr/share/clearwater/bin/update_user /usr/bin/cw-update_user
+/usr/share/clearwater/bin/list_users /usr/bin/cw-list_users
