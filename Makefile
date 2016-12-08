@@ -3,7 +3,7 @@ ENV_PYTHON := ${ENV_DIR}/bin/python
 PYTHON_BIN := $(shell which python)
 
 DEB_COMPONENT := ellis
-DEB_MAJOR_VERSION := 1.0${DEB_VERSION_QUALIFIER}
+DEB_MAJOR_VERSION ?= 1.0${DEB_VERSION_QUALIFIER}
 DEB_NAMES := ellis ellis-node clearwater-prov-tools
 
 MAX_LINE_LENGTH ?= 99
