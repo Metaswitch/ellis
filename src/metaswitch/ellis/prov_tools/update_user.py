@@ -52,7 +52,7 @@ def main():
     parser.add_argument("--prefix", action="store", default="123", dest="twin_prefix", help="twin-prefix (default: 123)")
     parser.add_argument("dns", metavar="<directory-number>[..<directory-number>]")
     parser.add_argument("domain", metavar="<domain>")
-    parser.add_argument("--password", metavar="<password>")
+    parser.add_argument("--password", action="store", default="password unchanged", dest="new_password", help="new password")
     args = parser.parse_args()
 
     utils.setup_logging()
