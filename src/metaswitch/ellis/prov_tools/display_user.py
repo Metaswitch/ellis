@@ -45,7 +45,7 @@ _log = logging.getLogger();
 def main():
     parser = argparse.ArgumentParser(description="Display user")
     parser.add_argument("-k", "--keep-going", action="store_true", dest="keep_going", help="keep going on errors")
-    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", help="suppress errors while ignoring them")
+    parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", help="suppress non-critical errors")
     parser.add_argument("-s", "--short", action="store_true", dest="short", help="less verbose display")
     parser.add_argument("--hsprov", metavar="IP:PORT", action="store", help="IP address and port of homestead-prov")
     parser.add_argument("dns", metavar="<directory-number>[..<directory-number>]")
