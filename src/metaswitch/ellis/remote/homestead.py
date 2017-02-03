@@ -133,12 +133,17 @@ def delete_private_id(private_id, callback):
     if isinstance(associated_irs_response, HTTPError): # pragma: no cover
         IOLoop.instance().add_callback(partial(callback, associated_irs_response))
         return None
-    irs = json.loads(associated_irs_response.body)['associated_implicit_registration_sets'][0]
 
-    irs_deletion = _sync_http_request(_irs_url(irs), method='DELETE')
-    if isinstance(irs_deletion, HTTPError): # pragma: no cover
-        IOLoop.instance().add_callback(partial(callback, irs_deletion))
-        return None
+    # If there was an error creating the user, there may be no irs, but we want
+    # to continue attempting to delete the user
+    irs_array = json.loads(associated_irs_response.body)['associated_implicit_registration_sets']
+    if len(irs_array) > 0:
+        irs = irs_array[0]
+        irs_deletion = _sync_http_request(_irs_url(irs), method='DELETE')
+        if isinstance(irs_deletion, HTTPError): # pragma: no cover
+            IOLoop.instance().add_callback(partial(callback, irs_deletion))
+            return None
+
     url = _private_id_url(private_id)
     _http_request(url, callback, method='DELETE')
 

@@ -53,6 +53,13 @@ class MockHTTPClient(object):
         response.headers.get_list.return_value = ['/irs/irs-uuid/service_profiles/sp-uuid']
         return response
 
+class MockHTTPClientEmptyResponse(object):
+    def fetch(self, url, *args, **kwargs):
+        response = Mock()
+        # Imitate a tornado.httpclient.httpresponse
+        response.body = '{"associated_implicit_registration_sets": []}'
+        return response
+
 class TestHomestead(unittest.TestCase):
     """
     Detailed, isolated unit tests of the homestead module.
@@ -161,6 +168,23 @@ class TestHomesteadPrivateIDs(TestHomestead):
     @patch("tornado.httpclient.AsyncHTTPClient")
     @patch("metaswitch.ellis.remote.homestead.settings")
     def test_delete_private_id_mainline(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        homestead.delete_private_id(PRIVATE_URI, callback)
+        self.mock_httpclient.fetch.assert_called_once_with(
+            'http://homestead/private/pri%40foo.bar',
+            ANY,
+            method='DELETE',
+            follow_redirects=False,
+            allow_ipv6=True)
+
+    @patch("tornado.httpclient.HTTPClient", new=MockHTTPClientEmptyResponse)
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_delete_private_id_no_irs(self, settings, AsyncHTTPClient):
+        """Test that trying to delete a private id that has no associated IRS
+           will still result in a DELETE being sent.
+        """
         self.standard_setup(settings, AsyncHTTPClient)
         callback = Mock()
         homestead.delete_private_id(PRIVATE_URI, callback)
