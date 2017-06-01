@@ -36,6 +36,12 @@ setup(
         "SQLAlchemy==1.0.9",
         "MySQL-python==1.2.5",
         "prctl==1.0.1",
-        "pycurl==7.43.0"],
+        "pycurl==7.43.0",
+        "pyzmq==16.0.2",
+        "six==1.10.0",
+        "pycparser==2.17",
+        "pycrypto==2.6.1",
+        "cffi==1.5.2",
+        "monotonic==0.6"],
     tests_require=["pbr==1.6", "Mock"]
     )
