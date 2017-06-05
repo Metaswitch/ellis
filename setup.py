@@ -41,5 +41,9 @@ setup(
         "six==1.10.0",
         "SQLAlchemy==1.0.9",
         "tornado==2.3"],
-    tests_require=["pbr==1.6", "Mock"]
+    tests_require=[
+        "funcsigs==1.0.2",
+        "Mock==2.0.0",
+        "pbr==1.6",
+        "six==1.10.0"]
     )
