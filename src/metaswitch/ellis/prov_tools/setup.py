@@ -27,5 +27,11 @@ setup(
     package_data={
         '': ['*.eml'],
         },
-    install_requires=["tornado"],
+    install_requires=[
+        "backports_abc==0.5",
+        "backports.ssl_match_hostname==3.5.0.1",
+        "certifi==2017.4.17",
+        "singledispatch==3.4.0.3",
+        "six==1.10.0",
+        "tornado==2.3"],
     )

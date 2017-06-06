@@ -29,13 +29,21 @@ setup(
         },
     test_suite='metaswitch.ellis.test',
     install_requires=[
-        "py-bcrypt==0.4",
-        "tornado==2.3",
+        "backports_abc==0.5",
+        "backports.ssl_match_hostname==3.5.0.1",
+        "certifi==2017.4.17",
         "msgpack-python==0.4.6",
-        "phonenumbers==7.1.1",
-        "SQLAlchemy==1.0.9",
         "MySQL-python==1.2.5",
+        "phonenumbers==7.1.1",
         "prctl==1.0.1",
-        "pycurl==7.43.0"],
-    tests_require=["pbr==1.6", "Mock"]
+        "pycurl==7.43.0",
+        "singledispatch==3.4.0.3",
+        "six==1.10.0",
+        "SQLAlchemy==1.0.9",
+        "tornado==2.3"],
+    tests_require=[
+        "funcsigs==1.0.2",
+        "Mock==2.0.0",
+        "pbr==1.6",
+        "six==1.10.0"]
     )
