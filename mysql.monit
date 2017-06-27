@@ -18,5 +18,5 @@ check process mysql_process with pidfile /var/run/mysqld/mysqld.pid
   restart program = "/etc/monit/run_logged /etc/init.d/mysql restart"
 
   # Check the service's resource usage, and restart mysql if it's too high.
-  if memory > 80% for 6 cycles then restart
+  if memory > 80% then restart
   if failed unix "/var/run/mysqld/mysqld.sock" then restart
