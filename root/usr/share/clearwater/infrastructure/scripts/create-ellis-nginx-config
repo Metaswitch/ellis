@@ -75,7 +75,7 @@ EOF3
 
     cat >> $temp_file << EOF4
 server {
-        listen       [::]:80 default_server; # ipv6only=off is set in the base config
+        listen       [::]:80 default_server ipv6only=off;
         server_name  $ellis_hostname $local_ip $public_ip $public_hostname;
 
         location / {
