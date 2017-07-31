@@ -22,6 +22,29 @@ then
   ssl_key_file=/etc/nginx/ssl/ellis.key
   temp_file=$(mktemp ellis.nginx.XXXXXXXX)
 
+  # Read common config into variables, to avoid duplication in this script.
+
+  read -r -d '' common_server_config << EOM
+        listen       [::]:80 default_server ipv6only=off;
+        server_name  $ellis_hostname $local_ip $public_ip $public_hostname;
+EOM
+
+  read -r -d '' location_config << EOM2
+        location / {
+                proxy_pass http://http_ellis;
+                proxy_http_version 1.1;
+
+                # The client may have instructed the server to close the
+                # connection - do not forward this upstream.
+                proxy_set_header Connection "";
+
+                # Preserve the Ellis hostname.
+                proxy_set_header Host $ellis_hostname;
+        }
+EOM2
+
+  # Write the ellis config to file, in multiple sections.
+
   cat > $temp_file << EOF1
 upstream http_ellis {
 EOF1
@@ -50,22 +73,11 @@ server {
         listen       [::]:443 ipv6only=off;
         server_name  $ellis_hostname $local_ip $public_ip $public_hostname;
 
-        location / {
-                proxy_pass http://http_ellis;
-                proxy_http_version 1.1;
-
-                # The client may have instructed the server to close the
-                # connection - do not forward this upstream.
-                proxy_set_header Connection "";
-
-                # Preserve the Ellis hostname.
-                proxy_set_header Host $ellis_hostname;
-        }
+        $location_config
 }
 
 server {
-        listen       [::]:80 default_server; # ipv6only=off is set in the base config
-        server_name  $ellis_hostname $local_ip $public_ip $public_hostname;
+        $common_server_config
 
         return       301   https://\$host\$request_uri;
 }
@@ -75,20 +87,9 @@ EOF3
 
     cat >> $temp_file << EOF4
 server {
-        listen       [::]:80 default_server; # ipv6only=off is set in the base config
-        server_name  $ellis_hostname $local_ip $public_ip $public_hostname;
+        $common_server_config
 
-        location / {
-                proxy_pass http://http_ellis;
-                proxy_http_version 1.1;
-
-                # The client may have instructed the server to close the
-                # connection - do not forward this upstream.
-                proxy_set_header Connection "";
-
-                # Preserve the Ellis hostname.
-                proxy_set_header Host $ellis_hostname;
-        }
+        $location_config
 }
 EOF4
 
