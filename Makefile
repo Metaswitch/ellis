@@ -78,7 +78,9 @@ ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -
 	# Touch the sentinel file
 	touch $@
 
+BANDIT_EXCLUDE_LIST = common,src/metaswitch/ellis/test,_env,.eggs,build
 include build-infra/cw-deb.mk
+include build-infra/python.mk
 
 .PHONY: deb
 deb: env deb-only
