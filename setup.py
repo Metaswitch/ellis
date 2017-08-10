@@ -37,6 +37,7 @@ setup(
         "phonenumbers==7.1.1",
         "prctl==1.0.1",
         "pycurl==7.43.0",
+        "py-bcrypt==0.4",
         "singledispatch==3.4.0.3",
         "six==1.10.0",
         "SQLAlchemy==1.0.9",
