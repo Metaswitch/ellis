@@ -59,7 +59,7 @@ class TestUsers(BaseDataTest):
                           self.mock_session, "password", "A User", "foo@bar.com", None)
 
     @patch("metaswitch.ellis.data.users.lookup_user_id")
-    @patch("metaswitch.common.utils.is_password_correct")
+    @patch("metaswitch.ellis.data.users.is_password_correct")
     def test_correct_password(self, is_pw_correct, lookup_user_id):
         is_pw_correct.return_value = True
         lookup_user_id.return_value = "1234"
@@ -71,7 +71,7 @@ class TestUsers(BaseDataTest):
         is_pw_correct.assert_called_once_with("password", "hashed")
 
     @patch("metaswitch.ellis.data.users.lookup_user_id")
-    @patch("metaswitch.common.utils.is_password_correct")
+    @patch("metaswitch.ellis.data.users.is_password_correct")
     def test_incorrect_password(self, is_pw_correct, lookup_user_id):
         is_pw_correct.return_value = False
         lookup_user_id.return_value = "1234"
@@ -174,6 +174,18 @@ class TestUsers(BaseDataTest):
                           users.set_recovered_password,
                           self.mock_session, "email@example.com", "dunnomatey", "newpw")
         self.mock_session.execute.assert_called_once_with(ANY, {'email': "email@example.com"})
+
+    def test_hash_password(self):
+        def test_password(p):
+            hashed = users.hash_password(p)
+            hashed2 = users.hash_password(p)
+            self.assertNotEqual(hashed, hashed2) # Should be salted
+            self.assertTrue(users.is_password_correct(p, hashed))
+            self.assertTrue(users.is_password_correct(p, hashed2))
+            self.assertFalse(users.is_password_correct(p + "a", hashed))
+        test_password("foo")
+        test_password("bar")
+        test_password(u"Smily face \u263A")
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)

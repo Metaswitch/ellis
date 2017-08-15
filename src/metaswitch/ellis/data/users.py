@@ -13,11 +13,11 @@ import Crypto.Random
 import uuid
 import datetime
 import base64
+import bcrypt
 
 from metaswitch.ellis.data._base import AlreadyExists
 from metaswitch.ellis.data._base import NotFound
 from metaswitch.ellis import settings
-from metaswitch.common import utils
 
 _log = logging.getLogger("ellis.data")
 
@@ -37,6 +37,17 @@ def lookup_user_id(db_sess, email):
     finally:
         cursor.close()
 
+def hash_password(password):
+    """Hashes the given password using bcrypt."""
+    binary = password.encode("utf-8")
+    hashed = bcrypt.hashpw(binary, bcrypt.gensalt(10)) #@UndefinedVariable
+    return hashed
+
+def is_password_correct(password, hashed):
+    """returns True if the password matches the given bcrypt hash."""
+    binary = password.encode("utf-8")
+    return bcrypt.hashpw(binary, hashed) == hashed #@UndefinedVariable
+
 def create_user(db_sess, password, full_name, email, expires):
     # Check if the user already exists.
     try:
@@ -47,7 +58,7 @@ def create_user(db_sess, password, full_name, email, expires):
         _log.info("Email %s already exists", email)
         raise AlreadyExists()
 
-    hashed_password = utils.hash_password(password)
+    hashed_password = hash_password(password)
     user_id = uuid.uuid4()
 
     expires_date = (datetime.datetime.now() + datetime.timedelta(days = expires)).strftime("%Y-%m-%d %H:%M:%S") if expires else None
@@ -113,7 +124,7 @@ def get_user_by_email_and_password(db_sess, email, password):
         _log.warning("User email %s not found", email)
         return None
     else:
-        if utils.is_password_correct(password, hashed):
+        if is_password_correct(password, hashed):
             return {"user_id":         user_id,
                     "hashed_password": hashed,
                     "full_name":       full_name,
@@ -213,7 +224,7 @@ def set_recovered_password(db_sess, email, token, password):
     expected_token = _get_valid_token(db_sess, email)
     if token == expected_token:
         _log.warn("Set password for %s", email)
-        hashed_password = utils.hash_password(password)
+        hashed_password = hash_password(password)
         db_sess.execute("""
                         UPDATE users
                         SET password = :hashed_password,
