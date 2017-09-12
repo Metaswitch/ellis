@@ -65,6 +65,11 @@ $(ENV_DIR)/bin/python: setup.py common/setup.py
 	$(ENV_DIR)/bin/easy_install distribute
 
 ${ENV_DIR}/.wheelhouse_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
+
+	# Ensure we have an up to date version of pip with wheel support
+	${PIP} install --upgrade pip==9.0.1
+	${PIP} install wheel
+
 	# Generate wheels
 	${PYTHON} setup.py bdist_wheel -d .wheelhouse
 	cd common && WHEELHOUSE=../.wheelhouse make build_common_wheel
