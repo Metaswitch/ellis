@@ -52,7 +52,11 @@ coverage: ${ENV_DIR}/bin/coverage setup.py
 	${ENV_DIR}/bin/coverage html
 
 .PHONY: env
-env: ${ENV_DIR}/.eggs_installed
+env: ${ENV_DIR}/.wheelhouse_installed
+
+BANDIT_EXCLUDE_LIST = common,src/metaswitch/ellis/test,_env,.wheelhouse,build
+include build-infra/cw-deb.mk
+include build-infra/python.mk
 
 $(ENV_DIR)/bin/python: setup.py common/setup.py
 	# Set up a fresh virtual environment
@@ -60,27 +64,24 @@ $(ENV_DIR)/bin/python: setup.py common/setup.py
 	$(ENV_DIR)/bin/easy_install -U "setuptools==24"
 	$(ENV_DIR)/bin/easy_install distribute
 
-${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
-	# Generate .egg files for ellis and python-common
-	${ENV_DIR}/bin/python setup.py bdist_egg -d .eggs
-	cd common && EGG_DIR=../.eggs make build_common_egg
+${ENV_DIR}/.wheelhouse_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
+	# Generate wheels
+	${PYTHON} setup.py bdist_wheel -d .wheelhouse
+	cd common && WHEELHOUSE=../.wheelhouse make build_common_wheel
 
-	${ENV_DIR}/bin/python src/metaswitch/ellis/prov_tools/setup.py bdist_egg -d .prov_tools_eggs
-	cd common && EGG_DIR=../.prov_tools_eggs make build_common_egg
+	${PYTHON} src/metaswitch/ellis/prov_tools/setup.py bdist_wheel -d .prov_tools_wheelhouse
+	cd common && WHEELHOUSE=../.prov_tools_wheelhouse make build_common_wheel
 
 	# Download the egg files they depend upon
-	${ENV_DIR}/bin/easy_install -zmaxd .eggs/ .eggs/*.egg
-	${ENV_DIR}/bin/easy_install -zmaxd .prov_tools_eggs/ .prov_tools_eggs/*.egg
+	${PIP} wheel -w .wheelhouse -r requirements.txt -r common/requirements.txt --find-links .wheelhouse
+	${PIP} wheel -w .prov_tools_wheelhouse -r prov_tools-requirements.txt -r common/requirements.txt --find-links .prov_tools_wheelhouse
 
 	# Install the downloaded egg files (this should match the postinst)
-	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .eggs/ .eggs/*.egg
+	${INSTALLER} --find-links .wheelhouse ellis
+	${PIP} install -r common/requirements-test.txt
 
 	# Touch the sentinel file
 	touch $@
-
-BANDIT_EXCLUDE_LIST = common,src/metaswitch/ellis/test,_env,.eggs,build
-include build-infra/cw-deb.mk
-include build-infra/python.mk
 
 .PHONY: deb
 deb: env deb-only
@@ -97,4 +98,4 @@ pyclean:
 
 .PHONY: envclean
 envclean:
-	-rm -r .eggs .prov_tools_eggs build ${ENV_DIR}
+	-rm -r .wheelhouse .prov_tools_wheelhouse build ${ENV_DIR}

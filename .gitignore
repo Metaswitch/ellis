@@ -19,5 +19,5 @@ build/
 .metadata/
 .coverage
 htmlcov/
-/.eggs/
-/.prov_tools_eggs/
+/.wheelhouse/
+/.prov_tools_wheelhouse/

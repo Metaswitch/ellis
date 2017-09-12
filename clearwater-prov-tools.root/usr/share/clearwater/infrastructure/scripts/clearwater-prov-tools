@@ -19,4 +19,4 @@ sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape "$local_ip")'"/g' \
   -e 's/^\(LOGS_DIR\) = .*$/\1 = "\/var\/log\/clearwater-prov-tools"/g' \
   </usr/share/clearwater/clearwater-prov-tools/local_settings.py >/tmp/local_settings.py.$$
 
-mv /tmp/local_settings.py.$$ /usr/share/clearwater/clearwater-prov-tools/env/lib/python2.7/site-packages/clearwater_prov_tools-0.1-py2.7.egg/metaswitch/ellis/local_settings.py
+mv /tmp/local_settings.py.$$ /usr/share/clearwater/clearwater-prov-tools/env/lib/python2.7/site-packages/metaswitch/ellis/local_settings.py
