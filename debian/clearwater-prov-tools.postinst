@@ -37,7 +37,13 @@ case "$1" in
         fi
 
         virtualenv --python=$(which python) $TOOLS_DIR/env
-        $TOOLS_DIR/env/bin/easy_install --allow-hosts=None --always-unzip -f $TOOLS_DIR/.eggs/ $TOOLS_DIR/.eggs/*.egg
+        $TOOLS_DIR/env/bin/pip install --compile \
+                    --no-index \
+                    --upgrade \
+                    --pre \
+                    --force-reinstall \
+                    --find-links $TOOLS_DIR/.wheelhouse \
+                    clearwater-prov-tools
         chown -R $NAME:root $TOOLS_DIR
         
         mkdir -p /var/log/clearwater-prov-tools
