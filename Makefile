@@ -64,7 +64,15 @@ $(ENV_DIR)/bin/python: setup.py common/setup.py
 	$(ENV_DIR)/bin/easy_install -U "setuptools==24"
 	$(ENV_DIR)/bin/easy_install distribute
 
-${ENV_DIR}/.wheelhouse_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
+${ENV_DIR}/.wheelhouse_installed : \
+	$(ENV_DIR)/bin/python \
+	$(shell find src/metaswitch -type f -not -name "*.pyc") \
+	$(shell find common/metaswitch -type f -not -name "*.pyc") \
+	setup.py \
+	common/requirements.txt \
+	common/requirements-test.txt \
+	requirements.txt \
+	prov_tools-requirements.txt
 
 	# Ensure we have an up to date version of pip with wheel support
 	${PIP} install --upgrade pip==9.0.1
