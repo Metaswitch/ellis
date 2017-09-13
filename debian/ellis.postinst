@@ -28,6 +28,12 @@ set -e
 
 NAME=ellis
 ELLIS_DIR=/usr/share/clearwater/ellis
+INSTALLER="$ELLIS_DIR/env/bin/pip install --compile \
+                    --no-index \
+                    --upgrade \
+                    --pre \
+                    --force-reinstall \
+                    --find-links $ELLIS_DIR/.wheelhouse"
 
 case "$1" in
     configure)
@@ -41,14 +47,11 @@ case "$1" in
         mkdir -p -m 755 /var/log/$NAME
         chown -R $NAME:root /var/log/$NAME
 
+        rm -rf $ELLIS_DIR/env
         virtualenv --python=$(which python) $ELLIS_DIR/env
-        $ELLIS_DIR/env/bin/pip install --compile \
-                    --no-index \
-                    --upgrade \
-                    --pre \
-                    --force-reinstall \
-                    --find-links $ELLIS_DIR/.wheelhouse \
-                    ellis
+        $INSTALLER pip
+        $INSTALLER wheel
+        $INSTALLER ellis
         chown -R $NAME:root $ELLIS_DIR
 
         mysql -u root --password= < $ELLIS_DIR/schema.sql
