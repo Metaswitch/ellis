@@ -42,7 +42,7 @@ case "$1" in
             useradd --system -M -d $TOOLS_DIR -s /bin/false $NAME
         fi
 
-        rm -rf $TOOLS_DIR
+        rm -rf $TOOLS_DIR/env
         virtualenv --python=$(which python) $TOOLS_DIR/env
         $INSTALLER pip
         $INSTALLER wheel
