@@ -28,6 +28,12 @@ set -e
 
 TOOLS_DIR=/usr/share/clearwater/clearwater-prov-tools
 NAME=clearwater-prov-tools
+INSTALLER="$TOOLS_DIR/env/bin/pip install --compile \
+                    --no-index \
+                    --upgrade \
+                    --pre \
+                    --force-reinstall \
+                    --find-links $TOOLS_DIR/.wheelhouse"
 
 case "$1" in
     configure)
@@ -36,14 +42,11 @@ case "$1" in
             useradd --system -M -d $TOOLS_DIR -s /bin/false $NAME
         fi
 
+        rm -rf $TOOLS_DIR
         virtualenv --python=$(which python) $TOOLS_DIR/env
-        $TOOLS_DIR/env/bin/pip install --compile \
-                    --no-index \
-                    --upgrade \
-                    --pre \
-                    --force-reinstall \
-                    --find-links $TOOLS_DIR/.wheelhouse \
-                    clearwater-prov-tools
+        $INSTALLER pip
+        $INSTALLER wheel
+        $INSTALLER clearwater_prov_tools
         chown -R $NAME:root $TOOLS_DIR
         
         mkdir -p /var/log/clearwater-prov-tools
