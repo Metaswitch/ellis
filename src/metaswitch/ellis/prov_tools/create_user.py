@@ -38,7 +38,7 @@ def main():
     if not utils.check_connection():
         sys.exit(1)
 
-    # We use sys.stout.write to print to stdout without a newline, so we can
+    # We use sys.stdout.write to print to stdout without a newline, so we can
     # indicate progress to the user
     sys.stdout.write("Creating users...")
     sys.stdout.flush()
