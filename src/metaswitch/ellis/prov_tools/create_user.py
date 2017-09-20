@@ -38,8 +38,16 @@ def main():
     if not utils.check_connection():
         sys.exit(1)
 
+    # We use sys.stdout.write to print to stdout without a newline, so we can
+    # indicate progress to the user
+    sys.stdout.write("Creating users...")
+    sys.stdout.flush()
     success = True
+    count = 0
     for dn in utils.parse_dn_ranges(args.dns):
+        count += 1
+        sys.stdout.write(".")
+        sys.stdout.flush()
         public_id = "sip:%s@%s" % (dn, args.domain)
         private_id = "%s@%s" % (dn, args.domain)
 
@@ -49,10 +57,19 @@ def main():
         else:
             success = False
 
+        if count == 100:
+            print("")
+            print("Created up to user {}".format(dn))
+            count = 0
+
         if not success and not args.keep_going:
             break
 
-    sys.exit(0 if success else 1)
+    if success:
+        print("done")
+        sys.exit(0)
+    else:
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
