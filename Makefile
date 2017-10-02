@@ -17,6 +17,7 @@ COVERAGE_SRC_DIR = src
 COVERAGE_EXCL = "**/test/**,**/prov_tools/**,src/metaswitch/ellis/api/static.py,src/metaswitch/ellis/background.py,src/metaswitch/ellis/data/connection.py,src/metaswitch/ellis/main.py,src/metaswitch/ellis/settings.py"
 BANDIT_EXCLUDE_LIST = common,src/metaswitch/ellis/test,_env,.wheelhouse,build
 CLEAN_SRC_DIR = src
+TEST_REQUIREMENTS = common/requirements-test.txt
 
 include build-infra/cw-deb.mk
 include build-infra/python.mk
@@ -58,25 +59,12 @@ prov_tools_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc") $(s
 # Create targets using the common python_component macro
 $(eval $(call python_component,prov_tools))
 
-# Additional test requirements
-${ENV_DIR}/.test_requirements: common/requirements-test.txt ${ENV_DIR}/.wheels-installed
-	${PIP} install -r common/requirements-test.txt
-
 .PHONY: all
 all: help
 
 .PHONY: help
 help:
 	@cat docs/development.md
-
-.PHONY: test
-test: setup.py env ${ENV_DIR}/.test_requirements
-	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup.py test -v
-
-coverage: ${ENV_DIR}/.test_requirements
-
-.PHONY: env
-env: ${ENV_DIR}/.wheels-installed
 
 .PHONY: deb
 deb: env deb-only
