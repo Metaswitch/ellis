@@ -21,3 +21,6 @@ build/
 htmlcov/
 /.wheelhouse/
 /.prov_tools_wheelhouse/
+/prov_tools_wheelhouse/
+/ellis_wheelhouse/
+coverage.xml

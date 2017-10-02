@@ -1,4 +1,4 @@
-.wheelhouse usr/share/clearwater/ellis/
+ellis_wheelhouse/* usr/share/clearwater/ellis/.wheelhouse/
 web-content usr/share/clearwater/ellis/
 local_settings.py usr/share/clearwater/ellis/
 src/metaswitch/ellis/data/*.sql usr/share/clearwater/ellis/
