@@ -239,7 +239,7 @@ def _location(httpresponse):
         raise HTTPError(500)
 
 
-def _http_request(url, callback, overload_retries=3, **kwargs):
+def _http_request(url, callback, overload_retries=4, **kwargs):
     http_client = httpclient.AsyncHTTPClient()
     if 'follow_redirects' not in kwargs:
         kwargs['follow_redirects'] = False
@@ -259,14 +259,19 @@ def _http_request(url, callback, overload_retries=3, **kwargs):
             _log.debug("503 response - retrying %d more time(s)..." % retries_holder['retries'])
             retries_holder['retries'] -= 1
             # Set a timer to retry the HTTP request in 500ms.
-            IOLoop.instance().add_timeout(datetime.timedelta(milliseconds=500), do_http_request)
+            if retries_holder['retries'] >= 3:
+                IOLoop.instance().add_timeout(datetime.timedelta(seconds=1), do_http_request)
+            elif retries_holder['retries'] == 2:
+                IOLoop.instance().add_timeout(datetime.timedelta(seconds=4), do_http_request)
+            elif retries_holder['retries'] == 1:
+                IOLoop.instance().add_timeout(datetime.timedelta(seconds=16), do_http_request)
         else:
             callback(response)
 
     do_http_request()
 
 
-def _sync_http_request(url, overload_retries=3, **kwargs):
+def _sync_http_request(url, overload_retries=4, **kwargs):
     _log.info("Sending HTTP %s request to %s",
               kwargs.get('method', 'GET'),
               url)
@@ -282,7 +287,12 @@ def _sync_http_request(url, overload_retries=3, **kwargs):
                 return e.response
             elif e.code == 503 and overload_retries > 1:
                 overload_retries -= 1
-                time.sleep(0.5)
+                if overload_retries >= 3:
+                    time.sleep(1)
+                elif overload_retries == 2:
+                    time.sleep(4)
+                elif overload_retries == 1:
+                    time.sleep(16)
             else:
                 return e
         except Exception as e:
