@@ -53,7 +53,7 @@ def main():
             print("Pace %d greater than recommended value (%d)" % (pace, default_pace))
         print("This may impact call processing!  Are you sure? [y/N]")
         print("(... or specify --force to skip this check and force the specified pace)")
-        if raw_input().lower() == "yes":
+        if raw_input().lower() == "y":
             print("Continuing...")
         else:
             print("Aborting!")
