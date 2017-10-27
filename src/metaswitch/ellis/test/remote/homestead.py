@@ -301,8 +301,8 @@ class TestHomesteadAsyncRetryOnOverload(TestHomestead):
         internal_callback(mock_response)
         return mock_response
 
-    def expect_timeout_set_and_call_it(self):
-        self.mock_ioloop.add_timeout.assert_called_once_with(datetime.timedelta(milliseconds=500), ANY)
+    def expect_timeout_set_and_call_it(self, seconds=1):
+        self.mock_ioloop.add_timeout.assert_called_once_with(datetime.timedelta(0, seconds), ANY)
         timeout_callback = self.mock_ioloop.add_timeout.call_args[0][1]
         self.mock_ioloop.reset_mock()
         timeout_callback()
@@ -341,7 +341,9 @@ class TestHomesteadAsyncRetryOnOverload(TestHomestead):
         self.expect_fetch_and_respond_with(503)
         self.expect_timeout_set_and_call_it()
         self.expect_fetch_and_respond_with(503)
-        self.expect_timeout_set_and_call_it()
+        self.expect_timeout_set_and_call_it(seconds=4)
+        self.expect_fetch_and_respond_with(503)
+        self.expect_timeout_set_and_call_it(seconds=16)
         mock_response = self.expect_fetch_and_respond_with(503)
         self.callback.assert_called_once_with(mock_response)
 
@@ -386,9 +388,9 @@ class TestHomesteadSyncRetryOnOverload(TestHomestead):
         e = HTTPError(503)
         self.mock_httpclient.fetch.side_effect = e
         self.assertEqual(homestead._sync_http_request("http://homestead/ping"), e)
-        self.assertEqual(sleep.call_args_list, [call(0.5)] * 2)
+        self.assertEqual(sleep.call_args_list, [call(1), call(4), call(16)])
         self.assertEqual(self.mock_httpclient.fetch.call_args_list,
-                         [call("http://homestead/ping", follow_redirects=False, allow_ipv6=True)] * 3)
+                         [call("http://homestead/ping", follow_redirects=False, allow_ipv6=True)] * 4)
 
 
 if __name__ == "__main__":
