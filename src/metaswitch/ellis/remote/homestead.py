@@ -26,6 +26,12 @@ from functools import partial
 
 _log = logging.getLogger("ellis.remote")
 
+# Intervals that we use for retrying after receiving a 503. On the first retry,
+# we wait 1 second, then 4 seconds on the second retry and 16 seconds on the
+# third.
+RETRY_INTERVAL_1 = 1
+RETRY_INTERVAL_2 = 4
+RETRY_INTERVAL_3 = 16
 
 def ping(callback=None):
     """Make sure we can reach homestead"""
@@ -260,11 +266,11 @@ def _http_request(url, callback, overload_retries=4, **kwargs):
             retries_holder['retries'] -= 1
             # Set a timer to retry the HTTP request in 500ms.
             if retries_holder['retries'] >= 3:
-                IOLoop.instance().add_timeout(datetime.timedelta(seconds=1), do_http_request)
+                IOLoop.instance().add_timeout(datetime.timedelta(seconds=RETRY_INTERVAL_1), do_http_request)
             elif retries_holder['retries'] == 2:
-                IOLoop.instance().add_timeout(datetime.timedelta(seconds=4), do_http_request)
+                IOLoop.instance().add_timeout(datetime.timedelta(seconds=RETRY_INTERVAL_2), do_http_request)
             elif retries_holder['retries'] == 1:
-                IOLoop.instance().add_timeout(datetime.timedelta(seconds=16), do_http_request)
+                IOLoop.instance().add_timeout(datetime.timedelta(seconds=RETRY_INTERVAL_3), do_http_request)
         else:
             callback(response)
 
@@ -288,11 +294,11 @@ def _sync_http_request(url, overload_retries=4, **kwargs):
             elif e.code == 503 and overload_retries > 1:
                 overload_retries -= 1
                 if overload_retries >= 3:
-                    time.sleep(1)
+                    time.sleep(RETRY_INTERVAL_1)
                 elif overload_retries == 2:
-                    time.sleep(4)
+                    time.sleep(RETRY_INTERVAL_2)
                 elif overload_retries == 1:
-                    time.sleep(16)
+                    time.sleep(RETRY_INTERVAL_3)
             else:
                 return e
         except Exception as e:
