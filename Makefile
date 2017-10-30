@@ -25,7 +25,8 @@ include build-infra/python.mk
 # Ellis wheel
 
 # Add a target that builds the python-common wheel into the correct wheelhouse
-${ENV_DIR}/.ellis_build_common_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc")
+# Depend on wheels-cleaned so that we rebuild it if it's deleted
+${ENV_DIR}/.ellis_build_common_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc") ${ENV_DIR}/.wheels-cleaned
 	cd common && WHEELHOUSE=../ellis_wheelhouse make build_common_wheel
 	touch $@
 
@@ -44,7 +45,8 @@ $(eval $(call python_component,ellis))
 # Prov-tools wheel
 
 # Add a target that builds the python-common wheel into the correct wheelhouse
-${ENV_DIR}/.prov_tools_build_common_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc")
+# Depend on wheels-cleaned so that we rebuild it if it's deleted
+${ENV_DIR}/.prov_tools_build_common_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc") ${ENV_DIR}/.wheels-cleaned
 	cd common && WHEELHOUSE=../prov_tools_wheelhouse make build_common_wheel
 	touch $@
 
