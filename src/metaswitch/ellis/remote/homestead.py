@@ -14,6 +14,7 @@ import json
 import re
 import datetime
 import time
+import xml.dom.minidom
 
 from tornado import httpclient
 from tornado.ioloop import IOLoop
@@ -216,6 +217,12 @@ def put_filter_criteria(public_id, ifcs, callback):
     Updates the initial filter criteria in Homestead for the given line.
     callback receives the HTTPResponse object.
     """
+    try:
+        _validate_ifc_file(ifcs)
+    except ValueError as e:
+        _log.error("The initial filter criteria cannot be uploaded as the iFC file \
+                   provided is not a valid XML file - %s", e)
+        raise
     sp_url = _sp_from_public_id_url(public_id)
     resp = _sync_http_request(sp_url, method='GET')
     if isinstance(resp, HTTPError): # pragma: no cover
