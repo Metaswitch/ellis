@@ -77,6 +77,11 @@ def build_ifc(ifc_file, domain, twin_prefix):
         except IOError as e:
             _log.error("Failed to read %s - %s", ifc_file, e.strerror)
             return None
+        try:
+            homestead._validate_ifc_file(ifc)
+        except ValueError as e:
+            _log.error("IFC validation failed - %s", e)
+            return None
     else:
         ifc=('<?xml version="1.0" ?>\n'
               '<ServiceProfile>\n'

@@ -421,3 +421,10 @@ def _get_sp_uuid(url):
     if not match: # pragma: no cover
         raise ValueError("URL %s is badly formatted: expected it to match %s" % (url, re_str))
     return match.group(1)
+
+def _validate_ifc_file(ifc_file):
+    """Checks whether ifc_file is a valid XML file. Raises a ValueError if not."""
+    try:
+        xml.dom.minidom.parseString(ifc_file)
+    except Exception as e:
+        raise ValueError("The XML file containing the iFC is malformed.", e)
