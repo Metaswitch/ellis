@@ -205,6 +205,14 @@ class TestHomesteadPublicIDs(TestHomestead):
             follow_redirects=False,
             allow_ipv6=True)
 
+    @patch("tornado.httpclient.HTTPClient", new=MockHTTPClient)
+    @patch("tornado.httpclient.AsyncHTTPClient")
+    @patch("metaswitch.ellis.remote.homestead.settings")
+    def test_create_public_id_with_malformed_ifc(self, settings, AsyncHTTPClient):
+        self.standard_setup(settings, AsyncHTTPClient)
+        callback = Mock()
+        self.assertRaises(ValueError, homestead.create_public_id, PRIVATE_URI, PUBLIC_URI, "this is malformed ifc", callback)
+
 class TestHomesteadAssociations(TestHomestead):
     """Tests for retrieving associated public/private URLs"""
 
