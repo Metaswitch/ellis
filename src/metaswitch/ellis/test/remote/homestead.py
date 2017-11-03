@@ -180,11 +180,11 @@ class TestHomesteadPublicIDs(TestHomestead):
     def test_create_public_id_mainline(self, settings, AsyncHTTPClient):
         self.standard_setup(settings, AsyncHTTPClient)
         callback = Mock()
-        homestead.create_public_id(PRIVATE_URI, PUBLIC_URI, "ifcs", callback)
+        homestead.create_public_id(PRIVATE_URI, PUBLIC_URI, '<?xml version="1.0" ?>\n<ServiceProfile>\n</ServiceProfile>', callback)
         self.mock_httpclient.fetch.assert_called_with(
           'http://homestead/irs/irs-uuid/service_profiles/sp-uuid/filter_criteria',
             ANY,
-            body="ifcs",
+            body='<?xml version="1.0" ?>\n<ServiceProfile>\n</ServiceProfile>',
             method='PUT',
             follow_redirects=False,
             allow_ipv6=True)
