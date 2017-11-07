@@ -11,9 +11,8 @@
 
 import unittest
 import json
-import datetime
 from tornado.httpclient import HTTPError
-from mock import MagicMock, Mock, patch, ANY, call
+from mock import MagicMock, Mock, patch, ANY
 from metaswitch.ellis.remote import homestead
 
 PRIVATE_URI = "pri@foo.bar"
@@ -291,7 +290,7 @@ class TestHomesteadBulkPublicIDs(TestHomestead):
             allow_ipv6=True)
 
 
-class TestHomesteadAsyncRetryOnOverload(TestHomestead):
+class TestHomesteadAsync(TestHomestead):
 
     def setup_and_do_initial_request(self, settings, AsyncHTTPClient, IOLoop):
         self.standard_setup(settings, AsyncHTTPClient)
@@ -309,16 +308,10 @@ class TestHomesteadAsyncRetryOnOverload(TestHomestead):
         internal_callback(mock_response)
         return mock_response
 
-    def expect_timeout_set_and_call_it(self, seconds=1):
-        self.mock_ioloop.add_timeout.assert_called_once_with(datetime.timedelta(0, seconds), ANY)
-        timeout_callback = self.mock_ioloop.add_timeout.call_args[0][1]
-        self.mock_ioloop.reset_mock()
-        timeout_callback()
-
     @patch("tornado.ioloop.IOLoop.instance")
     @patch("tornado.httpclient.AsyncHTTPClient")
     @patch("metaswitch.ellis.remote.homestead.settings")
-    def test_succeed_first_time(self, settings, AsyncHTTPClient, IOLoop):
+    def test_succeed(self, settings, AsyncHTTPClient, IOLoop):
         self.setup_and_do_initial_request(settings, AsyncHTTPClient, IOLoop)
         mock_response = self.expect_fetch_and_respond_with(200)
         self.callback.assert_called_once_with(mock_response)
@@ -326,79 +319,46 @@ class TestHomesteadAsyncRetryOnOverload(TestHomestead):
     @patch("tornado.ioloop.IOLoop.instance")
     @patch("tornado.httpclient.AsyncHTTPClient")
     @patch("metaswitch.ellis.remote.homestead.settings")
-    def test_fail_first_time(self, settings, AsyncHTTPClient, IOLoop):
+    def test_fail(self, settings, AsyncHTTPClient, IOLoop):
         self.setup_and_do_initial_request(settings, AsyncHTTPClient, IOLoop)
         mock_response = self.expect_fetch_and_respond_with(500)
         self.callback.assert_called_once_with(mock_response)
 
-    @patch("tornado.ioloop.IOLoop.instance")
-    @patch("tornado.httpclient.AsyncHTTPClient")
-    @patch("metaswitch.ellis.remote.homestead.settings")
-    def test_retry_then_succeed(self, settings, AsyncHTTPClient, IOLoop):
-        self.setup_and_do_initial_request(settings, AsyncHTTPClient, IOLoop)
-        self.expect_fetch_and_respond_with(503)
-        self.expect_timeout_set_and_call_it()
-        mock_response = self.expect_fetch_and_respond_with(200)
-        self.callback.assert_called_once_with(mock_response)
 
-    @patch("tornado.ioloop.IOLoop.instance")
-    @patch("tornado.httpclient.AsyncHTTPClient")
-    @patch("metaswitch.ellis.remote.homestead.settings")
-    def test_retry_until_limit(self, settings, AsyncHTTPClient, IOLoop):
-        self.setup_and_do_initial_request(settings, AsyncHTTPClient, IOLoop)
-        self.expect_fetch_and_respond_with(503)
-        self.expect_timeout_set_and_call_it()
-        self.expect_fetch_and_respond_with(503)
-        self.expect_timeout_set_and_call_it(seconds=4)
-        self.expect_fetch_and_respond_with(503)
-        self.expect_timeout_set_and_call_it(seconds=16)
-        mock_response = self.expect_fetch_and_respond_with(503)
-        self.callback.assert_called_once_with(mock_response)
-
-
-class TestHomesteadSyncRetryOnOverload(TestHomestead):
+class TestHomesteadSync(TestHomestead):
 
     def setup_httpclient(self, HTTPClient):
         self.mock_httpclient = Mock()
         HTTPClient.return_value = self.mock_httpclient
 
-    @patch("time.sleep")
     @patch("tornado.httpclient.HTTPClient")
-    def test_succeed_first_time(self, HTTPClient, sleep):
+    def test_succeed(self, HTTPClient):
         self.setup_httpclient(HTTPClient)
         self.mock_httpclient.fetch.return_value = "OK"
         self.assertEqual(homestead._sync_http_request("http://homestead/ping"), "OK")
         self.mock_httpclient.fetch.assert_called_once_with("http://homestead/ping", follow_redirects=False, allow_ipv6=True)
-        sleep.assert_not_called()
 
-    @patch("time.sleep")
     @patch("tornado.httpclient.HTTPClient")
-    def test_fail_first_time(self, HTTPClient, sleep):
+    def test_fail_303(self, HTTPClient):
         self.setup_httpclient(HTTPClient)
         self.mock_httpclient.fetch.side_effect = HTTPError(303, response="303 response")
         self.assertEqual(homestead._sync_http_request("http://homestead/ping"), "303 response")
         self.mock_httpclient.fetch.assert_called_once_with("http://homestead/ping", follow_redirects=False, allow_ipv6=True)
-        sleep.assert_not_called()
 
-    @patch("time.sleep")
     @patch("tornado.httpclient.HTTPClient")
-    def test_fail_exception(self, HTTPClient, sleep):
+    def test_fail_exception(self, HTTPClient):
         self.setup_httpclient(HTTPClient)
         self.mock_httpclient.fetch.side_effect = Exception()
         self.assertEqual(homestead._sync_http_request("http://homestead/ping").code, 500)
         self.mock_httpclient.fetch.assert_called_once_with("http://homestead/ping", follow_redirects=False, allow_ipv6=True)
-        sleep.assert_not_called()
 
-    @patch("time.sleep")
     @patch("tornado.httpclient.HTTPClient")
-    def test_retry_until_limit(self, HTTPClient, sleep):
+    def test_fail_http_exception(self, HTTPClient):
         self.setup_httpclient(HTTPClient)
         e = HTTPError(503)
         self.mock_httpclient.fetch.side_effect = e
         self.assertEqual(homestead._sync_http_request("http://homestead/ping"), e)
-        self.assertEqual(sleep.call_args_list, [call(1), call(4), call(16)])
-        self.assertEqual(self.mock_httpclient.fetch.call_args_list,
-                         [call("http://homestead/ping", follow_redirects=False, allow_ipv6=True)] * 4)
+        self.mock_httpclient.fetch.assert_called_once_with("http://homestead/ping", follow_redirects=False, allow_ipv6=True)
 
 
 if __name__ == "__main__":
