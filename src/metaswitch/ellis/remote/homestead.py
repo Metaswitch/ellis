@@ -12,8 +12,6 @@ import logging
 import urllib
 import json
 import re
-import datetime
-import time
 import xml.dom.minidom
 
 from tornado import httpclient
@@ -26,13 +24,6 @@ from metaswitch.common import utils
 from functools import partial
 
 _log = logging.getLogger("ellis.remote")
-
-# Intervals that we use for retrying after receiving a 503. On the first retry,
-# we wait 1 second, then 4 seconds on the second retry and 16 seconds on the
-# third.
-RETRY_INTERVAL_1 = 1
-RETRY_INTERVAL_2 = 4
-RETRY_INTERVAL_3 = 16
 
 def ping(callback=None):
     """Make sure we can reach homestead"""
@@ -252,13 +243,11 @@ def _location(httpresponse):
         raise HTTPError(500)
 
 
-def _http_request(url, callback, overload_retries=4, **kwargs):
+def _http_request(url, callback, **kwargs):
     http_client = httpclient.AsyncHTTPClient()
     if 'follow_redirects' not in kwargs:
         kwargs['follow_redirects'] = False
     kwargs['allow_ipv6'] = True
-    # Use a holder for the retries value, so that the functions we define below can modify it.
-    retries_holder = {'retries': overload_retries}
 
     def do_http_request():
         _log.info("Sending HTTP %s request to %s",
@@ -268,23 +257,12 @@ def _http_request(url, callback, overload_retries=4, **kwargs):
 
     def callback_wrapper(response):
         _log.debug("Received response from %s with code %d" % (url, response.code))
-        if response.code == 503 and retries_holder['retries'] > 1:
-            _log.debug("503 response - retrying %d more time(s)..." % retries_holder['retries'])
-            retries_holder['retries'] -= 1
-            # Set a timer to retry the HTTP request in 500ms.
-            if retries_holder['retries'] >= 3:
-                IOLoop.instance().add_timeout(datetime.timedelta(seconds=RETRY_INTERVAL_1), do_http_request)
-            elif retries_holder['retries'] == 2:
-                IOLoop.instance().add_timeout(datetime.timedelta(seconds=RETRY_INTERVAL_2), do_http_request)
-            elif retries_holder['retries'] == 1:
-                IOLoop.instance().add_timeout(datetime.timedelta(seconds=RETRY_INTERVAL_3), do_http_request)
-        else:
-            callback(response)
+        callback(response)
 
     do_http_request()
 
 
-def _sync_http_request(url, overload_retries=4, **kwargs):
+def _sync_http_request(url, **kwargs):
     _log.info("Sending HTTP %s request to %s",
               kwargs.get('method', 'GET'),
               url)
@@ -298,14 +276,6 @@ def _sync_http_request(url, overload_retries=4, **kwargs):
         except HTTPError as e:
             if e.code == 303:
                 return e.response
-            elif e.code == 503 and overload_retries > 1:
-                overload_retries -= 1
-                if overload_retries >= 3:
-                    time.sleep(RETRY_INTERVAL_1)
-                elif overload_retries == 2:
-                    time.sleep(RETRY_INTERVAL_2)
-                elif overload_retries == 1:
-                    time.sleep(RETRY_INTERVAL_3)
             else:
                 return e
         except Exception as e:

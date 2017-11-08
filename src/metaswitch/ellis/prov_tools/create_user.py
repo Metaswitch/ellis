@@ -43,9 +43,10 @@ def main():
     # indicate progress to the user
     sys.stdout.write("Creating users...")
     sys.stdout.flush()
-    success = True
     count = 0
+    errors = 0
     for dn in utils.parse_dn_ranges(args.dns):
+        success = True
         count += 1
         sys.stdout.write(".")
         sys.stdout.flush()
@@ -61,18 +62,31 @@ def main():
         else:
             success = False
 
+        if not success:
+            errors += 1
+            utils.delete_user(public_id, private_id, force=True)
+            print("Failed to create a subscriber - {}.".format(dn))
+
+            if not args.keep_going:
+                if dn != args.dns:
+                    print("Failed to create any subscribers beyond {}".format(dn))
+
+                break
+
         if count == 100:
             print("")
             print("Created up to user {}".format(dn))
             count = 0
 
-        if not success and not args.keep_going:
-            break
+    if errors == 0:
+        if count == 1:
+            print("Success. Subscriber {} has been created.".format(args.dns))
+        else:
+            print("Success. {} subscriber(s) have been created.".format(count))
 
-    if success:
-        print("done")
         sys.exit(0)
     else:
+        print("Finished, but failed to create all subscribers. See logs above for individual subscribers.")
         sys.exit(1)
 
 if __name__ == '__main__':
