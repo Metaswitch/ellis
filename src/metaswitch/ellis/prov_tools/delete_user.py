@@ -23,6 +23,7 @@ def main():
     parser.add_argument("-q", "--quiet", action="store_true", dest="quiet", help="silence 'forced' error messages")
     parser.add_argument("-y", "--yes", action="store_true", dest="no_prompt", help="auto-accept the prompt displayed before deleting the user(s)")
     parser.add_argument("--hsprov", metavar="IP:PORT", action="store", help="IP address and port of homestead-prov")
+    parser.add_argument("--impi", action="store", default="", dest="impi", help="IMPI (default: derived from the IMPU)")
     parser.add_argument("dns", metavar="<directory-number>[..<directory-number>]")
     parser.add_argument("domain", metavar="<domain>")
     args = parser.parse_args()
@@ -48,6 +49,9 @@ def main():
     for dn in utils.parse_dn_ranges(args.dns):
         public_id = "sip:%s@%s" % (dn, args.domain)
         private_id = "%s@%s" % (dn, args.domain)
+
+        if args.impi != "":
+            private_id = args.impi
 
         if not utils.delete_user(private_id, public_id, force=args.force):
             success = False

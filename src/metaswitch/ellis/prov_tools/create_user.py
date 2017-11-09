@@ -64,7 +64,7 @@ def main():
 
         if not success:
             errors += 1
-            utils.delete_user(public_id, private_id, force=True)
+            utils.delete_user(private_id, public_id, force=True)
             print("Failed to create a subscriber - {}.".format(dn))
 
             if not args.keep_going:
