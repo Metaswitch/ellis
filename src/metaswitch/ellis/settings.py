@@ -69,8 +69,8 @@ HOMESTEAD_URL = "hs.cw-ngv.com:8889"
 # XDM Server.
 XDM_URL = "homer.cw-ngv.com:7888"
 
-# UNIX domain socket prefix
-HTTP_UNIX="/tmp/.ellis-sock"
+# UNIX domain socket prefix, skip Bandit security checking for this filename
+HTTP_UNIX="/tmp/.ellis-sock"  # nosec
 
 # To avoid deploying with debug turned on, this settings should only ever be
 # changed by creating a local_settings.py file in this directory.

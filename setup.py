@@ -42,7 +42,9 @@ setup(
         "singledispatch",
         "six",
         "SQLAlchemy",
-        "tornado"],
+        "tornado",
+        "defusedxml"
+        ],
     tests_require=[
         "funcsigs",
         "Mock",
