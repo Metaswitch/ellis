@@ -16,7 +16,7 @@ import json
 import logging
 import tornado.ioloop
 from tornado.web import HTTPError
-import xml.dom.minidom;
+import defusedxml.minidom
 from metaswitch.ellis import settings
 from metaswitch.ellis.remote import homestead
 
@@ -225,7 +225,7 @@ def display_user(public_id, short=False, quiet=False):
         response = callback.wait()[0]
         filter_criteria_missing = (response.code == 404)
         if response.code == 200:
-            ifc = xml.dom.minidom.parseString(response.body)
+            ifc = defusedxml.minidom.parseString(response.body)
             ifc_str = ifc.toprettyxml(indent="  ")
             ifc_str = "\n".join(filter(lambda l: l.strip() != "", ifc_str.split("\n")))
             ifc_str = "    " + ifc_str.replace("\n", "\n    ")

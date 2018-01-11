@@ -34,5 +34,7 @@ setup(
         "metaswitchcommon",
         "singledispatch",
         "six",
-        "tornado"],
+        "tornado",
+        "defusedxml"
+        ],
     )

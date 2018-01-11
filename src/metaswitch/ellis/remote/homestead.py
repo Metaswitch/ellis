@@ -12,7 +12,7 @@ import logging
 import urllib
 import json
 import re
-import xml.dom.minidom
+import defusedxml.minidom
 
 from tornado import httpclient
 from tornado.ioloop import IOLoop
@@ -395,6 +395,6 @@ def _get_sp_uuid(url):
 def _validate_ifc_file(ifc_file):
     """Checks whether ifc_file is a valid XML file. Raises a ValueError if not."""
     try:
-        xml.dom.minidom.parseString(ifc_file)
+        defusedxml.minidom.parseString(ifc_file)
     except Exception as e:
         raise ValueError("The XML file containing the iFC is malformed.", e)
