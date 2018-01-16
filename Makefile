@@ -77,5 +77,5 @@ help:
 	@cat docs/development.md
 
 .PHONY: deb
-deb: env deb-only
+deb: env wheelhouses deb-only
 
