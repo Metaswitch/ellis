@@ -17,7 +17,6 @@ COVERAGE_SRC_DIR = src
 COVERAGE_EXCL = "**/test/**,**/prov_tools/**,src/metaswitch/ellis/api/static.py,src/metaswitch/ellis/background.py,src/metaswitch/ellis/data/connection.py,src/metaswitch/ellis/main.py,src/metaswitch/ellis/settings.py"
 BANDIT_EXCLUDE_LIST = common,src/metaswitch/ellis/test,_env,.wheelhouse,build
 CLEAN_SRC_DIR = src
-TEST_REQUIREMENTS = common/requirements-test.txt
 
 include build-infra/cw-deb.mk
 include build-infra/python.mk
@@ -26,18 +25,22 @@ include build-infra/python.mk
 
 # Add a target that builds the python-common wheel into the correct wheelhouse
 # Depend on wheels-cleaned so that we rebuild it if it's deleted
-${ENV_DIR}/.ellis_build_common_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc") ${ENV_DIR}/.wheels-cleaned
+ellis_wheelhouse/.ellis_build_common_wheel: $(shell find common/metaswitch -type f -not -name "*.pyc") ellis_wheelhouse/.clean-wheels
 	cd common && WHEELHOUSE=../ellis_wheelhouse make build_common_wheel
 	touch $@
 
-# Add dependency to the install-wheels to ensure we also install the python-common wheel
-${ENV_DIR}/.ellis-install-wheels: ${ENV_DIR}/.ellis_build_common_wheel
+# Add dependency to the install-wheels and wheelhouse-complete to ensure we've built
+# python-common we try to install it or consider the wheelhouse complete
+${ENV_DIR}/.ellis-install-wheels: ellis_wheelhouse/.ellis_build_common_wheel
+ellis_wheelhouse/.wheelhouse_complete: ellis_wheelhouse/.ellis_build_common_wheel
 
 # Set up the variables for Ellis
 ellis_SETUP = setup.py
+ellis_TEST_SETUP = setup.py
 ellis_REQUIREMENTS = requirements.txt common/requirements.txt
+ellis_TEST_REQUIREMENTS = common/requirements-test.txt
 ellis_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
-ellis_WHEELS = ellis
+ellis_WHEELS = metaswitchcommon
 
 # Create targets using the common python_component macro
 $(eval $(call python_component,ellis))
@@ -46,17 +49,22 @@ $(eval $(call python_component,ellis))
 
 # Add a target that builds the python-common wheel into the correct wheelhouse
 # Depend on wheels-cleaned so that we rebuild it if it's deleted
-${ENV_DIR}/.prov_tools_build_common_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc") ${ENV_DIR}/.wheels-cleaned
+prov_tools_wheelhouse/.prov_tools_build_common_wheel: $(shell find common/metaswitch -type f -not -name "*.pyc") prov_tools_wheelhouse/.clean-wheels
 	cd common && WHEELHOUSE=../prov_tools_wheelhouse make build_common_wheel
 	touch $@
 
-# Add dependency to the install-wheels to ensure we also install the python-common wheel
-${ENV_DIR}/.prov_tools-install-wheels: ${ENV_DIR}/.prov_tools_build_common_wheel
+# Add dependency to the install-wheels and wheelhouse-complete to ensure we've built
+# python-common we try to install it or consider the wheelhouse complete
+${ENV_DIR}/.prov_tools-install-wheels: prov_tools_wheelhouse/.prov_tools_build_common_wheel
+prov_tools_wheelhouse/.wheelhouse_complete: prov_tools_wheelhouse/.prov_tools_build_common_wheel
 
 # Setup up the variables for prov-tools
 prov_tools_SETUP = src/metaswitch/ellis/prov_tools/setup.py
+prov_tools_TEST_SETUP = src/metaswitch/ellis/prov_tools/setup.py
 prov_tools_REQUIREMENTS = prov_tools-requirements.txt common/requirements.txt
+prov_tools_TEST_REQUIREMENTS = common/requirements-test.txt
 prov_tools_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
+prov_tools_WHEELS = metaswitchcommon
 
 # Create targets using the common python_component macro
 $(eval $(call python_component,prov_tools))
@@ -69,5 +77,5 @@ help:
 	@cat docs/development.md
 
 .PHONY: deb
-deb: env deb-only
+deb: env wheelhouses deb-only
 

@@ -1,3 +1,3 @@
-prov_tools_wheelhouse/* usr/share/clearwater/clearwater-prov-tools/.wheelhouse/
+prov_tools_wheelhouse/*.whl usr/share/clearwater/clearwater-prov-tools/.wheelhouse/
 local_settings.py usr/share/clearwater/clearwater-prov-tools/
 clearwater-prov-tools.root/* .
